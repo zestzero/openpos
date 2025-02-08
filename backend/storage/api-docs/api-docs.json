@@ -11,6 +11,50 @@
     ],
     "paths": {
         "/products": {
+            "get": {
+                "tags": [
+                    "products"
+                ],
+                "summary": "Get all products",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "getProducts",
+                "parameters": [
+                    {
+                        "name": "includeDeleted",
+                        "in": "query",
+                        "description": "Should include deleted product",
+                        "required": false,
+                        "explode": true,
+                        "schema": {
+                            "type": "boolean",
+                            "default": "false"
+                        }
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                }
+                            },
+                            "application/xml": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Product"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "products"

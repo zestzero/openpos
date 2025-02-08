@@ -16,14 +16,45 @@ use App\Models\Product;
 class ProductController extends ApiController
 {
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/products",
+     *     tags={"products"},
+     *     summary="Get all products",
+     *     description="This can only be done by the logged in user.",
+     *     operationId="getProducts",
+     *     @OA\Response(
+     *         response="default",
+     *         description="successful operation",
+     *           @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Product")
+     *         ),
+     *         @OA\XmlContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Product")
+     *         )
+     *     ),
+     *      @OA\Parameter(
+     *         name="includeDeleted",
+     *         in="query",
+     *         description="Should include deleted product",
+     *         required=false,
+     *         explode=true,
+     *         @OA\Schema(
+     *             default="false",
+     *             type="boolean",
+     *         )
+     *     ),
+     * )
      */
     public function index()
     {
-        //
+        // retrieve all products
+        // $includeDeleted = $request->query('includeDeleted', 'false');
+        return Product::all();
     }
 
-   /**
+    /**
      * @OA\Post(
      *     path="/products",
      *     tags={"products"},
@@ -49,7 +80,7 @@ class ProductController extends ApiController
         return $product;
     }
 
-     /**
+    /**
      * @OA\Get(
      *     path="/products/{productId}",
      *     tags={"products"},
@@ -89,8 +120,7 @@ class ProductController extends ApiController
      */
     public function show(string $id)
     {
-        //
-        return new ProductResource(Product::findOrFail($id));
+        return Product::findOrFail($id);
     }
 
     /**
