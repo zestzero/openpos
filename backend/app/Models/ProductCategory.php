@@ -5,23 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Class Product.
+ * Class ProductCategory.
  *
  * @author  Krit Bannachaisirisuk
  *
  * @OA\Schema(
- *     title="Product model",
- *     description="Product model",
+ *     title="ProductCategory model",
+ *     description="ProductCategory model",
  * )
  */
-class Product extends Model
+class ProductCategory extends Model
 {
     /**
      * The table associated with the model.
      *
      * @var string
      */
-    protected $table = 'product';
+    protected $table = 'product_category';
 
     /**
      * @OA\Property(
@@ -37,7 +37,7 @@ class Product extends Model
     /**
      * @OA\Property(
      *     format="int64",
-     *     description="Product name",
+     *     description="Product Category name",
      *     title="Name",
      * )
      *
@@ -48,30 +48,18 @@ class Product extends Model
     /**
      * @OA\Property(
      *     format="int64",
-     *     description="Product category",
-     *     title="Category",
+     *     description="Product Category description",
+     *     title="Description",
      * )
      *
      * @var string
      */
-    private $category;
+    private $description;
 
     /**
      * @OA\Property(
      *     format="int64",
-     *     description="Product quantity",
-     *     title="Quantity",
-     * )
-     *
-     * @var int
-     */
-    private $quantity;
-
-
-    /**
-     * @OA\Property(
-     *     format="int64",
-     *     description="Is product deleted?",
+     *     description="Is product category deleted?",
      *     title="Deleted",
      *     default="false"
      * )
@@ -79,16 +67,4 @@ class Product extends Model
      * @var boolean
      */
     private $deleted;
-
-
-    /**
-     * @OA\Property(
-     *     format="int64",
-     *     description="Product price per piece",
-     *     title="Price",
-     * )
-     *
-     * @var float
-     */
-    private $price;
 }

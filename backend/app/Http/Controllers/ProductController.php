@@ -76,6 +76,9 @@ class ProductController extends ApiController
     {
         $product = new Product;
         $product->name = $request->name;
+        $product->category = $request->category;
+        $product->quantity = $request->quantity;
+        $product->price = $request->price;
         $product->save();
         return $product;
     }

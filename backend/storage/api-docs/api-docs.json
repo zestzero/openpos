@@ -10,6 +10,76 @@
         }
     ],
     "paths": {
+        "/product-categories": {
+            "get": {
+                "tags": [
+                    "product-categories"
+                ],
+                "summary": "Get all product categories",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "getProductCategories",
+                "parameters": [
+                    {
+                        "name": "includeDeleted",
+                        "in": "query",
+                        "description": "Should include deleted product category",
+                        "required": false,
+                        "explode": true,
+                        "schema": {
+                            "type": "boolean",
+                            "default": "false"
+                        }
+                    }
+                ],
+                "responses": {
+                    "default": {
+                        "description": "successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductCategory"
+                                    }
+                                }
+                            },
+                            "application/xml": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ProductCategory"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "product-categories"
+                ],
+                "summary": "create product",
+                "description": "This can only be done by the logged in user.",
+                "operationId": "createProductCategory",
+                "requestBody": {
+                    "description": "Create product category object",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ProductCategory"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "default": {
+                        "description": "successful operation"
+                    }
+                }
+            }
+        },
         "/products": {
             "get": {
                 "tags": [
@@ -216,13 +286,46 @@
                         "title": "Deleted",
                         "description": "Is product deleted?",
                         "type": "boolean",
-                        "format": "int64"
+                        "format": "int64",
+                        "default": "false"
                     },
                     "price": {
                         "title": "Price",
                         "description": "Product price per piece",
                         "type": "number",
                         "format": "int64"
+                    }
+                },
+                "type": "object"
+            },
+            "ProductCategory": {
+                "title": "ProductCategory model",
+                "description": "ProductCategory model",
+                "properties": {
+                    "id": {
+                        "title": "ID",
+                        "description": "ID",
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "title": "Name",
+                        "description": "Product Category name",
+                        "type": "string",
+                        "format": "int64"
+                    },
+                    "description": {
+                        "title": "Description",
+                        "description": "Product Category description",
+                        "type": "string",
+                        "format": "int64"
+                    },
+                    "deleted": {
+                        "title": "Deleted",
+                        "description": "Is product category deleted?",
+                        "type": "boolean",
+                        "format": "int64",
+                        "default": "false"
                     }
                 },
                 "type": "object"
@@ -234,6 +337,10 @@
         }
     },
     "tags": [
+        {
+            "name": "product-categories",
+            "description": "product-categories"
+        },
         {
             "name": "products",
             "description": "products"
