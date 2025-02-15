@@ -124,11 +124,42 @@ class ProductController extends ApiController
     }
 
     /**
-     * Update the specified resource in storage.
+     * @OA\Put(
+     *     path="/products/{productId}",
+     *     tags={"products"},
+     *     summary="update product",
+     *     description="This can only be done by the logged in user.",
+     *     operationId="updateProduct",
+     *     @OA\Parameter(
+     *         name="productId",
+     *         in="path",
+     *         description="ID of product to return",
+     *         required=true,
+     *         @OA\Schema(
+     *             type="integer",
+     *             format="int64"
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response="default",
+     *         description="successful operation"
+     *     ),
+     *     @OA\RequestBody(
+     *         description="Update product object",
+     *         required=true,
+     *         @OA\JsonContent(ref="#/components/schemas/Product")
+     *     )
+     * )
      */
-    public function update(UpdateProductRequest $request, Product $product)
+    public function update(UpdateProductRequest $request, string $id)
     {
-        //
+        $product = Product::findOrFail($id);
+        $product->name = $request->name ?: $product->name;
+        $product->category = $request->category ?: $product->category;
+        $product->quantity = $request->quantity ?: $product->quantity;
+        $product->price = $request->price ?: $product->price;
+        $product->save();
+        return $product;
     }
 
     /**
