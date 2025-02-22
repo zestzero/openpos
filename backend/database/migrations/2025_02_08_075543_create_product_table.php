@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\ProductCategory;
 
 return new class extends Migration
 {
@@ -14,7 +15,7 @@ return new class extends Migration
         Schema::create('product', function (Blueprint $table) {
             $table->id();
             $table->string('name', length: 250);
-            $table->string('category')->default('uncategorized');
+            $table->foreignIdFor(ProductCategory::class);
             $table->unsignedInteger('quantity')->default(0);
             $table->boolean('deleted')->default(false);
             $table->decimal('price', total: 8, places: 2)->default(0);
