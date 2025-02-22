@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react";
 import Database from "@tauri-apps/plugin-sql";
 import "./App.css";
@@ -52,12 +53,15 @@ function App() {
 
   return (
     <main className="container">
+      <h1 className="text-3xl font-bold underline">Hello world!</h1>
       <h1>Welcome to Tauri + SQLite</h1>
 
       {isLoadingUsers ? (
         <div>Loading users...</div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           <form
             className="row"
             onSubmit={(e) => {
@@ -77,10 +81,12 @@ function App() {
               onChange={(e) => setEmail(e.currentTarget.value)}
               placeholder="Enter an email..."
             />
-            <button type="submit">Add User</button>
+            <Button type="submit">Add User</Button>
           </form>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
+          >
             <h1>Users</h1>
             <table>
               <thead>
