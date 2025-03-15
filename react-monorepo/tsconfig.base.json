@@ -17,7 +17,8 @@
     "target": "es2022",
     "composite": true,
     "paths": {
-      "@/shared/ui": ["./libs/shared/ui/src/index.ts"]
+      "@/shared/ui": ["./libs/shared/ui/src/index.ts"],
+      "@/shared/api": ["./libs/shared/api/src/index.ts"]
     }
   }
 }
