@@ -1,0 +1,11 @@
+{
+  "name": "api",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "scripts": {
+    "generate": "pnpx openapi-typescript http://localhost/docs?api-docs.json -o src/lib/generated.d.ts"
+  }
+}
