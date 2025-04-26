@@ -1,5 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
 /* You can add global styles to this file, and also import other style files */
-@plugin "daisyui";
+@plugin "daisyui" {
+  themes: nord --default, abyss --prefersdark, cupcake, dracula;
+}
+
+@theme {
+  --font-sans: InterVariable, sans-serif;
+}

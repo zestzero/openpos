@@ -4,100 +4,100 @@
  */
 
 export interface paths {
-    "/product-categories": {
+    '/product-categories': {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get all product categories
          * @description This can only be done by the logged in user.
          */
-        get: operations["getProductCategories"];
-        put?: never;
+        get: operations['getProductCategories']
+        put?: never
         /**
          * create product
          * @description This can only be done by the logged in user.
          */
-        post: operations["createProductCategory"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/products": {
+        post: operations['createProductCategory']
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    '/products': {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Get all products
          * @description This can only be done by the logged in user.
          */
-        get: operations["getProducts"];
-        put?: never;
+        get: operations['getProducts']
+        put?: never
         /**
          * create product
          * @description This can only be done by the logged in user.
          */
-        post: operations["createProduct"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/products/{productId}": {
+        post: operations['createProduct']
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    '/products/{productId}': {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * Find product by ID
          * @description Returns a single product
          */
-        get: operations["showProduct"];
+        get: operations['showProduct']
         /**
          * update product
          * @description This can only be done by the logged in user.
          */
-        put: operations["updateProduct"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/user": {
+        put: operations['updateProduct']
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
+    '/user': {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /**
          * show user
          * @description This can only be done by the logged in user.
          */
-        get: operations["showUser"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+        get: operations['showUser']
+        put?: never
+        post?: never
+        delete?: never
+        options?: never
+        head?: never
+        patch?: never
+        trace?: never
+    }
 }
-export type webhooks = Record<string, never>;
+export type webhooks = Record<string, never>
 export interface components {
     schemas: {
         /**
@@ -110,39 +110,39 @@ export interface components {
              * Format: int64
              * @description ID
              */
-            id?: number;
+            id?: number
             /**
              * Name
              * Format: int64
              * @description Product name
              */
-            name?: string;
+            name?: string
             /**
              * Category
              * Format: int64
              * @description Product category
              */
-            category?: string;
+            category?: string
             /**
              * Quantity
              * Format: int64
              * @description Product quantity
              */
-            quantity?: number;
+            quantity?: number
             /**
              * Deleted
              * Format: int64
              * @description Is product deleted?
              * @default false
              */
-            deleted: boolean;
+            deleted: boolean
             /**
              * Price
              * Format: int64
              * @description Product price per piece
              */
-            price?: number;
-        };
+            price?: number
+        }
         /**
          * ProductCategory model
          * @description ProductCategory model
@@ -153,215 +153,215 @@ export interface components {
              * Format: int64
              * @description ID
              */
-            id?: number;
+            id?: number
             /**
              * Name
              * Format: int64
              * @description Product Category name
              */
-            name?: string;
+            name?: string
             /**
              * Description
              * Format: int64
              * @description Product Category description
              */
-            description?: string;
+            description?: string
             /**
              * Deleted
              * Format: int64
              * @description Is product category deleted?
              * @default false
              */
-            deleted: boolean;
-        };
+            deleted: boolean
+        }
         /**
          * User model
          * @description User model
          */
-        User: unknown;
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+        User: unknown
+    }
+    responses: never
+    parameters: never
+    requestBodies: never
+    headers: never
+    pathItems: never
 }
-export type $defs = Record<string, never>;
+export type $defs = Record<string, never>
 export interface operations {
     getProductCategories: {
         parameters: {
             query?: {
                 /** @description Should include deleted product category */
-                includeDeleted?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+                includeDeleted?: boolean
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["ProductCategory"][];
-                    "application/xml": components["schemas"]["ProductCategory"][];
-                };
-            };
-        };
-    };
+                    'application/json': components['schemas']['ProductCategory'][]
+                    'application/xml': components['schemas']['ProductCategory'][]
+                }
+            }
+        }
+    }
     createProductCategory: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** @description Create product category object */
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ProductCategory"];
-            };
-        };
+                'application/json': components['schemas']['ProductCategory']
+            }
+        }
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+        }
+    }
     getProducts: {
         parameters: {
             query?: {
                 /** @description Should include deleted product */
-                includeDeleted?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+                includeDeleted?: boolean
+            }
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["Product"][];
-                    "application/xml": components["schemas"]["Product"][];
-                };
-            };
-        };
-    };
+                    'application/json': components['schemas']['Product'][]
+                    'application/xml': components['schemas']['Product'][]
+                }
+            }
+        }
+    }
     createProduct: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
         /** @description Create product object */
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Product"];
-            };
-        };
+                'application/json': components['schemas']['Product']
+            }
+        }
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+        }
+    }
     showProduct: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
                 /** @description ID of product to return */
-                productId: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
+                productId: number
+            }
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description successful operation */
             200: {
                 headers: {
-                    [name: string]: unknown;
-                };
+                    [name: string]: unknown
+                }
                 content: {
-                    "application/json": components["schemas"]["Product"];
-                    "application/xml": components["schemas"]["Product"];
-                };
-            };
+                    'application/json': components['schemas']['Product']
+                    'application/xml': components['schemas']['Product']
+                }
+            }
             /** @description Invalid ID supplier */
             400: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
             /** @description Product not found */
             404: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+        }
+    }
     updateProduct: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: never
+            header?: never
             path: {
                 /** @description ID of product to return */
-                productId: number;
-            };
-            cookie?: never;
-        };
+                productId: number
+            }
+            cookie?: never
+        }
         /** @description Update product object */
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Product"];
-            };
-        };
+                'application/json': components['schemas']['Product']
+            }
+        }
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+        }
+    }
     showUser: {
         parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
+            query?: never
+            header?: never
+            path?: never
+            cookie?: never
+        }
+        requestBody?: never
         responses: {
             /** @description successful operation */
             default: {
                 headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
+                    [name: string]: unknown
+                }
+                content?: never
+            }
+        }
+    }
 }
