@@ -270,10 +270,10 @@
                         "type": "string",
                         "format": "int64"
                     },
-                    "category": {
+                    "product_category_id": {
                         "title": "Category",
-                        "description": "Product category",
-                        "type": "string",
+                        "description": "Product category id",
+                        "type": "integer",
                         "format": "int64"
                     },
                     "quantity": {

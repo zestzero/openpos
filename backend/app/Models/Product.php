@@ -48,13 +48,13 @@ class Product extends Model
     /**
      * @OA\Property(
      *     format="int64",
-     *     description="Product category",
+     *     description="Product category id",
      *     title="Category",
      * )
      *
-     * @var string
+     * @var int
      */
-    private $category;
+    private $product_category_id;
 
     /**
      * @OA\Property(

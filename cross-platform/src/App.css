@@ -4,6 +4,9 @@
 
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark, nord;
+}
 
 :root {
   --background: hsl(0 0% 100%);
