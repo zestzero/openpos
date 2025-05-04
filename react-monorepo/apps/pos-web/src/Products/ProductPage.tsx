@@ -1,4 +1,4 @@
-import { operations, useApiClient } from '@/shared/api'
+import { operations, useApiClient } from '@openpos/api'
 import { useEffect, useState } from 'react'
 
 export const ProductPage = () => {

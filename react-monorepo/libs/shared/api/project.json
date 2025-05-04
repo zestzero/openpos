@@ -1,5 +1,5 @@
 {
-    "name": "api",
+    "name": "@openpos/api",
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
     "sourceRoot": "libs/shared/api/src",
     "projectType": "library",
