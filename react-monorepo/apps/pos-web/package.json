@@ -1,8 +1,16 @@
 {
-  "name": "@react-monorepo/pos-web",
+  "name": "@openpos/pos-web",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
+  "description": "POS Web Application",
+  "license": "MIT",
   "nx": {
     "name": "pos-web"
+  },
+  "dependencies": {
+    "@openpos/api": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

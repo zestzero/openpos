@@ -76,7 +76,7 @@ class ProductController extends ApiController
     {
         $product = new Product;
         $product->name = $request->name;
-        $product->category = $request->category;
+        $product->product_category_id = $request->product_category_id;
         $product->quantity = $request->quantity;
         $product->price = $request->price;
         $product->save();
@@ -158,7 +158,7 @@ class ProductController extends ApiController
     {
         $product = Product::findOrFail($id);
         $product->name = $request->name ?: $product->name;
-        $product->category = $request->category ?: $product->category;
+        $product->product_category_id = $request->product_category_id ?: $product->product_category_id;
         $product->quantity = $request->quantity ?: $product->quantity;
         $product->price = $request->price ?: $product->price;
         $product->save();

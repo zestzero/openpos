@@ -1,14 +1,14 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import dts from 'vite-plugin-dts';
-import * as path from 'path';
-import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import dts from 'vite-plugin-dts'
+import * as path from 'path'
+import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin'
+import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin'
 
 export default defineConfig(() => ({
   root: __dirname,
-  cacheDir: '../../../node_modules/.vite/libs/shared/ui',
+  cacheDir: '../../../node_modules/.vite/libs/shared/api',
   plugins: [
     react(),
     nxViteTsPaths(),
@@ -25,7 +25,7 @@ export default defineConfig(() => ({
   // Configuration for building your library.
   // See: https://vitejs.dev/guide/build.html#library-mode
   build: {
-    outDir: '../../../dist/libs/shared/ui',
+    outDir: '../../../dist/libs/shared/api',
     emptyOutDir: true,
     reportCompressedSize: true,
     commonjsOptions: {
@@ -34,7 +34,7 @@ export default defineConfig(() => ({
     lib: {
       // Could also be a dictionary or array of multiple entry points.
       entry: 'src/index.ts',
-      name: 'ui',
+      name: 'api',
       fileName: 'index',
       // Change this to the formats you want to support.
       // Don't forget to update your package.json as well.
@@ -42,18 +42,18 @@ export default defineConfig(() => ({
     },
     rollupOptions: {
       // External packages that should not be bundled into your library.
-      external: ['react', 'react-dom', 'react/jsx-runtime'],
+      external: [],
     },
   },
   test: {
     watch: false,
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
-      reportsDirectory: '../../../coverage/libs/shared/ui',
+      reportsDirectory: '../../../coverage/libs/shared/api',
       provider: 'v8' as const,
     },
   },
-}));
+}))

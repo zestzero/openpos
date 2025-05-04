@@ -1,7 +1,9 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import tailwindcss from '@tailwindcss/vite'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
 export default defineConfig(() => ({
   root: __dirname,
@@ -14,7 +16,13 @@ export default defineConfig(() => ({
     port: 4300,
     host: 'localhost',
   },
-  plugins: [react(), tsconfigPaths()],
+  plugins: [
+    // Please make sure that '@tanstack/router-plugin' is passed before '@vitejs/plugin-react'
+    TanStackRouterVite({ target: 'react', autoCodeSplitting: true }),
+    react(),
+    tsconfigPaths(),
+    tailwindcss(),
+  ],
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],
@@ -38,4 +46,4 @@ export default defineConfig(() => ({
       provider: 'v8' as const,
     },
   },
-}));
+}))

@@ -1,4 +1,5 @@
 {
+  "editor.formatOnSave": true,
   "recommendations": [
     "nrwl.angular-console",
     "esbenp.prettier-vscode",

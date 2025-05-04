@@ -3,3 +3,6 @@
 /coverage
 /.nx/cache
 /.nx/workspace-data
+
+# Ignore generated files
+**/routeTree.gen.ts

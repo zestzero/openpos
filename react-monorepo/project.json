@@ -1,5 +1,5 @@
 {
-  "name": "@react-monorepo/source",
+  "name": "@openpos/source",
   "$schema": "node_modules/nx/schemas/project-schema.json",
   "targets": {
     "local-registry": {

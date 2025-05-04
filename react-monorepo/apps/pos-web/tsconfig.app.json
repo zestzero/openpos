@@ -24,8 +24,7 @@
     "src/**/*.test.js",
     "src/**/*.spec.jsx",
     "src/**/*.test.jsx",
-    "vite.config.mts",
-    "vite.config.mts",
+    "vite.config.ts",
     "vitest.config.ts",
     "vitest.config.mts",
     "eslint.config.js",
@@ -34,6 +33,7 @@
   ],
   "include": [
     "src/**/*.js",
+    "src/**/*.css",
     "src/**/*.jsx",
     "src/**/*.ts",
     "src/**/*.tsx",

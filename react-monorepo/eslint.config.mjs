@@ -1,9 +1,15 @@
-import nx from '@nx/eslint-plugin';
+import nx from '@nx/eslint-plugin'
+const simpleImportSort = require('eslint-plugin-simple-import-sort')
 
 export default [
   ...nx.configs['flat/base'],
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
+  {
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+    },
+  },
   {
     ignores: [
       '**/dist',
@@ -27,6 +33,12 @@ export default [
           ],
         },
       ],
+      'simple-import-sort/imports': [
+        'error',
+        {
+          groups: [['^react', '^@?\\w'], ['^@/'], ['^~'], ['^\\.']],
+        },
+      ],
     },
   },
   {
@@ -43,4 +55,4 @@ export default [
     // Override or add rules here
     rules: {},
   },
-];
+]
