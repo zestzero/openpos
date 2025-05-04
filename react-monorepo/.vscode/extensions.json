@@ -1,9 +1,9 @@
 {
-    "editor.formatOnSave": true,
-    "recommendations": [
-        "nrwl.angular-console",
-        "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "ms-playwright.playwright"
-    ]
+  "editor.formatOnSave": true,
+  "recommendations": [
+    "nrwl.angular-console",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-playwright.playwright"
+  ]
 }
