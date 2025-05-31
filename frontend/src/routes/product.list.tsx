@@ -4,6 +4,8 @@ import { z } from 'zod'
 import { useAppForm } from '../hooks/demo.form'
 
 import type { RootRoute } from '@tanstack/react-router'
+import { getProducts } from '@/client'
+import { useQuery } from '@tanstack/react-query'
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -11,6 +13,13 @@ const schema = z.object({
 })
 
 function ProductListPage() {
+  const { data } = useQuery({
+    queryKey: ['products'],
+    queryFn: () => getProducts(),
+  })
+
+  console.log(data)
+
   const form = useAppForm({
     defaultValues: {
       title: '',
