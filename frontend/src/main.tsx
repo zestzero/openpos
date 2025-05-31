@@ -23,6 +23,7 @@ import './styles.css'
 import reportWebVitals from './reportWebVitals.ts'
 
 import App from './App.tsx'
+import productList from './routes/product.list.tsx'
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -48,6 +49,7 @@ const routeTree = rootRoute.addChildren([
   FormAddressDemo(rootRoute),
   TableDemo(rootRoute),
   TanStackQueryDemo(rootRoute),
+  productList(rootRoute),
 ])
 
 const router = createRouter({
