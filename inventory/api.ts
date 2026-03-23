@@ -1,6 +1,7 @@
 import { api } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { InventoryLedger, InventorySnapshot } from "./entities";
+import { requireRole } from "../auth/middleware";
 
 interface LedgerRequest {
   variant_id: string;
@@ -23,7 +24,7 @@ interface LedgerResponse {
 }
 
 export const createLedgerEntry = api(
-  { expose: true, method: "POST", path: "/inventory/ledger", auth: false },
+  { expose: true, method: "POST", path: "/inventory/ledger", auth: true },
   async (req: LedgerRequest): Promise<LedgerResponse> => {
     const ds = await getDataSource();
     const repo = ds.getRepository(InventoryLedger);
@@ -75,8 +76,9 @@ interface AdjustmentRequest {
 }
 
 export const adjustStock = api(
-  { expose: true, method: "POST", path: "/inventory/adjustment", auth: false },
+  { expose: true, method: "POST", path: "/inventory/adjustment", auth: true },
   async (req: AdjustmentRequest): Promise<LedgerResponse> => {
+    requireRole("OWNER");
     return await createLedgerEntry({
       variant_id: req.variant_id,
       delta: req.delta,
@@ -93,7 +95,7 @@ interface StockResponse {
 }
 
 export const getStock = api(
-  { expose: true, method: "GET", path: "/inventory/variants/:id/stock", auth: false },
+  { expose: true, method: "GET", path: "/inventory/variants/:id/stock", auth: true },
   async ({ id }: { id: string }): Promise<StockResponse> => {
     const ds = await getDataSource();
     const snapshotRepo = ds.getRepository(InventorySnapshot);

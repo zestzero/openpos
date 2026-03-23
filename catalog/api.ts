@@ -1,7 +1,8 @@
 import { api, APIError } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { Category, Product, Variant } from "./entities";
-import { ILike, IsNull } from "typeorm";
+import { ILike } from "typeorm";
+import { requireRole } from "../auth/middleware";
 
 interface CreateCategoryRequest {
   name: string;
@@ -20,8 +21,9 @@ interface CategoryResponse {
 }
 
 export const createCategory = api(
-  { expose: true, method: "POST", path: "/catalog/categories", auth: false },
+  { expose: true, method: "POST", path: "/catalog/categories", auth: true },
   async (req: CreateCategoryRequest): Promise<CategoryResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const repo = ds.getRepository(Category);
     const category = repo.create({
@@ -38,7 +40,7 @@ export const createCategory = api(
 );
 
 export const listCategories = api(
-  { expose: true, method: "GET", path: "/catalog/categories", auth: false },
+  { expose: true, method: "GET", path: "/catalog/categories", auth: true },
   async (): Promise<{ categories: CategoryResponse[] }> => {
     const ds = await getDataSource();
     const categories = await ds.getRepository(Category).find({
@@ -55,8 +57,9 @@ export const listCategories = api(
 );
 
 export const updateCategory = api(
-  { expose: true, method: "PATCH", path: "/catalog/categories/:id", auth: false },
+  { expose: true, method: "PATCH", path: "/catalog/categories/:id", auth: true },
   async (req: { id: string } & UpdateCategoryRequest): Promise<CategoryResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const repo = ds.getRepository(Category);
     const category = await repo.findOneBy({ id: req.id });
@@ -96,8 +99,9 @@ interface ProductResponse {
 }
 
 export const createProduct = api(
-  { expose: true, method: "POST", path: "/catalog/products", auth: false },
+  { expose: true, method: "POST", path: "/catalog/products", auth: true },
   async (req: CreateProductRequest): Promise<ProductResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const productRepo = ds.getRepository(Product);
 
@@ -123,14 +127,41 @@ export const createProduct = api(
 );
 
 export const listProducts = api(
-  { expose: true, method: "GET", path: "/catalog/products", auth: false },
+  { expose: true, method: "GET", path: "/catalog/products", auth: true },
   async (req: { category_id?: string; search?: string }): Promise<{ products: ProductResponse[] }> => {
     const ds = await getDataSource();
-    const where: any = { archived: false };
-    if (req.category_id) where.category_id = req.category_id;
-    if (req.search) where.name = ILike(`%${req.search}%`);
+    const productRepo = ds.getRepository(Product);
 
-    const products = await ds.getRepository(Product).find({
+    if (req.search) {
+      const qb = productRepo
+        .createQueryBuilder("product")
+        .leftJoin("product.variants", "variant")
+        .where("product.archived = :archived", { archived: false })
+        .andWhere(
+          "(product.name ILIKE :search OR variant.sku ILIKE :search OR variant.barcode ILIKE :search)",
+          { search: `%${req.search}%` }
+        );
+
+      if (req.category_id) {
+        qb.andWhere("product.category_id = :categoryId", { categoryId: req.category_id });
+      }
+
+      const products = await qb.orderBy("product.name", "ASC").getMany();
+      return {
+        products: products.map((p) => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          category_id: p.category_id,
+          archived: p.archived,
+        })),
+      };
+    }
+
+    const where: Record<string, unknown> = { archived: false };
+    if (req.category_id) where.category_id = req.category_id;
+
+    const products = await productRepo.find({
       where,
       order: { name: "ASC" },
     });
@@ -147,8 +178,9 @@ export const listProducts = api(
 );
 
 export const updateProduct = api(
-  { expose: true, method: "PATCH", path: "/catalog/products/:id", auth: false },
+  { expose: true, method: "PATCH", path: "/catalog/products/:id", auth: true },
   async (req: { id: string } & UpdateProductRequest): Promise<ProductResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const productRepo = ds.getRepository(Product);
     const product = await productRepo.findOneBy({ id: req.id });
@@ -204,8 +236,9 @@ interface VariantResponse {
 }
 
 export const createVariant = api(
-  { expose: true, method: "POST", path: "/catalog/products/:productId/variants", auth: false },
+  { expose: true, method: "POST", path: "/catalog/products/:productId/variants", auth: true },
   async (req: { productId: string } & CreateVariantRequest): Promise<VariantResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const product = await ds.getRepository(Product).findOneBy({ id: req.productId });
     if (!product) throw APIError.notFound("Product not found");
@@ -242,7 +275,7 @@ export const createVariant = api(
 );
 
 export const listVariants = api(
-  { expose: true, method: "GET", path: "/catalog/products/:productId/variants", auth: false },
+  { expose: true, method: "GET", path: "/catalog/products/:productId/variants", auth: true },
   async (req: { productId: string }): Promise<{ variants: VariantResponse[] }> => {
     const ds = await getDataSource();
     const variants = await ds.getRepository(Variant).find({
@@ -264,8 +297,9 @@ export const listVariants = api(
 );
 
 export const updateVariant = api(
-  { expose: true, method: "PATCH", path: "/catalog/variants/:id", auth: false },
+  { expose: true, method: "PATCH", path: "/catalog/variants/:id", auth: true },
   async (req: { id: string } & UpdateVariantRequest): Promise<VariantResponse> => {
+    requireRole("OWNER");
     const ds = await getDataSource();
     const variantRepo = ds.getRepository(Variant);
     const variant = await variantRepo.findOneBy({ id: req.id });
