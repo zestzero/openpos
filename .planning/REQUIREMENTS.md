@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: Owner can create account with email and password
-- [ ] **AUTH-02**: Owner can log in with email/password and stay logged in across sessions
-- [ ] **AUTH-03**: Owner can create cashier accounts and assign roles (Cashier, Owner)
+- [x] **AUTH-01**: Owner can create account with email and password
+- [x] **AUTH-02**: Owner can log in with email/password and stay logged in across sessions
+- [x] **AUTH-03**: Owner can create cashier accounts and assign roles (Cashier, Owner)
 - [ ] **AUTH-04**: Cashier can log in at the register using a numeric PIN
 - [ ] **AUTH-05**: System enforces role-based access — cashiers see POS only, owners see POS + ERP
 
@@ -69,8 +69,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Platform
 
 - [ ] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
-- [ ] **PLAT-02**: Encore TypeScript backend with service-per-domain architecture
-- [ ] **PLAT-03**: PostgreSQL database auto-provisioned per service via Encore
+- [x] **PLAT-02**: Encore TypeScript backend with service-per-domain architecture
+- [x] **PLAT-03**: PostgreSQL database auto-provisioned per service via Encore
 - [ ] **PLAT-04**: PWA with service worker for offline POS capability
 - [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
@@ -139,9 +139,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Pending |
 | AUTH-05 | Phase 1 | Pending |
 | POS-01 | Phase 2 | Pending |
@@ -175,8 +175,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |
 | PLAT-01 | Phase 2 | Pending |
-| PLAT-02 | Phase 1 | Pending |
-| PLAT-03 | Phase 1 | Pending |
+| PLAT-02 | Phase 1 | Complete |
+| PLAT-03 | Phase 1 | Complete |
 | PLAT-04 | Phase 2 | Pending |
 | PLAT-05 | Phase 4 | Pending |
 
