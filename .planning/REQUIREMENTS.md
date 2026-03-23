@@ -12,8 +12,8 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **AUTH-01**: Owner can create account with email and password
 - [x] **AUTH-02**: Owner can log in with email/password and stay logged in across sessions
 - [x] **AUTH-03**: Owner can create cashier accounts and assign roles (Cashier, Owner)
-- [ ] **AUTH-04**: Cashier can log in at the register using a numeric PIN
-- [ ] **AUTH-05**: System enforces role-based access — cashiers see POS only, owners see POS + ERP
+- [x] **AUTH-04**: Cashier can log in at the register using a numeric PIN
+- [x] **AUTH-05**: System enforces role-based access — cashiers see POS only, owners see POS + ERP
 
 ### POS — Sale Flow
 
@@ -142,8 +142,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| AUTH-04 | Phase 1 | Pending |
-| AUTH-05 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Complete |
+| AUTH-05 | Phase 1 | Complete |
 | POS-01 | Phase 2 | Pending |
 | POS-02 | Phase 2 | Pending |
 | POS-03 | Phase 2 | Pending |
