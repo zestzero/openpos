@@ -46,11 +46,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Product Management
 
-- [ ] **PROD-01**: Owner can create products with name, description, category, and images
-- [ ] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
-- [ ] **PROD-03**: Owner can edit and archive products and variants
-- [ ] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
-- [ ] **PROD-05**: Owner can assign or generate barcodes for each variant
+- [x] **PROD-01**: Owner can create products with name, description, category, and images
+- [x] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
+- [x] **PROD-03**: Owner can edit and archive products and variants
+- [x] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
+- [x] **PROD-05**: Owner can assign or generate barcodes for each variant
 - [ ] **PROD-06**: Owner can bulk import products and variants via CSV or Excel file
 
 ### Inventory
@@ -161,11 +161,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OFF-02 | Phase 2 | Pending |
 | OFF-03 | Phase 2 | Pending |
 | OFF-04 | Phase 2 | Pending |
-| PROD-01 | Phase 4 | Pending |
-| PROD-02 | Phase 4 | Pending |
-| PROD-03 | Phase 4 | Pending |
-| PROD-04 | Phase 4 | Pending |
-| PROD-05 | Phase 4 | Pending |
+| PROD-01 | Phase 4 | Complete |
+| PROD-02 | Phase 4 | Complete |
+| PROD-03 | Phase 4 | Complete |
+| PROD-04 | Phase 4 | Complete |
+| PROD-05 | Phase 4 | Complete |
 | PROD-06 | Phase 4 | Pending |
 | INV-01 | Phase 1 | Pending |
 | INV-02 | Phase 1 | Pending |
