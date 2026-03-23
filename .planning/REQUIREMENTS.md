@@ -55,10 +55,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Inventory
 
-- [ ] **INV-01**: Every stock change is recorded in an inventory ledger with type (sale, restock, adjustment), quantity delta, and reference
-- [ ] **INV-02**: Stock automatically deducts when a sale completes (via ledger entry)
-- [ ] **INV-03**: Owner can manually adjust stock with a reason code (damaged, count correction, received)
-- [ ] **INV-04**: Owner can view current stock levels per variant (derived from ledger)
+- [x] **INV-01**: Every stock change is recorded in an inventory ledger with type (sale, restock, adjustment), quantity delta, and reference
+- [x] **INV-02**: Stock automatically deducts when a sale completes (via ledger entry)
+- [x] **INV-03**: Owner can manually adjust stock with a reason code (damaged, count correction, received)
+- [x] **INV-04**: Owner can view current stock levels per variant (derived from ledger)
 
 ### Reporting
 
@@ -167,10 +167,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROD-04 | Phase 4 | Complete |
 | PROD-05 | Phase 4 | Complete |
 | PROD-06 | Phase 4 | Pending |
-| INV-01 | Phase 1 | Pending |
-| INV-02 | Phase 1 | Pending |
-| INV-03 | Phase 1 | Pending |
-| INV-04 | Phase 1 | Pending |
+| INV-01 | Phase 1 | Complete |
+| INV-02 | Phase 1 | Complete |
+| INV-03 | Phase 1 | Complete |
+| INV-04 | Phase 1 | Complete |
 | RPT-01 | Phase 4 | Pending |
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |
