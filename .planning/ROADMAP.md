@@ -40,12 +40,12 @@
 
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
 
-**Plans:** 6 plans
+**Plans:** 3/6 plans executed
 
 Plans:
 - [x] 02-00-PLAN.md — Minimal Sales backend service (order creation + inventory deduction)
-- [ ] 02-01-PLAN.md — Frontend scaffold (Vite + React + TanStack Router + shadcn/ui + PWA manifest)
-- [ ] 02-02-PLAN.md — API client, auth context, catalog browsing UI with search
+- [x] 02-01-PLAN.md — Frontend scaffold (Vite + React + TanStack Router + shadcn/ui + PWA manifest)
+- [x] 02-02-PLAN.md — API client, auth context, catalog browsing UI with search
 - [ ] 02-03-PLAN.md — Offline database (Dexie.js) and PWA service worker
 - [ ] 02-04-PLAN.md — Cart management, bottom sheet, barcode scanning (camera + USB wedge)
 - [ ] 02-05-PLAN.md — Favorites bar, offline sale completion, sync queue with status indicator
@@ -140,4 +140,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-03-28 (Plan 02-00 complete)*
+*Last updated: 2026-03-28 (Plan 02-02 complete — API client, auth, TanStack Query, POS catalog UI)*

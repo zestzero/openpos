@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-28T09:50:17.604Z"
+last_updated: "2026-03-28T10:10:56.310Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 5
+  completed_plans: 7
 ---
 
 # STATE.md
@@ -21,15 +21,15 @@ progress:
 
 ## Current Position
 
-Phase: 02 (pos-frontend-offline) — EXECUTING
-Plan: 2 of 6
+Phase: 02 (pos-frontend-offline) — IN PROGRESS
+Plan: 4 of 6 (02-02 complete, 02-03 next)
 
 ## Phase Overview
 
 | Phase | Goal | Status |
 |-------|------|--------|
 | 1 | Foundation & Backend Core | ✅ Complete |
-| 2 | POS Frontend & Offline | Not started |
+| 2 | POS Frontend & Offline | 🔄 In Progress |
 | 3 | Payments & Receipts | Not started |
 | 4 | ERP Management & Reporting | Not started |
 
@@ -48,6 +48,12 @@ Plan: 2 of 6
 | Product → Variant hierarchy | Never flat products; variants have own SKU/barcode/price/cost |
 | Inventory ledger + snapshot | Ledger is truth, snapshot is derived cache |
 | Delta sync for offline | Sync operations (decrement 1), not state (set to 9) |
+| Tailwind v4 CSS-first | @theme in globals.css instead of v3 JS config |
+| Sonner replaces toast | shadcn deprecated toast, sonner is the replacement |
+| Router plugin order | tanstackRouter plugin must precede react() in vite.config.ts |
+| JWT via atob() | Parse JWT payload with atob() on base64url segment — no extra lib needed |
+| THB via Intl.NumberFormat | formatTHB(priceCents) = Intl.NumberFormat('th-TH', { currency: 'THB' }).format(priceCents/100) |
+| CategoryTabs custom buttons | Custom pill buttons over shadcn Tabs for better horizontal scroll control |
 
 ---
 
@@ -62,4 +68,4 @@ Plan: 2 of 6
 
 ---
 
-*Last updated: 2026-03-23*
+*Last updated: 2026-03-28 (Plan 02-02 complete — API client, auth context, TanStack Query, POS catalog UI)*
