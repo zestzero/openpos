@@ -1,13 +1,38 @@
+import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { CartItemRow } from './cart-item-row';
 import { useCartStore } from '@/stores/cart-store';
+import { useOnlineStatus } from '@/hooks/use-online-status';
+import { completeSale } from '@/lib/complete-sale';
 import { formatTHB } from '@/lib/format';
+import { toast } from 'sonner';
 
 export function CartBottomSheet() {
   const { items, isSheetOpen, setSheetOpen, updateQuantity, removeItem, clearCart, getItemCount, getTotalCents } = useCartStore();
+  const isOnline = useOnlineStatus();
+  const [isCompleting, setIsCompleting] = useState(false);
   const itemCount = getItemCount();
   const totalCents = getTotalCents();
+
+  const handleCompleteSale = async () => {
+    if (items.length === 0) return;
+    setIsCompleting(true);
+    try {
+      const result = await completeSale(items);
+      if (result.synced) {
+        toast.success('Sale complete!');
+      } else {
+        toast.success('Sale queued — will sync when back online');
+      }
+      clearCart();
+      setSheetOpen(false);
+    } catch (err) {
+      toast.error('Failed to complete sale');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
@@ -43,8 +68,16 @@ export function CartBottomSheet() {
                 <span>Total</span>
                 <span>{formatTHB(totalCents)}</span>
               </div>
-              <Button className="w-full h-12 text-base font-semibold" size="lg">
-                Complete Sale
+              {!isOnline && (
+                <p className="text-xs text-amber-600 text-center">Offline — sale will be queued</p>
+              )}
+              <Button
+                className="w-full h-12 text-base font-semibold"
+                size="lg"
+                disabled={isCompleting}
+                onClick={handleCompleteSale}
+              >
+                {isCompleting ? 'Processing...' : 'Complete Sale'}
               </Button>
             </div>
           </>

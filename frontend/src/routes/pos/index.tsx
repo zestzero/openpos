@@ -6,6 +6,7 @@ import { useCategories, useProducts, useSearchProducts } from '@/hooks/use-catal
 import { fetchProducts, fetchVariants, type VariantResponse } from '@/lib/api-client'
 import { SearchBar } from '@/components/pos/search-bar'
 import { CategoryTabs } from '@/components/pos/category-tabs'
+import { FavoritesBar } from '@/components/pos/favorites-bar'
 import { ProductGrid } from '@/components/pos/product-grid'
 import { CartSummaryBar } from '@/components/pos/cart-summary-bar'
 import { CartBottomSheet } from '@/components/pos/cart-bottom-sheet'
@@ -116,6 +117,7 @@ function POSScreen() {
           onSelect={setSelectedCategory}
         />
       )}
+      <FavoritesBar />
       <div className="flex-1 overflow-y-auto pb-20">
         <ProductGrid
           products={displayProducts}
