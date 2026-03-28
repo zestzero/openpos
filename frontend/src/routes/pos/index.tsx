@@ -6,6 +6,9 @@ import { fetchVariants, type VariantResponse } from '@/lib/api-client'
 import { SearchBar } from '@/components/pos/search-bar'
 import { CategoryTabs } from '@/components/pos/category-tabs'
 import { ProductGrid } from '@/components/pos/product-grid'
+import { CartSummaryBar } from '@/components/pos/cart-summary-bar'
+import { CartBottomSheet } from '@/components/pos/cart-bottom-sheet'
+import { useCartStore } from '@/stores/cart-store'
 
 export const Route = createFileRoute('/pos/')({
   component: POSScreen,
@@ -14,6 +17,7 @@ export const Route = createFileRoute('/pos/')({
 function POSScreen() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   const { data: categories = [] } = useCategories()
   const { data: browseProducts = [], isLoading: isBrowseLoading } = useProducts(
@@ -39,16 +43,41 @@ function POSScreen() {
     enabled: displayProducts.length > 0,
   })
 
-  const handleAddToCart = (variant: VariantResponse) => {
-    console.log('Add to cart:', variant.sku, variant.price_cents)
+  const addItem = useCartStore((s) => s.addItem)
+  const setSheetOpen = useCartStore((s) => s.setSheetOpen)
+  const getItemCount = useCartStore((s) => s.getItemCount)
+  const getTotalCents = useCartStore((s) => s.getTotalCents)
+
+  const variantToProductName: Record<string, string> = {}
+  for (const product of displayProducts) {
+    const variants = variantsByProduct[product.id] || []
+    for (const variant of variants) {
+      variantToProductName[variant.id] = product.name
+    }
   }
+
+  const handleAddToCart = (variant: VariantResponse) => {
+    const productName = variantToProductName[variant.id] || 'Unknown Product'
+    addItem({
+      variant_id: variant.id,
+      product_id: variant.product_id,
+      product_name: productName,
+      variant_sku: variant.sku,
+      barcode: variant.barcode,
+      price_cents: variant.price_cents,
+      cost_cents: variant.cost_cents,
+    })
+  }
+
+  const itemCount = getItemCount()
+  const totalCents = getTotalCents()
 
   return (
     <div className="flex flex-col h-dvh">
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
-        onScanPress={() => {}}
+        onScanPress={() => setScannerOpen(true)}
       />
       {!isSearching && (
         <CategoryTabs
@@ -65,6 +94,12 @@ function POSScreen() {
           isLoading={isLoading}
         />
       </div>
+      <CartSummaryBar
+        itemCount={itemCount}
+        totalCents={totalCents}
+        onClick={() => setSheetOpen(true)}
+      />
+      <CartBottomSheet />
     </div>
   )
 }
