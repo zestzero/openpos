@@ -19,10 +19,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **POS-01**: Cashier can scan barcode via device camera (BarcodeDetector API with html5-qrcode fallback)
 - [x] **POS-02**: Cashier can scan barcode via USB keyboard-wedge scanner (rapid keystroke detection)
-- [ ] **POS-03**: Cashier can browse products via touch catalog grid organized by category
-- [ ] **POS-04**: Cashier can search products by name or SKU
+- [x] **POS-03**: Cashier can browse products via touch catalog grid organized by category
+- [x] **POS-04**: Cashier can search products by name or SKU
 - [x] **POS-05**: Cashier can add, remove, and adjust item quantities in the cart
-- [ ] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
+- [x] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
 - [x] **POS-07**: Cart displays running total, item count, and per-line subtotals in THB
 
 ### POS — Payments
@@ -42,7 +42,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **OFF-01**: Cashier can complete sales while device has no internet connection
 - [x] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
 - [x] **OFF-03**: Sync retries with exponential backoff on failure
-- [ ] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
+- [x] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
 
 ### Product Management
 
@@ -146,10 +146,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-05 | Phase 1 | Complete |
 | POS-01 | Phase 2 | Complete |
 | POS-02 | Phase 2 | Complete |
-| POS-03 | Phase 2 | Pending |
-| POS-04 | Phase 2 | Pending |
+| POS-03 | Phase 2 | Complete |
+| POS-04 | Phase 2 | Complete |
 | POS-05 | Phase 2 | Complete |
-| POS-06 | Phase 2 | Pending |
+| POS-06 | Phase 2 | Complete |
 | POS-07 | Phase 2 | Complete |
 | PAY-01 | Phase 3 | Pending |
 | PAY-02 | Phase 3 | Pending |
@@ -160,7 +160,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OFF-01 | Phase 2 | Complete |
 | OFF-02 | Phase 2 | Complete |
 | OFF-03 | Phase 2 | Complete |
-| OFF-04 | Phase 2 | Pending |
+| OFF-04 | Phase 2 | Complete |
 | PROD-01 | Phase 4 | Complete |
 | PROD-02 | Phase 4 | Complete |
 | PROD-03 | Phase 4 | Complete |

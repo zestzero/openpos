@@ -12,17 +12,17 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 
 ### Validated
 
-(None yet — ship to validate)
+**POS (Mobile-First Cashier Interface) — Phase 2 Complete**
+- [x] Add items to cart via barcode scan, touch catalog grid, or name/SKU search
+- [x] Work offline — cache catalog, queue orders, sync when reconnected
+- [x] Auto-deduct stock on completed sale
 
 ### Active
 
 **POS (Mobile-First Cashier Interface)**
-- [ ] Add items to cart via barcode scan, touch catalog grid, or name/SKU search
 - [ ] Apply simple discounts (manual % or fixed amount per item or per order)
 - [ ] Accept all payment types: cash, card, QR/mobile pay (PromptPay, LINE Pay)
 - [ ] Print receipt to thermal printer after completing sale
-- [ ] Work offline — cache catalog, queue orders, sync when reconnected
-- [ ] Auto-deduct stock on completed sale
 
 **ERP (Desktop Backoffice)**
 - [ ] Full product management: name, price, barcode, image, category, variants (size/color), cost tracking, supplier info
@@ -31,10 +31,9 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 - [ ] Create, edit, and archive products
 
 **Platform**
+- [x] Single Vite + React SPA with route-based separation (POS routes mobile-optimized, ERP routes desktop-optimized)
+- [x] PWA with service workers for offline capability
 - [ ] Email/password authentication with role-based access (cashier vs owner)
-- [ ] Single Vite + React SPA with route-based separation (POS routes mobile-optimized, ERP routes desktop-optimized)
-- [ ] Encore TypeScript backend with service-based architecture
-- [ ] PostgreSQL database (auto-provisioned per service via Encore)
 
 ### Out of Scope
 
@@ -66,12 +65,12 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Encore TypeScript backend | Infrastructure-as-code, type-safe services, auto-provisioned DB/PubSub, minimal DevOps | — Pending |
-| TypeORM over Encore raw SQL | Entity-based modeling for complex product variants; Encore SQL migrations for schema | — Pending |
-| Single SPA over separate apps | Shared auth, shared components, simpler deployment; route-based separation keeps concerns clear | — Pending |
-| Vite + React over Next.js | No SSR needed for POS/ERP; Vite is lighter, faster builds, better PWA support | — Pending |
-| Offline-first POS via PWA | Service workers + IndexedDB for offline queue; avoids React Native complexity while still mobile-capable | — Pending |
-| Service-per-domain backend | POS, inventory, ERP/reports, auth as separate Encore services — clean boundaries, independent databases, async communication via PubSub | — Pending |
+| Encore TypeScript backend | Infrastructure-as-code, type-safe services, auto-provisioned DB/PubSub, minimal DevOps | ✅ Implemented in Phase 1 |
+| TypeORM over Encore raw SQL | Entity-based modeling for complex product variants; Encore SQL migrations for schema | ✅ Implemented in Phase 1 |
+| Single SPA over separate apps | Shared auth, shared components, simpler deployment; route-based separation keeps concerns clear | ✅ Implemented in Phase 2 |
+| Vite + React over Next.js | No SSR needed for POS/ERP; Vite is lighter, faster builds, better PWA support | ✅ Implemented in Phase 2 |
+| Offline-first POS via PWA | Service workers + IndexedDB for offline queue; avoids React Native complexity while still mobile-capable | ✅ Implemented in Phase 2 |
+| Service-per-domain backend | POS, inventory, ERP/reports, auth as separate Encore services — clean boundaries, independent databases, async communication via PubSub | ✅ Implemented in Phase 1 |
 
 ---
-*Last updated: 2026-03-22 after initial project setup*
+*Last updated: 2026-03-28 after Phase 2 completion (POS Frontend & Offline)*
