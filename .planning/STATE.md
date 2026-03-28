@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-  last_updated: "2026-03-28T10:10:50Z"
+  last_updated: "2026-03-28T10:40:00Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # STATE.md
@@ -22,7 +22,7 @@ progress:
 ## Current Position
 
 Phase: 02 (pos-frontend-offline) — IN PROGRESS
-Plan: 4 of 6 (02-03 complete, 02-04 next)
+Plan: 4 of 6 (02-04 complete, 02-05 next)
 
 ## Phase Overview
 
@@ -60,6 +60,8 @@ Plan: 4 of 6 (02-03 complete, 02-04 next)
 | Client-side UUIDs for orders | Offline orders use client-generated UUIDs — server never assigns IDs |
 | Sequential sync processing | Sync queue processes one entry at a time for server-side order consistency |
 | Hand-written service worker | Cache-first static assets, network-first navigation, SPA fallback — focused scope |
+| variantToProductName reverse lookup | ProductTile passes VariantResponse only; POS builds {variantId→productName} map from displayProducts×variantsByProduct to attach product name to cart items |
+| BarcodeDetector with any-cast | Native BarcodeDetector API not in standard TS lib; uses `window as any`, graceful html5-qrcode fallback |
 
 ---
 
@@ -74,4 +76,4 @@ Plan: 4 of 6 (02-03 complete, 02-04 next)
 
 ---
 
-*Last updated: 2026-03-28 (Plan 02-03 complete — Dexie.js offline DB, sync queue, PWA service worker)*
+*Last updated: 2026-03-28 (Plan 02-04 complete — Zustand cart store, bottom-sheet cart UI, barcode scanning via camera and USB wedge)*
