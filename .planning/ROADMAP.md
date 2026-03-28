@@ -43,7 +43,7 @@
 **Plans:** 6 plans
 
 Plans:
-- [ ] 02-00-PLAN.md — Minimal Sales backend service (order creation + inventory deduction)
+- [x] 02-00-PLAN.md — Minimal Sales backend service (order creation + inventory deduction)
 - [ ] 02-01-PLAN.md — Frontend scaffold (Vite + React + TanStack Router + shadcn/ui + PWA manifest)
 - [ ] 02-02-PLAN.md — API client, auth context, catalog browsing UI with search
 - [ ] 02-03-PLAN.md — Offline database (Dexie.js) and PWA service worker
@@ -140,4 +140,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-03-28*
+*Last updated: 2026-03-28 (Plan 02-00 complete)*
