@@ -100,7 +100,7 @@ encore migrate
 ### Backend Only
 
 ```bash
-encore dev
+encore run
 ```
 
 - Backend runs at `http://localhost:4000`
@@ -121,7 +121,7 @@ npm run dev
 
 ```bash
 # Terminal 1 — backend
-encore dev
+encore run
 
 # Terminal 2 — frontend
 cd frontend && npm run dev
