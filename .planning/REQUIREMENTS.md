@@ -39,9 +39,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Offline
 
-- [ ] **OFF-01**: Cashier can complete sales while device has no internet connection
-- [ ] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
-- [ ] **OFF-03**: Sync retries with exponential backoff on failure
+- [x] **OFF-01**: Cashier can complete sales while device has no internet connection
+- [x] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
+- [x] **OFF-03**: Sync retries with exponential backoff on failure
 - [ ] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
 
 ### Product Management
@@ -68,10 +68,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Platform
 
-- [ ] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
+- [x] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
 - [x] **PLAT-02**: Encore TypeScript backend with service-per-domain architecture
 - [x] **PLAT-03**: PostgreSQL database auto-provisioned per service via Encore
-- [ ] **PLAT-04**: PWA with service worker for offline POS capability
+- [x] **PLAT-04**: PWA with service worker for offline POS capability
 - [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
 ## v2 Requirements
@@ -157,9 +157,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REC-01 | Phase 3 | Pending |
 | REC-02 | Phase 3 | Pending |
 | REC-03 | Phase 3 | Pending |
-| OFF-01 | Phase 2 | Pending |
-| OFF-02 | Phase 2 | Pending |
-| OFF-03 | Phase 2 | Pending |
+| OFF-01 | Phase 2 | Complete |
+| OFF-02 | Phase 2 | Complete |
+| OFF-03 | Phase 2 | Complete |
 | OFF-04 | Phase 2 | Pending |
 | PROD-01 | Phase 4 | Complete |
 | PROD-02 | Phase 4 | Complete |
@@ -174,10 +174,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RPT-01 | Phase 4 | Pending |
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |
-| PLAT-01 | Phase 2 | Pending |
+| PLAT-01 | Phase 2 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 2 | Pending |
+| PLAT-04 | Phase 2 | Complete |
 | PLAT-05 | Phase 4 | Pending |
 
 **Coverage:**

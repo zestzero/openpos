@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-28T10:10:56.310Z"
+  last_updated: "2026-03-28T10:10:50Z"
 progress:
   total_phases: 4
   completed_phases: 1
@@ -22,7 +22,7 @@ progress:
 ## Current Position
 
 Phase: 02 (pos-frontend-offline) — IN PROGRESS
-Plan: 4 of 6 (02-02 complete, 02-03 next)
+Plan: 4 of 6 (02-03 complete, 02-04 next)
 
 ## Phase Overview
 
@@ -54,6 +54,12 @@ Plan: 4 of 6 (02-02 complete, 02-03 next)
 | JWT via atob() | Parse JWT payload with atob() on base64url segment — no extra lib needed |
 | THB via Intl.NumberFormat | formatTHB(priceCents) = Intl.NumberFormat('th-TH', { currency: 'THB' }).format(priceCents/100) |
 | CategoryTabs custom buttons | Custom pill buttons over shadcn Tabs for better horizontal scroll control |
+| Dexie.js EntityTable | Typed IndexedDB via Dexie EntityTable — db.categories/products/variants/orders/syncQueue |
+| Exponential backoff sync | 1s, 2s, 4s, 8s, 16s backoff — max 5 attempts for offline order sync |
+| Delta sync (operations not state) | POST CREATE_ORDER operations (item decrements), not absolute stock values |
+| Client-side UUIDs for orders | Offline orders use client-generated UUIDs — server never assigns IDs |
+| Sequential sync processing | Sync queue processes one entry at a time for server-side order consistency |
+| Hand-written service worker | Cache-first static assets, network-first navigation, SPA fallback — focused scope |
 
 ---
 
@@ -68,4 +74,4 @@ Plan: 4 of 6 (02-02 complete, 02-03 next)
 
 ---
 
-*Last updated: 2026-03-28 (Plan 02-02 complete — API client, auth context, TanStack Query, POS catalog UI)*
+*Last updated: 2026-03-28 (Plan 02-03 complete — Dexie.js offline DB, sync queue, PWA service worker)*
