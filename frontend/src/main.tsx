@@ -5,6 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { routeTree } from './routeTree.gen'
 import { queryClient } from './lib/query-client'
 import { AuthProvider } from './lib/auth'
+import { registerServiceWorker } from './lib/register-sw'
 import './styles/globals.css'
 
 const router = createRouter({ routeTree })
@@ -22,3 +23,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>,
 )
+
+registerServiceWorker()
