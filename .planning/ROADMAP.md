@@ -32,7 +32,7 @@
 
 ---
 
-## Phase 2: POS Frontend & Offline
+## Phase 2: POS Frontend & Offline ✅
 
 **Goal:** Cashiers can ring up sales using the mobile-first POS interface, including while offline.
 
@@ -40,7 +40,9 @@
 
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
 
-**Plans:** 5/6 plans executed
+**Status:** Complete (2026-03-28)
+
+**Plans:** 6/6 plans executed ✅
 
 Plans:
 - [x] 02-00-PLAN.md — Minimal Sales backend service (order creation + inventory deduction)
@@ -48,7 +50,7 @@ Plans:
 - [x] 02-02-PLAN.md — API client, auth context, catalog browsing UI with search
 - [x] 02-03-PLAN.md — Offline database (Dexie.js) and PWA service worker
 - [x] 02-04-PLAN.md — Cart management, bottom sheet, barcode scanning (camera + USB wedge)
-- [ ] 02-05-PLAN.md — Favorites bar, offline sale completion, sync queue with status indicator
+- [x] 02-05-PLAN.md — Favorites bar, offline sale completion, sync queue with status indicator ✅ COMPLETE
 
 **Success Criteria:**
 1. Cashier can scan a product barcode via device camera and it adds to cart
@@ -140,4 +142,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-03-28 (Plan 02-04 complete — Zustand cart store, bottom-sheet cart UI, barcode scanning via camera and USB wedge)*
+*Last updated: 2026-03-28 (Plan 02-05 complete — favorites bar, offline sale completion, sync status, offline banner. Phase 02 COMPLETE.)*
