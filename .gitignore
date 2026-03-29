@@ -1,0 +1,30 @@
+encore.gen.go
+encore.gen.cue
+.encore/
+encore.gen/
+node_modules/
+
+# Build artifacts
+tsconfig.tsbuildinfo
+dist/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.logs/
+
+.logs/
+.sisyphus/
