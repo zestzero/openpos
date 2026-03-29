@@ -20,5 +20,7 @@
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true
-  }
+  },
+  "include": ["auth", "catalog", "inventory", "sales", "encore.gen/**/*"],
+  "exclude": ["node_modules"]
 }

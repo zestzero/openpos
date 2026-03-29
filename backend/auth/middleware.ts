@@ -1,7 +1,7 @@
 import { APIError, Gateway, Header } from "encore.dev/api";
 import { authHandler } from "encore.dev/auth";
 import { getAuthData } from "~encore/auth";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-for-dev-only";
 

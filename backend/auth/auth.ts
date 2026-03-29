@@ -1,8 +1,8 @@
 import { api, APIError } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { User, UserRole } from "./user.entity";
-import * as bcrypt from "bcryptjs";
-import * as jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { requireRole } from "./middleware";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-for-dev-only";

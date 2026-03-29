@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { Entity, PrimaryColumn, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 
 @Entity("orders")

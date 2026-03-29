@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useCategories, useProducts, useSearchProducts } from '@/hooks/use-catalog'
+import { useDebouncedValue } from '@/hooks/use-debounce'
 import { fetchProducts, fetchVariants, type VariantResponse } from '@/lib/api-client'
 import { SearchBar } from '@/components/pos/search-bar'
 import { CategoryTabs } from '@/components/pos/category-tabs'
@@ -23,11 +24,13 @@ function POSScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
 
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
+
   const { data: categories = [] } = useCategories()
   const { data: browseProducts = [], isLoading: isBrowseLoading } = useProducts(
     selectedCategory ?? undefined
   )
-  const { data: searchResults = [], isLoading: isSearchLoading } = useSearchProducts(searchQuery)
+  const { data: searchResults = [], isLoading: isSearchLoading } = useSearchProducts(debouncedSearch)
 
   const isSearching = searchQuery.length >= 2
   const displayProducts = isSearching ? searchResults : browseProducts

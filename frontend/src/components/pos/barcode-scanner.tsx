@@ -12,7 +12,7 @@ interface BarcodeScannerProps {
 
 export function BarcodeScanner({ open, onClose, onScanned }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { startScanning, stopScanning, isScanning, error } = useBarcodeScanner((barcode) => {
+  const { startScanning, stopScanning, isScanning, isLoading, error } = useBarcodeScanner((barcode) => {
     onScanned(barcode);
     onClose();
   });
@@ -26,7 +26,7 @@ export function BarcodeScanner({ open, onClose, onScanned }: BarcodeScannerProps
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { stopScanning(); onClose(); } }}>
-      <DialogContent className="max-w-sm p-0 overflow-hidden">
+      <DialogContent showCloseButton={false} className="max-w-sm p-0 overflow-hidden">
         <DialogHeader className="p-4 pb-2">
           <div className="flex items-center justify-between">
             <DialogTitle>Scan Barcode</DialogTitle>
@@ -43,6 +43,16 @@ export function BarcodeScanner({ open, onClose, onScanned }: BarcodeScannerProps
             playsInline
             muted
           />
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+              <p className="text-sm text-white">Starting camera…</p>
+            </div>
+          )}
+          {!isLoading && !isScanning && !error && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+              <p className="text-sm text-white">Preparing scanner…</p>
+            </div>
+          )}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-48 h-48 border-2 border-white/50 rounded-lg" />
           </div>

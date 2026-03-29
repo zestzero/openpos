@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -15,19 +16,19 @@ export class User {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true, type: "varchar" })
   email: string;
 
-  @Column({ name: "password_hash" })
+  @Column({ name: "password_hash", type: "varchar" })
   passwordHash: string;
 
-  @Column({ default: "OWNER" })
+  @Column({ default: "OWNER", type: "varchar" })
   role: UserRole;
 
-  @Column({ name: "pin_hash", nullable: true })
+  @Column({ name: "pin_hash", nullable: true, type: "varchar" })
   pinHash: string | null;
 
-  @Column({ name: "is_active", default: true })
+  @Column({ name: "is_active", default: true, type: "boolean" })
   isActive: boolean;
 
   @Column({ name: "last_login_at", type: "timestamp with time zone", nullable: true })

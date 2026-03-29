@@ -2,7 +2,7 @@ import { api } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { Order, OrderItem } from "./entities";
 import { getAuthData } from "~encore/auth";
-import inventory from "~encore/clients/inventory";
+import { inventory } from "~encore/clients";
 
 interface CreateOrderItem {
   variant_id: string;
