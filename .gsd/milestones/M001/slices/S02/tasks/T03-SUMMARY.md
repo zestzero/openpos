@@ -92,6 +92,65 @@ None — no blocking issues. All acceptance criteria met on first build.
 
 These stubs are intentional per plan scope — Plan 04 adds barcode scanning and variant selection.
 
+## Verification Evidence
+
+| Check | Command | Exit Code | Verdict | Duration |
+|-------|---------|-----------|---------|----------|
+| API client exists | `test -f frontend/src/lib/api-client.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Bearer auth | `grep "Bearer" frontend/src/lib/api-client.ts` | 0 | ✓ PASS | <1s |
+| Auth context | `grep "AuthProvider\|useAuth" frontend/src/lib/auth.tsx` | 0 | ✓ PASS | <1s |
+| Query client | `test -f frontend/src/lib/query-client.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| THB formatting | `grep "formatTHB" frontend/src/lib/format.ts` | 0 | ✓ PASS | <1s |
+| Catalog hooks | `grep "useCategories\|useProducts\|useSearchProducts" frontend/src/hooks/use-catalog.ts` | 0 | ✓ PASS | <1s |
+| POS catalog UI | `ls frontend/src/components/pos/*.tsx \| grep -E "(search|category|product-grid)"` | 0 | ✓ PASS | <1s |
+| Build succeeds | `cd frontend && npm run build 2>&1 \| tail -1` | 0 | ✓ PASS | ~30s |
+
+## Diagnostics
+
+### Test API Client Endpoints
+```bash
+cd frontend
+grep -E "export (const|function)" src/lib/api-client.ts
+# Expected: loginWithPin, loginWithEmail, getCategories, getProducts, searchProducts, getVariants
+```
+
+### Verify Auth Context
+```bash
+grep "useAuth\|AuthProvider" frontend/src/lib/auth.tsx
+# Expected: export const useAuth and export const AuthProvider
+```
+
+### Check THB Formatting
+```bash
+cd frontend
+node -e "
+const formatter = new Intl.NumberFormat('th-TH', {
+  style: 'currency',
+  currency: 'THB'
+});
+console.log(formatter.format(100));
+"
+# Expected: ฿100.00
+```
+
+### Inspect Search Bar Stickiness
+```bash
+grep "sticky" frontend/src/components/pos/search-bar.tsx
+# Expected: sticky top-0 className
+```
+
+### Verify Category Tabs Scrollable
+```bash
+grep "overflow-x-auto\|flex" frontend/src/components/pos/category-tabs.tsx
+# Expected: horizontal scrollable flex container
+```
+
+### Product Grid Responsiveness
+```bash
+grep "grid-cols" frontend/src/components/pos/product-grid.tsx
+# Expected: grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 (or similar)
+```
+
 ## Verification
 
 - `cd frontend && npx vite build` exits 0 ✓

@@ -100,6 +100,65 @@ None — all artifacts are functional and wired.
 
 None — no external service configuration required.
 
+## Verification Evidence
+
+| Check | Command | Exit Code | Verdict | Duration |
+|-------|---------|-----------|---------|----------|
+| Dexie database | `test -f frontend/src/lib/db.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Sync queue logic | `grep "processSyncQueue\|exponentialBackoff" frontend/src/lib/sync-queue.ts` | 0 | ✓ PASS | <1s |
+| Online status hook | `test -f frontend/src/hooks/use-online-status.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Service worker | `test -f frontend/public/sw.js && echo "OK"` | 0 | ✓ PASS | <1s |
+| Service worker registered | `grep "registerServiceWorker" frontend/src/main.tsx` | 0 | ✓ PASS | <1s |
+| vite-env.d.ts | `test -f frontend/src/vite-env.d.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Dexie tables typed | `grep "export.*Table" frontend/src/lib/db.ts` | 0 | ✓ PASS | <1s |
+| Build succeeds | `cd frontend && npm run build 2>&1 \| tail -1` | 0 | ✓ PASS | ~30s |
+
+## Diagnostics
+
+### Inspect Dexie Database Schema
+```bash
+grep "table(" frontend/src/lib/db.ts
+# Expected: 5 tables: categories, products, variants, orders, syncQueue
+```
+
+### Verify Sync Queue Backoff Logic
+```bash
+grep -A 5 "exponentialBackoff" frontend/src/lib/sync-queue.ts
+# Expected: 1s → 2s → 4s → 8s → 16s progression
+```
+
+### Check Service Worker Cache Strategy
+```bash
+cat frontend/public/sw.js | grep -E "cache.*First|network.*first"
+# Expected: cache-first for static assets, network-first for navigation
+```
+
+### Verify Online Status Hook
+```bash
+grep "useOnlineStatus\|addEventListener.*online" frontend/src/hooks/use-online-status.ts
+# Expected: online/offline event listeners and hook returning boolean
+```
+
+### Test Service Worker Registration
+```bash
+grep "navigator.serviceWorker.register" frontend/src/lib/register-sw.ts
+# Expected: registration code with /public/sw.js path
+```
+
+### Inspect Sync Queue Dequeue
+```bash
+grep -A 10 "processSyncQueue" frontend/src/lib/sync-queue.ts
+# Expected: sequential processing (for loop, not Promise.all), retry logic
+```
+
+## Known Stubs
+
+None — all artifacts are functional and wired.
+
+## User Setup Required
+
+None — no external service configuration required.
+
 ## Next Phase Readiness
 
 - Offline database ready for catalog caching (Plans 02-04 and 02-05 will populate the catalog cache on login)

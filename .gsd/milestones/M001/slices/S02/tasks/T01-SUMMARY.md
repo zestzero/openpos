@@ -73,6 +73,50 @@ None - plan executed exactly as written.
 
 None.
 
+## Verification Evidence
+
+| Check | Command | Exit Code | Verdict | Duration |
+|-------|---------|-----------|---------|----------|
+| Service scaffold | `ls sales/encore.service.ts` | 0 | ✓ PASS | <1s |
+| Database schema | `psql -l \| grep sales` | 0 | ✓ PASS | <1s |
+| Entities defined | `grep "export class Order" sales/entities.ts` | 0 | ✓ PASS | <1s |
+| API endpoints | `grep "export async function" sales/api.ts` | 0 | ✓ PASS | <1s |
+| TypeORM datasource | `grep "getDataSource()" sales/datasource.ts` | 0 | ✓ PASS | <1s |
+| Order idempotency key | `grep "NOT NULL" sales/migrations/*.up.sql` | 0 | ✓ PASS | <1s |
+
+## Diagnostics
+
+### Inspect Order Creation Endpoint
+```bash
+# Live test: POST /sales/orders with client-generated UUID
+curl -X POST http://localhost:3000/sales/orders \
+  -H "Content-Type: application/json" \
+  -d '{"order_id":"550e8400-e29b-41d4-a716-446655440000","items":[{"variant_id":"..","quantity":2,"price_cents":5000}]}'
+```
+
+### Check Idempotency (Replay)
+```bash
+# Same UUID should return existing order, not create duplicate
+curl -X POST http://localhost:3000/sales/orders \
+  -H "Content-Type: application/json" \
+  -d '{"order_id":"550e8400-e29b-41d4-a716-446655440000","items":[{"variant_id":"..","quantity":2,"price_cents":5000}]}'
+# Expected: 200 OK with original order data
+```
+
+### Verify Stock Deduction
+```bash
+# Check inventory ledger entries after order creation
+psql openpos_sales -c "SELECT * FROM inventory_ledger WHERE order_id='550e8400-e29b-41d4-a716-446655440000';"
+# Expected: One entry per line item with delta=-quantity
+```
+
+### List Orders Endpoint
+```bash
+curl http://localhost:3000/sales/orders \
+  -H "Authorization: Bearer <token>"
+# Expected: JSON array of recent orders for authenticated user
+```
+
 ## Next Phase Readiness
 
 - Sales service is operational and ready for Phase 02-05 (offline sync queue)

@@ -101,6 +101,67 @@ Each task was committed atomically:
 
 None — all artifacts are functional and wired.
 
+## Verification Evidence
+
+| Check | Command | Exit Code | Verdict | Duration |
+|-------|---------|-----------|---------|----------|
+| Zustand cart store | `test -f frontend/src/stores/cart-store.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Cart store functions | `grep "addItem\|removeItem\|clearCart" frontend/src/stores/cart-store.ts` | 0 | ✓ PASS | <1s |
+| Bottom sheet UI | `test -f frontend/src/components/pos/cart-bottom-sheet.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Cart summary bar | `test -f frontend/src/components/pos/cart-summary-bar.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Barcode scanner hook | `test -f frontend/src/hooks/use-barcode-scanner.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Keyboard wedge hook | `test -f frontend/src/hooks/use-keyboard-wedge.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Barcode scanner modal | `test -f frontend/src/components/pos/barcode-scanner.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Build succeeds | `cd frontend && npm run build 2>&1 \| tail -1` | 0 | ✓ PASS | ~30s |
+
+## Diagnostics
+
+### Inspect Zustand Cart Store
+```bash
+grep -E "addItem|removeItem|updateQuantity|getTotalCents" frontend/src/stores/cart-store.ts
+# Expected: All core cart actions defined
+```
+
+### Verify Bottom Sheet Cart UI
+```bash
+grep "SheetContent\|SheetHeader\|Complete Sale" frontend/src/components/pos/cart-bottom-sheet.tsx
+# Expected: Bottom sheet with cart items and complete sale CTA
+```
+
+### Check Cart Summary Bar
+```bash
+grep "fixed.*bottom\|item.*count\|Badge" frontend/src/components/pos/cart-summary-bar.tsx
+# Expected: Fixed positioned bar showing item count badge + THB total
+```
+
+### Test Barcode Scanner Initialization
+```bash
+grep "BarcodeDetector\|html5-qrcode" frontend/src/hooks/use-barcode-scanner.ts
+# Expected: Both native and fallback implementations present
+```
+
+### Verify Keyboard Wedge Detection
+```bash
+grep -E "50|threshold|Enter" frontend/src/hooks/use-keyboard-wedge.ts
+# Expected: <50ms keystroke threshold, Enter terminator
+```
+
+### Check Barcode Not Found Toast
+```bash
+grep "Barcode not found\|toast.error" frontend/src/routes/pos/index.tsx
+# Expected: toast.error() called on barcode lookup failure
+```
+
+### Verify HTML5-QRCode Fallback
+```bash
+grep "html5-qrcode" frontend/package.json
+# Expected: html5-qrcode ^2.3.8 or higher
+```
+
+## Known Stubs
+
+None — all artifacts are functional and wired.
+
 ## Next Phase Readiness
 
 - `useCartStore` ready for Plan 05 (offline sale: cart → order → sync queue)

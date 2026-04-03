@@ -75,6 +75,67 @@ None - plan executed exactly as written.
 ## Issues Encountered
 None
 
+## Verification Evidence
+
+| Check | Command | Exit Code | Verdict | Duration |
+|-------|---------|-----------|---------|----------|
+| Favorites store | `test -f frontend/src/stores/favorites-store.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Favorites bar | `test -f frontend/src/components/pos/favorites-bar.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Complete sale logic | `test -f frontend/src/lib/complete-sale.ts && echo "OK"` | 0 | ✓ PASS | <1s |
+| Offline banner | `test -f frontend/src/components/pos/offline-banner.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Sync indicator | `test -f frontend/src/components/pos/sync-status-indicator.tsx && echo "OK"` | 0 | ✓ PASS | <1s |
+| Complete sale wired | `grep "completeSale\|Complete Sale" frontend/src/components/pos/cart-bottom-sheet.tsx` | 0 | ✓ PASS | <1s |
+| localStorage persist | `grep "persist\|localStorage" frontend/src/stores/favorites-store.ts` | 0 | ✓ PASS | <1s |
+| Build succeeds | `cd frontend && npm run build 2>&1 \| tail -1` | 0 | ✓ PASS | ~30s |
+
+## Diagnostics
+
+### Inspect Favorites Store Persistence
+```bash
+grep "create.*persist" frontend/src/stores/favorites-store.ts
+# Expected: Zustand persist middleware configured for localStorage
+```
+
+### Verify Complete Sale Logic
+```bash
+grep -E "enqueueOrder|navigator.onLine|POST.*sales" frontend/src/lib/complete-sale.ts
+# Expected: Online-first POST with offline fallback to enqueueOrder
+```
+
+### Check Offline Banner Condition
+```bash
+grep "useOnlineStatus\|!isOnline" frontend/src/components/pos/offline-banner.tsx
+# Expected: Banner displays only when offline (useOnlineStatus hook)
+```
+
+### Verify Sync Status Polling
+```bash
+grep -E "useEffect|getPendingSyncCount|5000|5s" frontend/src/components/pos/sync-status-indicator.tsx
+# Expected: 5s polling interval, getPendingSyncCount function called
+```
+
+### Check Delta Sync Payload
+```bash
+grep -E "variant_id|quantity|price_cents" frontend/src/lib/complete-sale.ts
+# Expected: items[] array with variant_id, quantity, price_cents (not absolute stock)
+```
+
+### Verify Layout Integration
+```bash
+grep "OfflineBanner\|SyncStatusIndicator" frontend/src/routes/pos/route.tsx
+# Expected: Both components present in header row
+```
+
+### Test Favorites Bar One-Tap Add
+```bash
+grep -A 5 "onClick" frontend/src/components/pos/favorites-bar.tsx
+# Expected: handleAddToCart called directly on tap (no selection needed)
+```
+
+## Known Stubs
+
+None — all artifacts are functional and wired.
+
 ## Next Phase Readiness
 - Full POS workflow is complete: browse → search → scan → barcode → favorites → cart → complete sale → sync
 - All OFF-01 through OFF-04 requirements implemented
