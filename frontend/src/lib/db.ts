@@ -30,12 +30,17 @@ export interface CachedVariant {
 
 // Offline order (created locally, synced later)
 export type OrderStatus = 'pending_sync' | 'syncing' | 'synced' | 'failed';
+export type PaymentMethod = 'cash' | 'qr';
 
 export interface OfflineOrder {
   id: string; // UUID generated client-side
   items: OrderItem[];
   total_cents: number;
   status: OrderStatus;
+  payment_method?: PaymentMethod;
+  tendered_cents?: number;
+  change_cents?: number;
+  receipt_printed?: boolean;
   created_at: number; // epoch ms
   synced_at: number | null;
   error: string | null;
@@ -78,7 +83,7 @@ db.version(1).stores({
   categories: 'id, sort_order',
   products: 'id, category_id, name',
   variants: 'id, product_id, sku, barcode',
-  orders: 'id, status, created_at',
+  orders: 'id, status, created_at, payment_method',
   syncQueue: '++id, order_id, next_retry_at',
 });
 

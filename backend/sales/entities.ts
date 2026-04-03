@@ -18,6 +18,18 @@ export class Order {
   @Column({ type: "timestamptz", nullable: true })
   client_created_at!: Date | null;
 
+  @Column({ type: "varchar", length: 10, nullable: true })
+  payment_method!: "cash" | "qr" | null;
+
+  @Column({ type: "integer", nullable: true })
+  tendered_cents!: number | null;
+
+  @Column({ type: "integer", nullable: true })
+  change_cents!: number | null;
+
+  @Column({ type: "boolean", default: false })
+  receipt_printed!: boolean;
+
   @CreateDateColumn({ type: "timestamptz" })
   created_at!: Date;
 
