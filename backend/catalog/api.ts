@@ -96,6 +96,7 @@ interface ProductResponse {
   description: string | null;
   category_id: string | null;
   archived: boolean;
+  variants?: VariantResponse[];
 }
 
 export const createProduct = api(
@@ -128,25 +129,58 @@ export const createProduct = api(
 
 export const listProducts = api(
   { expose: true, method: "GET", path: "/catalog/products", auth: true },
-  async (req: { category_id?: string; search?: string }): Promise<{ products: ProductResponse[] }> => {
+  async (req: { category_id?: string; search?: string; include_variants?: boolean }): Promise<{ products: ProductResponse[] }> => {
     const ds = await getDataSource();
     const productRepo = ds.getRepository(Product);
 
-    if (req.search) {
+    if (req.search || req.include_variants) {
       const qb = productRepo
         .createQueryBuilder("product")
         .leftJoin("product.variants", "variant")
-        .where("product.archived = :archived", { archived: false })
-        .andWhere(
+        .where("product.archived = :archived", { archived: false });
+
+      if (req.search) {
+        qb.andWhere(
           "(product.name ILIKE :search OR variant.sku ILIKE :search OR variant.barcode ILIKE :search)",
           { search: `%${req.search}%` }
         );
+      }
 
       if (req.category_id) {
         qb.andWhere("product.category_id = :categoryId", { categoryId: req.category_id });
       }
 
       const products = await qb.orderBy("product.name", "ASC").getMany();
+
+      if (req.include_variants) {
+        const variantRepo = ds.getRepository(Variant);
+        const productsWithVariants = await Promise.all(
+          products.map(async (p) => {
+            const variants = await variantRepo.find({
+              where: { product_id: p.id },
+              order: { sku: "ASC" },
+            });
+            return {
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              category_id: p.category_id,
+              archived: p.archived,
+              variants: variants.map((v) => ({
+                id: v.id,
+                product_id: v.product_id,
+                sku: v.sku,
+                barcode: v.barcode,
+                price_cents: v.price_cents,
+                cost_cents: v.cost_cents,
+                active: v.active,
+              })),
+            };
+          })
+        );
+        return { products: productsWithVariants };
+      }
+
       return {
         products: products.map((p) => ({
           id: p.id,
@@ -197,6 +231,28 @@ export const updateProduct = api(
     if (req.name !== undefined) product.name = req.name;
     if (req.description !== undefined) product.description = req.description;
     if (req.archived !== undefined) product.archived = req.archived;
+
+    await productRepo.save(product);
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      category_id: product.category_id,
+      archived: product.archived,
+    };
+  }
+);
+
+export const archiveProduct = api(
+  { expose: true, method: "PATCH", path: "/catalog/products/:id/archive", auth: true },
+  async (req: { id: string; archive?: boolean }): Promise<ProductResponse> => {
+    requireRole("OWNER");
+    const ds = await getDataSource();
+    const productRepo = ds.getRepository(Product);
+    const product = await productRepo.findOneBy({ id: req.id });
+    if (!product) throw APIError.notFound("Product not found");
+
+    product.archived = req.archive ?? !product.archived;
 
     await productRepo.save(product);
     return {
@@ -292,6 +348,25 @@ export const listVariants = api(
         cost_cents: v.cost_cents,
         active: v.active,
       })),
+    };
+  }
+);
+
+export const getVariant = api(
+  { expose: true, method: "GET", path: "/catalog/variants/:id", auth: true },
+  async (req: { id: string }): Promise<VariantResponse> => {
+    const ds = await getDataSource();
+    const variant = await ds.getRepository(Variant).findOneBy({ id: req.id });
+    if (!variant) throw APIError.notFound("Variant not found");
+
+    return {
+      id: variant.id,
+      product_id: variant.product_id,
+      sku: variant.sku,
+      barcode: variant.barcode,
+      price_cents: variant.price_cents,
+      cost_cents: variant.cost_cents,
+      active: variant.active,
     };
   }
 );
