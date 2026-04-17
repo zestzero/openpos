@@ -82,3 +82,45 @@ export function fetchProducts(params?: { category_id?: string; search?: string }
 export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
 }
+
+export interface InventoryItemResponse {
+  variant_id: string;
+  product_id: string;
+  product_name: string;
+  category_id: string | null;
+  category_name: string | null;
+  sku: string;
+  barcode: string | null;
+  stock: number;
+  status: "in-stock" | "low" | "out";
+}
+
+export interface ListInventoryResponse {
+  items: InventoryItemResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface ListInventoryParams {
+  search?: string;
+  category_id?: string;
+  status?: "in-stock" | "low" | "out";
+  sort_by?: "stock" | "product" | "sku";
+  sort_order?: "asc" | "desc";
+  page?: number;
+  page_size?: number;
+}
+
+export function fetchInventory(params?: ListInventoryParams) {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  if (params?.category_id) query.set("category_id", params.category_id);
+  if (params?.status) query.set("status", params.status);
+  if (params?.sort_by) query.set("sort_by", params.sort_by);
+  if (params?.sort_order) query.set("sort_order", params.sort_order);
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.page_size) query.set("page_size", String(params.page_size));
+  const qs = query.toString();
+  return apiFetch<ListInventoryResponse>(`/inventory${qs ? `?${qs}` : ""}`);
+}
