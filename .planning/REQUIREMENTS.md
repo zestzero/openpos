@@ -2,6 +2,7 @@
 
 **Defined:** 2026-03-22
 **Core Value:** A salesperson can complete a sale end-to-end — scan items, take payment, print receipt — even without internet.
+**Stack Reset:** 2026-04-18 — migrated from Encore TypeScript to Go (chi + sqlc + pgx). All requirements reset to pending.
 
 ## v1 Requirements
 
@@ -9,21 +10,21 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication
 
-- [x] **AUTH-01**: Owner can create account with email and password
-- [x] **AUTH-02**: Owner can log in with email/password and stay logged in across sessions
-- [x] **AUTH-03**: Owner can create cashier accounts and assign roles (Cashier, Owner)
-- [x] **AUTH-04**: Cashier can log in at the register using a numeric PIN
-- [x] **AUTH-05**: System enforces role-based access — cashiers see POS only, owners see POS + ERP
+- [ ] **AUTH-01**: Owner can create account with email and password
+- [ ] **AUTH-02**: Owner can log in with email/password and stay logged in across sessions
+- [ ] **AUTH-03**: Owner can create cashier accounts and assign roles (Cashier, Owner)
+- [ ] **AUTH-04**: Cashier can log in at the register using a numeric PIN
+- [ ] **AUTH-05**: System enforces role-based access — cashiers see POS only, owners see POS + ERP
 
 ### POS — Sale Flow
 
-- [x] **POS-01**: Cashier can scan barcode via device camera (BarcodeDetector API with html5-qrcode fallback)
-- [x] **POS-02**: Cashier can scan barcode via USB keyboard-wedge scanner (rapid keystroke detection)
-- [x] **POS-03**: Cashier can browse products via touch catalog grid organized by category
-- [x] **POS-04**: Cashier can search products by name or SKU
-- [x] **POS-05**: Cashier can add, remove, and adjust item quantities in the cart
-- [x] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
-- [x] **POS-07**: Cart displays running total, item count, and per-line subtotals in THB
+- [ ] **POS-01**: Cashier can scan barcode via device camera (BarcodeDetector API with html5-qrcode fallback)
+- [ ] **POS-02**: Cashier can scan barcode via USB keyboard-wedge scanner (rapid keystroke detection)
+- [ ] **POS-03**: Cashier can browse products via touch catalog grid organized by category
+- [ ] **POS-04**: Cashier can search products by name or SKU
+- [ ] **POS-05**: Cashier can add, remove, and adjust item quantities in the cart
+- [ ] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
+- [ ] **POS-07**: Cart displays running total, item count, and per-line subtotals in THB
 
 ### POS — Payments
 
@@ -39,26 +40,26 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Offline
 
-- [x] **OFF-01**: Cashier can complete sales while device has no internet connection
-- [x] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
-- [x] **OFF-03**: Sync retries with exponential backoff on failure
-- [x] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
+- [ ] **OFF-01**: Cashier can complete sales while device has no internet connection
+- [ ] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
+- [ ] **OFF-03**: Sync retries with exponential backoff on failure
+- [ ] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
 
 ### Product Management
 
-- [x] **PROD-01**: Owner can create products with name, description, category, and images
-- [x] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
-- [x] **PROD-03**: Owner can edit and archive products and variants
-- [x] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
-- [x] **PROD-05**: Owner can assign or generate barcodes for each variant
+- [ ] **PROD-01**: Owner can create products with name, description, category, and images
+- [ ] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
+- [ ] **PROD-03**: Owner can edit and archive products and variants
+- [ ] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
+- [ ] **PROD-05**: Owner can assign or generate barcodes for each variant
 - [ ] **PROD-06**: Owner can bulk import products and variants via CSV or Excel file
 
 ### Inventory
 
-- [x] **INV-01**: Every stock change is recorded in an inventory ledger with type (sale, restock, adjustment), quantity delta, and reference
-- [x] **INV-02**: Stock automatically deducts when a sale completes (via ledger entry)
-- [x] **INV-03**: Owner can manually adjust stock with a reason code (damaged, count correction, received)
-- [x] **INV-04**: Owner can view current stock levels per variant (derived from ledger)
+- [ ] **INV-01**: Every stock change is recorded in an inventory ledger with type (sale, restock, adjustment), quantity delta, and reference
+- [ ] **INV-02**: Stock automatically deducts when a sale completes (via ledger entry)
+- [ ] **INV-03**: Owner can manually adjust stock with a reason code (damaged, count correction, received)
+- [ ] **INV-04**: Owner can view current stock levels per variant (derived from ledger)
 
 ### Reporting
 
@@ -68,10 +69,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Platform
 
-- [x] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
-- [x] **PLAT-02**: Encore TypeScript backend with service-per-domain architecture
-- [x] **PLAT-03**: PostgreSQL database auto-provisioned per service via Encore
-- [x] **PLAT-04**: PWA with service worker for offline POS capability
+- [ ] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
+- [ ] **PLAT-02**: Go backend with chi router, sqlc for type-safe SQL, pgx for PostgreSQL driver
+- [ ] **PLAT-03**: PostgreSQL database with golang-migrate for schema migrations
+- [ ] **PLAT-04**: PWA with service worker for offline POS capability
 - [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
 ## v2 Requirements
@@ -139,52 +140,52 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Complete |
-| AUTH-02 | Phase 1 | Complete |
-| AUTH-03 | Phase 1 | Complete |
-| AUTH-04 | Phase 1 | Complete |
-| AUTH-05 | Phase 1 | Complete |
-| POS-01 | Phase 2 | Complete |
-| POS-02 | Phase 2 | Complete |
-| POS-03 | Phase 2 | Complete |
-| POS-04 | Phase 2 | Complete |
-| POS-05 | Phase 2 | Complete |
-| POS-06 | Phase 2 | Complete |
-| POS-07 | Phase 2 | Complete |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| AUTH-05 | Phase 1 | Pending |
+| POS-01 | Phase 2 | Pending |
+| POS-02 | Phase 2 | Pending |
+| POS-03 | Phase 2 | Pending |
+| POS-04 | Phase 2 | Pending |
+| POS-05 | Phase 2 | Pending |
+| POS-06 | Phase 2 | Pending |
+| POS-07 | Phase 2 | Pending |
 | PAY-01 | Phase 3 | Pending |
 | PAY-02 | Phase 3 | Pending |
 | PAY-03 | Phase 3 | Pending |
 | REC-01 | Phase 3 | Pending |
 | REC-02 | Phase 3 | Pending |
 | REC-03 | Phase 3 | Pending |
-| OFF-01 | Phase 2 | Complete |
-| OFF-02 | Phase 2 | Complete |
-| OFF-03 | Phase 2 | Complete |
-| OFF-04 | Phase 2 | Complete |
-| PROD-01 | Phase 4 | Complete |
-| PROD-02 | Phase 4 | Complete |
-| PROD-03 | Phase 4 | Complete |
-| PROD-04 | Phase 4 | Complete |
-| PROD-05 | Phase 4 | Complete |
+| OFF-01 | Phase 2 | Pending |
+| OFF-02 | Phase 2 | Pending |
+| OFF-03 | Phase 2 | Pending |
+| OFF-04 | Phase 2 | Pending |
+| PROD-01 | Phase 4 | Pending |
+| PROD-02 | Phase 4 | Pending |
+| PROD-03 | Phase 4 | Pending |
+| PROD-04 | Phase 4 | Pending |
+| PROD-05 | Phase 4 | Pending |
 | PROD-06 | Phase 4 | Pending |
-| INV-01 | Phase 1 | Complete |
-| INV-02 | Phase 1 | Complete |
-| INV-03 | Phase 1 | Complete |
-| INV-04 | Phase 1 | Complete |
+| INV-01 | Phase 1 | Pending |
+| INV-02 | Phase 1 | Pending |
+| INV-03 | Phase 1 | Pending |
+| INV-04 | Phase 1 | Pending |
 | RPT-01 | Phase 4 | Pending |
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |
-| PLAT-01 | Phase 2 | Complete |
-| PLAT-02 | Phase 1 | Complete |
-| PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 2 | Complete |
+| PLAT-01 | Phase 2 | Pending |
+| PLAT-02 | Phase 1 | Pending |
+| PLAT-03 | Phase 1 | Pending |
+| PLAT-04 | Phase 2 | Pending |
 | PLAT-05 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 32 total
 - Mapped to phases: 32
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-03-22 after roadmap creation*
+*Last updated: 2026-04-18 — full reset for Go stack migration*

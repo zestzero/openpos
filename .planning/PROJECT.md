@@ -12,14 +12,14 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 
 ### Validated
 
-**POS (Mobile-First Cashier Interface) — Phase 2 Complete**
-- [x] Add items to cart via barcode scan, touch catalog grid, or name/SKU search
-- [x] Work offline — cache catalog, queue orders, sync when reconnected
-- [x] Auto-deduct stock on completed sale
+*None yet — full reset for Go stack migration.*
 
 ### Active
 
 **POS (Mobile-First Cashier Interface)**
+- [ ] Add items to cart via barcode scan, touch catalog grid, or name/SKU search
+- [ ] Work offline — cache catalog, queue orders, sync when reconnected
+- [ ] Auto-deduct stock on completed sale
 - [ ] Apply simple discounts (manual % or fixed amount per item or per order)
 - [ ] Accept all payment types: cash, card, QR/mobile pay (PromptPay, LINE Pay)
 - [ ] Print receipt to thermal printer after completing sale
@@ -31,8 +31,8 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 - [ ] Create, edit, and archive products
 
 **Platform**
-- [x] Single Vite + React SPA with route-based separation (POS routes mobile-optimized, ERP routes desktop-optimized)
-- [x] PWA with service workers for offline capability
+- [ ] Single Vite + React SPA with route-based separation (POS routes mobile-optimized, ERP routes desktop-optimized)
+- [ ] PWA with service workers for offline capability
 - [ ] Email/password authentication with role-based access (cashier vs owner)
 
 ### Out of Scope
@@ -54,23 +54,27 @@ A POS + ERP system for retail stores. Two distinct interfaces: a **mobile-first 
 
 ## Constraints
 
-- **Tech stack (backend)**: Encore TypeScript + TypeORM + PostgreSQL — Encore enforces monorepo with flat service directories, single `package.json`, HTTP-based service communication (no gRPC), and auto-provisioned infrastructure
+- **Tech stack (backend)**: Go with chi router + sqlc + pgx + PostgreSQL — standard library idioms, SQL-first data access, type-safe generated Go code from SQL queries
 - **Tech stack (frontend)**: Vite + React SPA — single app with route-based POS/ERP separation, PWA with service workers for offline capability
-- **Database migrations**: Encore manages schema via SQL migration files (`migrations/*.up.sql`); TypeORM maps entities to existing schema (`synchronize: false`)
-- **Service architecture**: Each backend domain (POS, inventory, auth, etc.) is a separate Encore service with its own database — services communicate via typed API calls (`~encore/clients`) or PubSub topics
-- **Deployment**: Cloud SaaS via Encore Cloud (deploys to your AWS/GCP account) with Docker self-host option
-- **Offline sync**: Client-side responsibility — IndexedDB/service worker queue on frontend, REST sync endpoints + PubSub processing on backend
+- **Database migrations**: Managed via golang-migrate or similar; sqlc generates Go code from SQL queries against the migrated schema
+- **Service architecture**: Monolithic Go binary with clean package boundaries per domain (auth, catalog, inventory, sales, reporting) — services communicate in-process via function calls
+- **Deployment**: Docker container with self-hosted deployment (VPS, cloud VM, or k8s)
+- **Offline sync**: Client-side responsibility — IndexedDB/service worker queue on frontend, REST sync endpoints on backend
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Encore TypeScript backend | Infrastructure-as-code, type-safe services, auto-provisioned DB/PubSub, minimal DevOps | ✅ Implemented in Phase 1 |
-| TypeORM over Encore raw SQL | Entity-based modeling for complex product variants; Encore SQL migrations for schema | ✅ Implemented in Phase 1 |
-| Single SPA over separate apps | Shared auth, shared components, simpler deployment; route-based separation keeps concerns clear | ✅ Implemented in Phase 2 |
-| Vite + React over Next.js | No SSR needed for POS/ERP; Vite is lighter, faster builds, better PWA support | ✅ Implemented in Phase 2 |
-| Offline-first POS via PWA | Service workers + IndexedDB for offline queue; avoids React Native complexity while still mobile-capable | ✅ Implemented in Phase 2 |
-| Service-per-domain backend | POS, inventory, ERP/reports, auth as separate Encore services — clean boundaries, independent databases, async communication via PubSub | ✅ Implemented in Phase 1 |
+| Go backend (chi + sqlc + pgx) | Simple, fast, single binary deployment, SQL-first data access with type safety | Pending |
+| sqlc over GORM | SQL-first approach — write queries in SQL, get type-safe Go code; more idiomatic Go than ORM | Pending |
+| Monolithic Go binary | Clean package boundaries per domain, in-process communication, simpler deployment than microservices | Pending |
+| Docker self-host | Single container deployment, no vendor lock-in, runs anywhere | Pending |
+| Single SPA over separate apps | Shared auth, shared components, simpler deployment; route-based separation keeps concerns clear | Pending |
+| Vite + React over Next.js | No SSR needed for POS/ERP; Vite is lighter, faster builds, better PWA support | Pending |
+| Offline-first POS via PWA | Service workers + IndexedDB for offline queue; avoids React Native complexity while still mobile-capable | Pending |
+| Product → Variant hierarchy | Never flat products; variants have own SKU/barcode/price/cost | Pending |
+| Inventory ledger + snapshot | Ledger is truth, snapshot is derived cache | Pending |
+| Delta sync for offline | Sync operations (decrement 1), not state (set to 9) | Pending |
 
 ---
-*Last updated: 2026-03-28 after Phase 2 completion (POS Frontend & Offline)*
+*Last updated: 2026-04-18 — full reset for Go stack migration (was Encore TypeScript)*
