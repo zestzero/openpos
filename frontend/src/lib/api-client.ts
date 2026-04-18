@@ -102,10 +102,183 @@ export function updateVariant(id: string, data: { low_stock_threshold?: number }
   });
 }
 
+// Inventory types
+export interface StockResponse {
+  variant_id: string;
+  balance: number;
+  snapshot_at: string | null;
+}
+
+export interface BulkRestockRow {
+  variant_id: string;
+  quantity: number;
+  reason?: string;
+}
+
+export interface BulkRestockResultRow {
+  variant_id: string;
+  success: boolean;
+  error?: string;
+  ledger_id?: string;
+}
+
+export interface BulkRestockResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkRestockResultRow[];
+}
+
+export interface StockLevelExport {
+  variant_id: string;
+  sku: string | null;
+  barcode: string | null;
+  product_name: string | null;
+  balance: number;
+  last_updated: string | null;
+}
+
+export interface ExportStockResponse {
+  levels: StockLevelExport[];
+  exported_at: string;
+}
+
+export interface BulkStockCountRow {
+  variant_id: string;
+  counted_quantity: number;
+  reason?: string;
+}
+
+export interface BulkStockCountResultRow {
+  variant_id: string;
+  success: boolean;
+  previous_balance?: number;
+  new_balance?: number;
+  adjustment_delta?: number;
+  error?: string;
+}
+
+export interface BulkStockCountResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkStockCountResultRow[];
+}
+
 // Inventory endpoints
+export function fetchStock(variantId: string) {
+  return apiFetch<StockResponse>(`/inventory/variants/${variantId}/stock`);
+}
+
+export function bulkRestock(rows: BulkRestockRow[]) {
+  return apiFetch<BulkRestockResponse>('/inventory/bulk-restock', {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  });
+}
+
+export function exportStockLevels() {
+  return apiFetch<ExportStockResponse>('/inventory/export-stock');
+}
+
+export function bulkStockCount(rows: BulkStockCountRow[]) {
+  return apiFetch<BulkStockCountResponse>('/inventory/bulk-stock-count', {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
+  });
+}
+
+export interface ValuationResponse {
+  total_value_cents: number;
+  variant_count: number;
+}
+
+export function fetchValuation() {
+  return apiFetch<ValuationResponse>('/inventory/valuation');
+}
+
+export interface LowStockResponse {
+  variants: LowStockVariant[];
+}
+
 export function fetchLowStock(threshold?: number) {
   const query = new URLSearchParams();
   if (threshold !== undefined) query.set('threshold', String(threshold));
   const qs = query.toString();
   return apiFetch<{ variants: LowStockVariant[] }>(`/inventory/low-stock${qs ? `?${qs}` : ''}`);
+}
+
+export interface GlobalLedgerEntry {
+  id: string;
+  variant_id: string;
+  delta: number;
+  type: string;
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface RecentLedgerResponse {
+  ledger: GlobalLedgerEntry[];
+}
+
+export function fetchRecentLedger(limit: number = 10) {
+  return apiFetch<RecentLedgerResponse>(`/inventory/ledger?limit=${limit}`);
+}
+
+export interface VariantStockItem {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  cost_cents: number;
+  balance: number;
+}
+
+export interface ListVariantsResponse {
+  variants: VariantStockItem[];
+}
+
+export function fetchAllVariants() {
+  return apiFetch<ListVariantsResponse>('/inventory/variants');
+}
+
+export interface VariantWithProductResponse {
+  id: string;
+  product_id: string;
+  sku: string;
+  barcode: string | null;
+  price_cents: number;
+  cost_cents: number;
+  active: boolean;
+  product_name: string;
+  current_stock: number;
+}
+
+export function searchVariants(query: string) {
+  const qs = new URLSearchParams({ search: query }).toString();
+  return apiFetch<{ variants: VariantWithProductResponse[] }>(`/catalog/variants/search?${qs}`);
+}
+
+export interface InventoryAdjustmentRequest {
+  variant_id: string;
+  adjustment_type: 'restock' | 'correction';
+  quantity: number;
+  reason: string;
+  reference_id?: string;
+}
+
+export interface InventoryAdjustmentResponse {
+  id: string;
+  variant_id: string;
+  adjustment_type: string;
+  quantity: number;
+  reason: string;
+  reference_id: string | null;
+  new_balance: number;
+  created_at: string;
+}
+
+export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
+  return apiFetch<InventoryAdjustmentResponse>('/inventory/ledger', {
+    method: 'POST',
+    body: JSON.stringify({ ...data, type: 'adjustment' }),
+  });
 }
