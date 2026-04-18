@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { setAuthToken, pinLogin as apiPinLogin, emailLogin as apiEmailLogin } from './api-client';
+import { setAuthToken, pinLogin as apiPinLogin, emailLogin as apiEmailLogin, register as apiRegister } from './api-client';
 
 interface AuthUser {
   token: string;
@@ -13,6 +13,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   loginWithPin: (pin: string) => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -54,6 +55,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser({ token, role: payload.role as AuthUser['role'], email: payload.email, userId: payload.sub });
   }, []);
 
+  const register = useCallback(async (email: string, password: string) => {
+    const { token } = await apiRegister(email, password);
+    const payload = parseJwt(token);
+    setAuthToken(token);
+    localStorage.setItem('openpos_token', token);
+    setUser({ token, role: payload.role as AuthUser['role'], email: payload.email, userId: payload.sub });
+  }, []);
+
   const logout = useCallback(() => {
     setAuthToken(null);
     localStorage.removeItem('openpos_token');
@@ -61,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loginWithPin, loginWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loginWithPin, loginWithEmail, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

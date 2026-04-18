@@ -41,6 +41,27 @@ export function emailLogin(email: string, password: string) {
   });
 }
 
+export function register(email: string, password: string) {
+  return apiFetch<{ token: string }>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  name: string;
+  role: 'OWNER' | 'CASHIER';
+}
+
+export function createUser(data: CreateUserRequest) {
+  return apiFetch<{ userId: string }>('/auth/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 // Catalog types (matching backend response shapes exactly)
 export interface CategoryResponse {
   id: string;

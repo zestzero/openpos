@@ -1,5 +1,15 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
+function getAuthToken(): string | null {
+  return localStorage.getItem('openpos_token');
+}
+
 export const Route = createFileRoute('/')({
-  beforeLoad: () => { throw redirect({ to: '/pos' }) },
+  beforeLoad: () => {
+    const token = getAuthToken();
+    if (!token) {
+      throw redirect({ to: '/pos' });
+    }
+    throw redirect({ to: '/pos' });
+  },
 })

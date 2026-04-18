@@ -1,6 +1,8 @@
-import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/erp')({
   component: ErpLayout,
@@ -11,7 +13,13 @@ export const Route = createFileRoute('/erp')({
 })
 
 function ErpLayout() {
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, logout } = useAuth()
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: '/pos' });
+  };
 
   if (!isAuthenticated) {
     // Don't throw redirect during render - navigate declaratively
@@ -22,7 +30,7 @@ function ErpLayout() {
           <p className="text-muted-foreground mt-2">
             Please log in to access the ERP backoffice.
           </p>
-          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
+          <Link to="/pos" className="text-blue-600 hover:underline mt-4 inline-block">
             Go to Login
           </Link>
         </div>
@@ -46,8 +54,12 @@ function ErpLayout() {
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white border-b px-6 py-4">
+        <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900">OpenPOS ERP</h1>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="size-4 mr-2" />
+            Logout
+          </Button>
         </header>
         <div className="bg-white border-b px-6">
           <nav className="flex gap-4">
