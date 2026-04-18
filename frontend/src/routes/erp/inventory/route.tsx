@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useCallback } from 'react'
 import Papa from 'papaparse'
@@ -379,4 +380,19 @@ function InventoryBulkPage() {
       )}
     </div>
   )
+=======
+import { createFileRoute, Outlet } from "@tanstack/react--router";
+
+export const Route = createFileRoute("/erp/inventory")({
+  component: InventoryLayout,
+});
+
+function InventoryLayout() {
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-4">Inventory Management</h2>
+      <Outlet />
+    </div>
+  );
+>>>>>>> 2313688 (feat(OPE-4): add ERP route structure and layout)
 }
