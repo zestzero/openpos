@@ -163,7 +163,8 @@ function DashboardPage() {
           {data && data.lowStockCount > 0 && (
             <CardContent className="pt-0">
               <Link
-                to="/erp/inventory?tab=low-stock"
+                to="/erp/inventory"
+                search={{ tab: 'low-stock' } as any}
                 className="text-sm text-blue-600 hover:underline"
               >
                 View items →

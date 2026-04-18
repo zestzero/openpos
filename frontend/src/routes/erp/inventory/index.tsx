@@ -228,8 +228,8 @@ function InventoryBulkPage() {
                 onChange={(e) => handleFileUpload(e, "restock")}
               />
               <label htmlFor="restock-file">
-                <Button variant="outline" as="span" className="cursor-pointer">
-                  Choose Restock CSV
+                <Button variant="outline" className="cursor-pointer" asChild>
+                  <span>Choose Restock CSV</span>
                 </Button>
               </label>
               <Button variant="ghost" onClick={() => handleExportTemplate("restock")}>
@@ -260,8 +260,8 @@ function InventoryBulkPage() {
                 onChange={(e) => handleFileUpload(e, "count")}
               />
               <label htmlFor="count-file">
-                <Button variant="outline" as="span" className="cursor-pointer">
-                  Choose Count CSV
+                <Button variant="outline" className="cursor-pointer" asChild>
+                  <span>Choose Count CSV</span>
                 </Button>
               </label>
               <Button variant="ghost" onClick={() => handleExportTemplate("count")}>
