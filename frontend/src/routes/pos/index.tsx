@@ -46,25 +46,25 @@ function POSScreen() {
 
   const lowStockVariantIds = new Set(lowStockVariants.map(lsv => lsv.variant_id))
 
-  const filteredProducts = showLowStockOnly
-    ? displayProducts.filter(p =>
-        (variantsByProduct[p.id] || []).some(v => lowStockVariantIds.has(v.id))
-      )
-    : displayProducts
-
   const { data: variantsByProduct = {} } = useQuery({
-    queryKey: ['variants-batch', filteredProducts.map(p => p.id)],
+    queryKey: ['variants-batch', displayProducts.map((p: any) => p.id)],
     queryFn: async () => {
       const entries = await Promise.all(
-        filteredProducts.map(async (p) => {
+        displayProducts.map(async (p: any) => {
           const { variants } = await fetchVariants(p.id)
           return [p.id, variants] as const
         })
       )
-      return Object.fromEntries(entries) as Record<string, VariantResponse[]>
+      return Object.fromEntries(entries)
     },
-    enabled: filteredProducts.length > 0,
+    enabled: displayProducts.length > 0,
   })
+
+  const filteredProducts = showLowStockOnly
+    ? displayProducts.filter((p: any) =>
+        (variantsByProduct[p.id] || []).some((v: any) => lowStockVariantIds.has(v.id))
+      )
+    : displayProducts
 
   const addItem = useCartStore((s) => s.addItem)
   const setSheetOpen = useCartStore((s) => s.setSheetOpen)

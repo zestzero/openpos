@@ -4,13 +4,30 @@ import { ErrorBoundary } from '@/components/error-boundary'
 
 export const Route = createFileRoute('/erp')({
   component: ErpLayout,
+  beforeLoad: ({ context }) => {
+    // Auth check happens here - the context would need to be set up properly
+    // For now, we'll handle it in the component
+  }
 })
 
 function ErpLayout() {
   const { user, isAuthenticated } = useAuth()
 
   if (!isAuthenticated) {
-    throw redirect({ to: '/' })
+    // Don't throw redirect during render - navigate declaratively
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-destructive">Not Authenticated</h1>
+          <p className="text-muted-foreground mt-2">
+            Please log in to access the ERP backoffice.
+          </p>
+          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
+            Go to Login
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   if (user?.role !== 'OWNER') {

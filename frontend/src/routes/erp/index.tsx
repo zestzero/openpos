@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { fetchValuation, fetchLowStock, fetchRecentLedger, fetchAllVariants, type RecentLedgerResponse, type LowStockItem, type VariantStockItem } from "@/lib/api-client";
+import { fetchValuation, fetchLowStock, fetchRecentLedger, fetchAllVariants, type RecentLedgerResponse, type LowStockVariant, type VariantStockItem } from "@/lib/api-client";
 
 export const Route = createFileRoute("/erp/")({
   component: DashboardPage,
@@ -12,7 +12,7 @@ interface DashboardData {
   totalUnits: number;
   totalValue: number;
   lowStockCount: number;
-  lowStockItems: LowStockItem[];
+  lowStockItems: LowStockVariant[];
   recentLedger: RecentLedgerResponse["ledger"];
 }
 
@@ -164,6 +164,7 @@ function DashboardPage() {
             <CardContent className="pt-0">
               <Link
                 to="/erp/inventory"
+                search={{ tab: 'low-stock' } as any}
                 className="text-sm text-blue-600 hover:underline"
               >
                 View items →
