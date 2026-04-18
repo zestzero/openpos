@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PosRouteRouteImport } from './routes/pos/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
+import { Route as InventoryAdjustmentRouteImport } from './routes/inventory/adjustment'
 
 const PosRouteRoute = PosRouteRouteImport.update({
   id: '/pos',
@@ -28,33 +29,42 @@ const PosIndexRoute = PosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PosRouteRoute,
 } as any)
+const InventoryAdjustmentRoute = InventoryAdjustmentRouteImport.update({
+  id: '/inventory/adjustment',
+  path: '/inventory/adjustment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/pos': typeof PosRouteRouteWithChildren
+  '/inventory/adjustment': typeof InventoryAdjustmentRoute
   '/pos/': typeof PosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/inventory/adjustment': typeof InventoryAdjustmentRoute
   '/pos': typeof PosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/pos': typeof PosRouteRouteWithChildren
+  '/inventory/adjustment': typeof InventoryAdjustmentRoute
   '/pos/': typeof PosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pos' | '/pos/'
+  fullPaths: '/' | '/pos' | '/inventory/adjustment' | '/pos/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pos'
-  id: '__root__' | '/' | '/pos' | '/pos/'
+  to: '/' | '/inventory/adjustment' | '/pos'
+  id: '__root__' | '/' | '/pos' | '/inventory/adjustment' | '/pos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PosRouteRoute: typeof PosRouteRouteWithChildren
+  InventoryAdjustmentRoute: typeof InventoryAdjustmentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -80,6 +90,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosIndexRouteImport
       parentRoute: typeof PosRouteRoute
     }
+    '/inventory/adjustment': {
+      id: '/inventory/adjustment'
+      path: '/inventory/adjustment'
+      fullPath: '/inventory/adjustment'
+      preLoaderRoute: typeof InventoryAdjustmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -98,6 +115,7 @@ const PosRouteRouteWithChildren = PosRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PosRouteRoute: PosRouteRouteWithChildren,
+  InventoryAdjustmentRoute: InventoryAdjustmentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

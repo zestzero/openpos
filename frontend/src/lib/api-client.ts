@@ -82,3 +82,43 @@ export function fetchProducts(params?: { category_id?: string; search?: string }
 export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
 }
+
+export interface VariantWithProductResponse extends VariantResponse {
+  product_name: string;
+  current_stock: number;
+}
+
+export function fetchAllVariants() {
+  return apiFetch<{ variants: VariantWithProductResponse[] }>('/catalog/variants');
+}
+
+export function searchVariants(query: string) {
+  const qs = new URLSearchParams({ search: query }).toString();
+  return apiFetch<{ variants: VariantWithProductResponse[] }>(`/catalog/variants/search?${qs}`);
+}
+
+export interface InventoryAdjustmentRequest {
+  variant_id: string;
+  adjustment_type: 'restock' | 'correction';
+  quantity: number;
+  reason: string;
+  reference_id?: string;
+}
+
+export interface InventoryAdjustmentResponse {
+  id: string;
+  variant_id: string;
+  adjustment_type: string;
+  quantity: number;
+  reason: string;
+  reference_id: string | null;
+  new_balance: number;
+  created_at: string;
+}
+
+export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
+  return apiFetch<InventoryAdjustmentResponse>('/inventory/ledger', {
+    method: 'POST',
+    body: JSON.stringify({ ...data, type: 'adjustment' }),
+  });
+}
