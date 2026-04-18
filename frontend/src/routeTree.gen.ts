@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PosRouteRouteImport } from './routes/pos/route'
 import { Route as ErpRouteRouteImport } from './routes/erp/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,6 +22,16 @@ import { Route as ErpInventoryRouteRouteImport } from './routes/erp/inventory/ro
 import { Route as ErpInventoryIndexRouteImport } from './routes/erp/inventory/index'
 import { Route as ErpReportsStockRouteImport } from './routes/erp/reports/stock'
 
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PosRouteRoute = PosRouteRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -75,6 +87,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
   '/erp/products': typeof ErpProductsRoute
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
@@ -85,6 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/erp/products': typeof ErpProductsRoute
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
   '/erp': typeof ErpIndexRoute
@@ -97,6 +113,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
   '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
   '/erp/products': typeof ErpProductsRoute
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
@@ -111,6 +129,8 @@ export interface FileRouteTypes {
     | '/'
     | '/erp'
     | '/pos'
+    | '/login'
+    | '/register'
     | '/erp/inventory'
     | '/erp/products'
     | '/inventory/adjustment'
@@ -121,6 +141,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
+    | '/register'
     | '/erp/products'
     | '/inventory/adjustment'
     | '/erp'
@@ -132,6 +154,8 @@ export interface FileRouteTypes {
     | '/'
     | '/erp'
     | '/pos'
+    | '/login'
+    | '/register'
     | '/erp/inventory'
     | '/erp/products'
     | '/inventory/adjustment'
@@ -145,11 +169,27 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ErpRouteRoute: typeof ErpRouteRouteWithChildren
   PosRouteRoute: typeof PosRouteRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
   InventoryAdjustmentRoute: typeof InventoryAdjustmentRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pos': {
       id: '/pos'
       path: '/pos'
@@ -268,6 +308,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ErpRouteRoute: ErpRouteRouteWithChildren,
   PosRouteRoute: PosRouteRouteWithChildren,
+  LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
   InventoryAdjustmentRoute: InventoryAdjustmentRoute,
 }
 export const routeTree = rootRouteImport

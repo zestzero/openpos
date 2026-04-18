@@ -4,6 +4,7 @@ import { SyncStatusIndicator } from "@/components/pos/sync-status-indicator";
 import { PinLogin } from "@/components/pos/pin-login";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useAuth } from "@/lib/auth";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export const Route = createFileRoute("/pos")({
   component: PosLayout,
@@ -22,7 +23,10 @@ function PosLayout() {
         <OfflineBanner />
         <div className="flex items-center justify-between px-4 py-2">
           <span className="text-sm font-semibold text-zinc-400">OpenPOS</span>
-          <SyncStatusIndicator />
+          <div className="flex items-center gap-2">
+            <SyncStatusIndicator />
+            <LogoutButton variant="ghost" size="icon" />
+          </div>
         </div>
         <Outlet />
       </div>
