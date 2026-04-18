@@ -1,281 +1,378 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { useInventory } from "@/hooks/use-inventory";
-import { useCategories } from "@/hooks/use-catalog";
-import { useDebouncedValue } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useCallback } from "react";
+import Papa from "papaparse";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { bulkRestock, exportStockLevels, bulkStockCount, type BulkRestockRow, type BulkStockCountRow, type StockLevelExport } from "@/lib/api-client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/erp/inventory/")({
-  component: InventoryPage,
+  component: InventoryBulkPage,
 });
 
-function InventoryPage() {
-  const navigate = useNavigate();
-  const [search, setSearch] = useState("");
-  const [categoryId, setCategoryId] = useState<string>("all");
-  const [status, setStatus] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"stock" | "product" | "sku">("product");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+interface ParsedRow {
+  variant_id: string;
+  quantity: number;
+  reason?: string;
+  error?: string;
+}
 
-  const debouncedSearch = useDebouncedValue(search, 300);
+interface RestockResult {
+  variant_id: string;
+  success: boolean;
+  error?: string;
+}
 
-  const inventoryParams = useMemo(
-    () => ({
-      search: debouncedSearch || undefined,
-      category_id: categoryId !== "all" ? categoryId : undefined,
-      status: status !== "all" ? (status as "in-stock" | "low" | "out") : undefined,
-      sort_by: sortBy,
-      sort_order: sortOrder,
-      page,
-      page_size: pageSize,
-    }),
-    [debouncedSearch, categoryId, status, sortBy, sortOrder, page, pageSize]
-  );
+interface CountResult {
+  variant_id: string;
+  success: boolean;
+  previous_balance?: number;
+  new_balance?: number;
+  adjustment_delta?: number;
+  error?: string;
+}
 
-  const { data: inventoryData, isLoading, isError } = useInventory(inventoryParams);
-  const { data: categories } = useCategories();
+function InventoryBulkPage() {
+  const [restockData, setRestockData] = useState<ParsedRow[]>([]);
+  const [countData, setCountData] = useState<ParsedRow[]>([]);
+  const [restockResults, setRestockResults] = useState<RestockResult[]>([]);
+  const [countResults, setCountResults] = useState<CountResult[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.target.value);
-    setPage(1);
-  };
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>, type: "restock" | "count") => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
-  const handleCategoryChange = (value: string) => {
-    setCategoryId(value);
-    setPage(1);
-  };
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const parsed: ParsedRow[] = [];
+        const errors: string[] = [];
 
-  const handleStatusChange = (value: string) => {
-    setStatus(value);
-    setPage(1);
-  };
+        results.data.forEach((row: unknown, index: number) => {
+          const r = row as Record<string, string>;
+          const variantId = r.variant_id?.trim();
+          const quantity = type === "restock" ? parseInt(r.quantity ?? "0", 10) : parseInt(r.counted_quantity ?? r.quantity ?? "0", 10);
+          const reason = r.reason?.trim();
 
-  const handleSortChange = (value: string) => {
-    const [newSortBy, newSortOrder] = value.split("-") as [
-      "stock" | "product" | "sku",
-      "asc" | "desc"
-    ];
-    setSortBy(newSortBy);
-    setSortOrder(newSortOrder);
-    setPage(1);
-  };
+          if (!variantId) {
+            errors.push(`Row ${index + 1}: Missing variant_id`);
+            return;
+          }
 
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(Number(value));
-    setPage(1);
-  };
+          if (isNaN(quantity) || quantity < 0) {
+            errors.push(`Row ${index + 1}: Invalid quantity`);
+            return;
+          }
 
-  const totalPages = inventoryData
-    ? Math.ceil(inventoryData.total / inventoryData.page_size)
-    : 0;
+          parsed.push({ variant_id: variantId, quantity, reason });
+        });
+
+        if (errors.length > 0) {
+          toast.error(`Validation errors:\n${errors.slice(0, 5).join("\n")}${errors.length > 5 ? "\n..." : ""}`);
+        }
+
+        if (type === "restock") {
+          setRestockData(parsed);
+        } else {
+          setCountData(parsed);
+        }
+      },
+      error: (error) => {
+        toast.error(`Failed to parse CSV: ${error.message}`);
+      },
+    });
+  }, []);
+
+  const handleExportTemplate = useCallback((type: "restock" | "count") => {
+    const headers = type === "restock"
+      ? ["variant_id", "quantity", "reason"]
+      : ["variant_id", "counted_quantity", "reason"];
+    const csv = headers.join(",") + "\n";
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `stock_${type}_template.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleExportCurrentStock = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const response = await exportStockLevels();
+      const csv = [
+        ["variant_id", "sku", "barcode", "product_name", "balance", "last_updated"].join(","),
+        ...response.levels.map((level: StockLevelExport) =>
+          [level.variant_id, level.sku ?? "", level.barcode ?? "", level.product_name ?? "", level.balance, level.last_updated ?? ""].join(",")
+        ),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `stock_export_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${response.levels.length} stock levels`);
+    } catch (error) {
+      toast.error(`Export failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
+
+  const handleProcessRestock = useCallback(async () => {
+    if (restockData.length === 0) {
+      toast.error("No data to process. Please upload a CSV first.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const rows: BulkRestockRow[] = restockData.map((row) => ({
+        variant_id: row.variant_id,
+        quantity: row.quantity,
+        reason: row.reason,
+      }));
+
+      const response = await bulkRestock(rows);
+      setRestockResults(response.results);
+      toast.success(`Restock complete: ${response.success_count} succeeded, ${response.failure_count} failed`);
+    } catch (error) {
+      toast.error(`Restock failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [restockData]);
+
+  const handleProcessStockCount = useCallback(async () => {
+    if (countData.length === 0) {
+      toast.error("No data to process. Please upload a CSV first.");
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const rows: BulkStockCountRow[] = countData.map((row) => ({
+        variant_id: row.variant_id,
+        counted_quantity: row.quantity,
+        reason: row.reason,
+      }));
+
+      const response = await bulkStockCount(rows);
+      setCountResults(response.results);
+      toast.success(`Stock count complete: ${response.success_count} succeeded, ${response.failure_count} failed`);
+    } catch (error) {
+      toast.error(`Stock count failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [countData]);
+
+  const handleDownloadErrors = useCallback((results: RestockResult[] | CountResult[], type: "restock" | "count") => {
+    const failedRows = results.filter((r) => !r.success);
+    if (failedRows.length === 0) {
+      toast.error("No failed rows to download");
+      return;
+    }
+
+    const csv = [
+      ["variant_id", "error"].join(","),
+      ...failedRows.map((r) => [r.variant_id, r.error ?? "Unknown error"].join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${type}_errors_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const successCount = restockResults.filter((r) => r.success).length;
+  const failureCount = restockResults.filter((r) => !r.success).length;
+  const countSuccessCount = countResults.filter((r) => r.success).length;
+  const countFailureCount = countResults.filter((r) => !r.success).length;
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Inventory</h1>
-      </div>
-
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="w-full max-w-sm">
-          <Input
-            placeholder="Search by name, SKU, or barcode..."
-            value={search}
-            onChange={handleSearchChange}
-            className="w-full"
-          />
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Bulk Stock Operations</h2>
+          <p className="text-gray-500">Upload CSV files to restock or reconcile inventory</p>
         </div>
-
-        <Select value={categoryId} onValueChange={handleCategoryChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories?.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={status} onValueChange={handleStatusChange}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="in-stock">In Stock</SelectItem>
-            <SelectItem value="low">Low Stock</SelectItem>
-            <SelectItem value="out">Out of Stock</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={`${sortBy}-${sortOrder}`}
-          onValueChange={handleSortChange}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="product-asc">Product (A-Z)</SelectItem>
-            <SelectItem value="product-desc">Product (Z-A)</SelectItem>
-            <SelectItem value="sku-asc">SKU (A-Z)</SelectItem>
-            <SelectItem value="sku-desc">SKU (Z-A)</SelectItem>
-            <SelectItem value="stock-asc">Stock (Low to High)</SelectItem>
-            <SelectItem value="stock-desc">Stock (High to Low)</SelectItem>
-          </SelectContent>
-        </Select>
+        <Button variant="outline" onClick={handleExportCurrentStock} disabled={isExporting}>
+          {isExporting ? "Exporting..." : "Export Current Stock"}
+        </Button>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Barcode</TableHead>
-              <TableHead className="text-right">Stock</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-28" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-12 ml-auto" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-16" />
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : isError ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  Error loading inventory. Please try again.
-                </TableCell>
-              </TableRow>
-            ) : inventoryData?.items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                  No inventory items found. Try adjusting your filters.
-                </TableCell>
-              </TableRow>
-            ) : (
-              inventoryData?.items.map((item) => (
-                <TableRow
-                  key={item.variant_id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => window.location.href = `/erp/inventory/variant/${item.variant_id}`}
-                >
-                  <TableCell className="font-medium">{item.product_name}</TableCell>
-                  <TableCell>{item.sku}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {item.barcode || "-"}
-                  </TableCell>
-                  <TableCell className="text-right">{item.stock}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        item.status === "in-stock"
-                          ? "default"
-                          : item.status === "low"
-                          ? "secondary"
-                          : "destructive"
-                      }
-                    >
-                      {item.status === "in-stock"
-                        ? "In Stock"
-                        : item.status === "low"
-                        ? "Low"
-                        : "Out"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Restock</CardTitle>
+            <CardDescription>Upload CSV with variant_id, quantity, reason</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <input
+                type="file"
+                accept=".csv"
+                id="restock-file"
+                className="hidden"
+                onChange={(e) => handleFileUpload(e, "restock")}
+              />
+              <label htmlFor="restock-file" className="cursor-pointer inline-block">
+                <span className="px-4 py-2 text-sm rounded-md border bg-background hover:bg-muted">
+                  Choose Restock CSV
+                </span>
+              </label>
+              <Button variant="ghost" onClick={() => handleExportTemplate("restock")}>
+                Download Template
+              </Button>
+            </div>
+            {restockData.length > 0 && (
+              <div className="text-sm text-gray-600">{restockData.length} rows parsed</div>
             )}
-          </TableBody>
-        </Table>
+            <Button onClick={handleProcessRestock} disabled={isProcessing || restockData.length === 0}>
+              {isProcessing ? "Processing..." : "Process Restock"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Bulk Stock Count</CardTitle>
+            <CardDescription>Upload CSV with variant_id, counted_quantity, reason</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <input
+                type="file"
+                accept=".csv"
+                id="count-file"
+                className="hidden"
+                onChange={(e) => handleFileUpload(e, "count")}
+              />
+              <label htmlFor="count-file" className="cursor-pointer inline-block">
+                <span className="px-4 py-2 text-sm rounded-md border bg-background hover:bg-muted">
+                  Choose Count CSV
+                </span>
+              </label>
+              <Button variant="ghost" onClick={() => handleExportTemplate("count")}>
+                Download Template
+              </Button>
+            </div>
+            {countData.length > 0 && (
+              <div className="text-sm text-gray-600">{countData.length} rows parsed</div>
+            )}
+            <Button onClick={handleProcessStockCount} disabled={isProcessing || countData.length === 0}>
+              {isProcessing ? "Processing..." : "Process Stock Count"}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Rows per page:</span>
-          <Select
-            value={String(pageSize)}
-            onValueChange={handlePageSizeChange}
-          >
-            <SelectTrigger className="w-[80px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="20">20</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {restockResults.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Restock Results</CardTitle>
+            <CardDescription>
+              {successCount} succeeded, {failureCount} failed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-64 overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Variant ID</th>
+                    <th className="px-2 py-1 text-left">Status</th>
+                    <th className="px-2 py-1 text-left">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {restockResults.map((result, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="px-2 py-1 font-mono text-xs">{result.variant_id}</td>
+                      <td className="px-2 py-1">
+                        <span className={result.success ? "text-green-600" : "text-red-600"}>
+                          {result.success ? "Success" : "Failed"}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 text-red-600">{result.error || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {failureCount > 0 && (
+              <Button variant="outline" className="mt-2" onClick={() => handleDownloadErrors(restockResults, "restock")}>
+                Download Error Report
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            Page {inventoryData?.page || 1} of {totalPages || 1}
-          </span>
-          <div className="flex gap-1">
-            <button
-              className={cn(
-                "px-3 py-1 text-sm rounded border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed",
-                (inventoryData?.page ?? 1) <= 1 && "cursor-not-allowed"
-              )}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={(inventoryData?.page ?? 1) <= 1}
-            >
-              Previous
-            </button>
-            <button
-              className={cn(
-                "px-3 py-1 text-sm rounded border hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed",
-                (inventoryData?.page ?? 1) >= totalPages && "cursor-not-allowed"
-              )}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={(inventoryData?.page ?? 1) >= totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
+      {countResults.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Stock Count Results</CardTitle>
+            <CardDescription>
+              {countSuccessCount} succeeded, {countFailureCount} failed
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="max-h-64 overflow-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-100 sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1 text-left">Variant ID</th>
+                    <th className="px-2 py-1 text-right">Previous</th>
+                    <th className="px-2 py-1 text-right">New</th>
+                    <th className="px-2 py-1 text-right">Adjustment</th>
+                    <th className="px-2 py-1 text-left">Status</th>
+                    <th className="px-2 py-1 text-left">Error</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {countResults.map((result, i) => (
+                    <tr key={i} className="border-b">
+                      <td className="px-2 py-1 font-mono text-xs">{result.variant_id}</td>
+                      <td className="px-2 py-1 text-right">{result.previous_balance ?? "-"}</td>
+                      <td className="px-2 py-1 text-right">{result.new_balance ?? "-"}</td>
+                      <td className="px-2 py-1 text-right">
+                        {result.adjustment_delta !== undefined && (
+                          <span className={result.adjustment_delta > 0 ? "text-green-600" : result.adjustment_delta < 0 ? "text-red-600" : ""}>
+                            {result.adjustment_delta > 0 ? "+" : ""}{result.adjustment_delta}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1">
+                        <span className={result.success ? "text-green-600" : "text-red-600"}>
+                          {result.success ? "Success" : "Failed"}
+                        </span>
+                      </td>
+                      <td className="px-2 py-1 text-red-600">{result.error || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {countFailureCount > 0 && (
+              <Button variant="outline" className="mt-2" onClick={() => handleDownloadErrors(countResults, "count")}>
+                Download Error Report
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

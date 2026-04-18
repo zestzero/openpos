@@ -13,7 +13,10 @@ import { Route as PosRouteRouteImport } from './routes/pos/route'
 import { Route as ErpRouteRouteImport } from './routes/erp/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
+import { Route as ErpIndexRouteImport } from './routes/erp/index'
+import { Route as ErpInventoryRouteRouteImport } from './routes/erp/inventory/route'
 import { Route as ErpInventoryIndexRouteImport } from './routes/erp/inventory/index'
+import { Route as ErpInventoryBrowserRouteImport } from './routes/erp/inventory/browser'
 import { Route as ErpInventoryVariantVariantIdRouteImport } from './routes/erp/inventory/variant/$variantId'
 
 const PosRouteRoute = PosRouteRouteImport.update({
@@ -36,30 +39,49 @@ const PosIndexRoute = PosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PosRouteRoute,
 } as any)
-const ErpInventoryIndexRoute = ErpInventoryIndexRouteImport.update({
-  id: '/inventory/',
-  path: '/inventory/',
+const ErpIndexRoute = ErpIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => ErpRouteRoute,
+} as any)
+const ErpInventoryRouteRoute = ErpInventoryRouteRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => ErpRouteRoute,
+} as any)
+const ErpInventoryIndexRoute = ErpInventoryIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ErpInventoryRouteRoute,
+} as any)
+const ErpInventoryBrowserRoute = ErpInventoryBrowserRouteImport.update({
+  id: '/browser',
+  path: '/browser',
+  getParentRoute: () => ErpInventoryRouteRoute,
 } as any)
 const ErpInventoryVariantVariantIdRoute =
   ErpInventoryVariantVariantIdRouteImport.update({
-    id: '/inventory/variant/$variantId',
-    path: '/inventory/variant/$variantId',
-    getParentRoute: () => ErpRouteRoute,
+    id: '/variant/$variantId',
+    path: '/variant/$variantId',
+    getParentRoute: () => ErpInventoryRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
+  '/erp/inventory/browser': typeof ErpInventoryBrowserRoute
   '/erp/inventory/': typeof ErpInventoryIndexRoute
   '/erp/inventory/variant/$variantId': typeof ErpInventoryVariantVariantIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/erp': typeof ErpRouteRouteWithChildren
+  '/erp': typeof ErpIndexRoute
   '/pos': typeof PosIndexRoute
+  '/erp/inventory/browser': typeof ErpInventoryBrowserRoute
   '/erp/inventory': typeof ErpInventoryIndexRoute
   '/erp/inventory/variant/$variantId': typeof ErpInventoryVariantVariantIdRoute
 }
@@ -68,7 +90,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
+  '/erp/inventory/browser': typeof ErpInventoryBrowserRoute
   '/erp/inventory/': typeof ErpInventoryIndexRoute
   '/erp/inventory/variant/$variantId': typeof ErpInventoryVariantVariantIdRoute
 }
@@ -78,7 +103,10 @@ export interface FileRouteTypes {
     | '/'
     | '/erp'
     | '/pos'
+    | '/erp/inventory'
+    | '/erp/'
     | '/pos/'
+    | '/erp/inventory/browser'
     | '/erp/inventory/'
     | '/erp/inventory/variant/$variantId'
   fileRoutesByTo: FileRoutesByTo
@@ -86,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/erp'
     | '/pos'
+    | '/erp/inventory/browser'
     | '/erp/inventory'
     | '/erp/inventory/variant/$variantId'
   id:
@@ -93,7 +122,10 @@ export interface FileRouteTypes {
     | '/'
     | '/erp'
     | '/pos'
+    | '/erp/inventory'
+    | '/erp/'
     | '/pos/'
+    | '/erp/inventory/browser'
     | '/erp/inventory/'
     | '/erp/inventory/variant/$variantId'
   fileRoutesById: FileRoutesById
@@ -134,31 +166,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosIndexRouteImport
       parentRoute: typeof PosRouteRoute
     }
+    '/erp/': {
+      id: '/erp/'
+      path: '/'
+      fullPath: '/erp/'
+      preLoaderRoute: typeof ErpIndexRouteImport
+      parentRoute: typeof ErpRouteRoute
+    }
+    '/erp/inventory': {
+      id: '/erp/inventory'
+      path: '/inventory'
+      fullPath: '/erp/inventory'
+      preLoaderRoute: typeof ErpInventoryRouteRouteImport
+      parentRoute: typeof ErpRouteRoute
+    }
     '/erp/inventory/': {
       id: '/erp/inventory/'
-      path: '/inventory'
+      path: '/'
       fullPath: '/erp/inventory/'
       preLoaderRoute: typeof ErpInventoryIndexRouteImport
-      parentRoute: typeof ErpRouteRoute
+      parentRoute: typeof ErpInventoryRouteRoute
+    }
+    '/erp/inventory/browser': {
+      id: '/erp/inventory/browser'
+      path: '/browser'
+      fullPath: '/erp/inventory/browser'
+      preLoaderRoute: typeof ErpInventoryBrowserRouteImport
+      parentRoute: typeof ErpInventoryRouteRoute
     }
     '/erp/inventory/variant/$variantId': {
       id: '/erp/inventory/variant/$variantId'
-      path: '/inventory/variant/$variantId'
+      path: '/variant/$variantId'
       fullPath: '/erp/inventory/variant/$variantId'
       preLoaderRoute: typeof ErpInventoryVariantVariantIdRouteImport
-      parentRoute: typeof ErpRouteRoute
+      parentRoute: typeof ErpInventoryRouteRoute
     }
   }
 }
 
-interface ErpRouteRouteChildren {
+interface ErpInventoryRouteRouteChildren {
+  ErpInventoryBrowserRoute: typeof ErpInventoryBrowserRoute
   ErpInventoryIndexRoute: typeof ErpInventoryIndexRoute
   ErpInventoryVariantVariantIdRoute: typeof ErpInventoryVariantVariantIdRoute
 }
 
-const ErpRouteRouteChildren: ErpRouteRouteChildren = {
+const ErpInventoryRouteRouteChildren: ErpInventoryRouteRouteChildren = {
+  ErpInventoryBrowserRoute: ErpInventoryBrowserRoute,
   ErpInventoryIndexRoute: ErpInventoryIndexRoute,
   ErpInventoryVariantVariantIdRoute: ErpInventoryVariantVariantIdRoute,
+}
+
+const ErpInventoryRouteRouteWithChildren =
+  ErpInventoryRouteRoute._addFileChildren(ErpInventoryRouteRouteChildren)
+
+interface ErpRouteRouteChildren {
+  ErpInventoryRouteRoute: typeof ErpInventoryRouteRouteWithChildren
+  ErpIndexRoute: typeof ErpIndexRoute
+}
+
+const ErpRouteRouteChildren: ErpRouteRouteChildren = {
+  ErpInventoryRouteRoute: ErpInventoryRouteRouteWithChildren,
+  ErpIndexRoute: ErpIndexRoute,
 }
 
 const ErpRouteRouteWithChildren = ErpRouteRoute._addFileChildren(
