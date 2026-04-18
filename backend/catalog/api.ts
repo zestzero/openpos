@@ -271,6 +271,7 @@ interface CreateVariantRequest {
   price_cents: number;
   cost_cents?: number;
   active?: boolean;
+  low_stock_threshold?: number;
 }
 
 interface UpdateVariantRequest {
@@ -279,6 +280,7 @@ interface UpdateVariantRequest {
   price_cents?: number;
   cost_cents?: number;
   active?: boolean;
+  low_stock_threshold?: number;
 }
 
 interface VariantResponse {
@@ -289,6 +291,7 @@ interface VariantResponse {
   price_cents: number;
   cost_cents: number;
   active: boolean;
+  low_stock_threshold: number;
 }
 
 export const createVariant = api(
@@ -316,6 +319,7 @@ export const createVariant = api(
       price_cents: req.price_cents,
       cost_cents: req.cost_cents ?? 0,
       active: req.active ?? true,
+      low_stock_threshold: req.low_stock_threshold ?? 10,
     });
     await variantRepo.save(variant);
     return {
@@ -326,6 +330,7 @@ export const createVariant = api(
       price_cents: variant.price_cents,
       cost_cents: variant.cost_cents,
       active: variant.active,
+      low_stock_threshold: variant.low_stock_threshold,
     };
   }
 );
@@ -347,6 +352,7 @@ export const listVariants = api(
         price_cents: v.price_cents,
         cost_cents: v.cost_cents,
         active: v.active,
+        low_stock_threshold: v.low_stock_threshold,
       })),
     };
   }
@@ -402,6 +408,7 @@ export const updateVariant = api(
     if (req.price_cents !== undefined) variant.price_cents = req.price_cents;
     if (req.cost_cents !== undefined) variant.cost_cents = req.cost_cents;
     if (req.active !== undefined) variant.active = req.active;
+    if (req.low_stock_threshold !== undefined) variant.low_stock_threshold = req.low_stock_threshold;
 
     await variantRepo.save(variant);
     return {
@@ -412,6 +419,7 @@ export const updateVariant = api(
       price_cents: variant.price_cents,
       cost_cents: variant.cost_cents,
       active: variant.active,
+      low_stock_threshold: variant.low_stock_threshold,
     };
   }
 );

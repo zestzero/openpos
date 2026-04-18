@@ -64,6 +64,18 @@ export interface VariantResponse {
   price_cents: number;
   cost_cents: number;
   active: boolean;
+  low_stock_threshold: number;
+}
+
+export interface LowStockVariant {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  product_id: string;
+  product_name: string;
+  balance: number;
+  threshold: number;
+  status: "low" | "out";
 }
 
 // Catalog endpoints
@@ -81,6 +93,13 @@ export function fetchProducts(params?: { category_id?: string; search?: string }
 
 export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
+}
+
+export function updateVariant(id: string, data: { low_stock_threshold?: number }) {
+  return apiFetch<VariantResponse>(`/catalog/variants/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 // Inventory types
@@ -176,19 +195,15 @@ export function fetchValuation() {
   return apiFetch<ValuationResponse>('/inventory/valuation');
 }
 
-export interface LowStockItem {
-  variant_id: string;
-  sku: string;
-  barcode: string | null;
-  balance: number;
-}
-
 export interface LowStockResponse {
-  variants: LowStockItem[];
+  variants: LowStockVariant[];
 }
 
-export function fetchLowStock(threshold: number = 10) {
-  return apiFetch<LowStockResponse>(`/inventory/low-stock?threshold=${threshold}`);
+export function fetchLowStock(threshold?: number) {
+  const query = new URLSearchParams();
+  if (threshold !== undefined) query.set('threshold', String(threshold));
+  const qs = query.toString();
+  return apiFetch<{ variants: LowStockVariant[] }>(`/inventory/low-stock${qs ? `?${qs}` : ''}`);
 }
 
 export interface GlobalLedgerEntry {

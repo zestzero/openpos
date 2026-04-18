@@ -2,7 +2,7 @@ import { api, APIError } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { getDataSource as getCatalogDataSource } from "../catalog/datasource";
 import { InventoryLedger, InventorySnapshot } from "./entities";
-import { Variant } from "../catalog/entities";
+import { Product, Variant } from "../catalog/entities";
 import { requireRole } from "../auth/middleware";
 import { catalog } from "~encore/clients";
 import { getAuthData } from "~encore/auth";
@@ -131,6 +131,21 @@ export const getStock = api(
   }
 );
 
+interface LowStockVariant {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  product_id: string;
+  product_name: string;
+  balance: number;
+  threshold: number;
+  status: "low" | "out";
+}
+
+interface LowStockResponse {
+  variants: LowStockVariant[];
+}
+
 interface VariantStockItem {
   variant_id: string;
   sku: string;
@@ -250,46 +265,38 @@ export const getLedgerHistory = api(
   }
 );
 
-interface LowStockRequest {
-  threshold: number;
-}
-
-interface LowStockItem {
-  variant_id: string;
-  sku: string;
-  barcode: string | null;
-  balance: number;
-}
-
-interface LowStockResponse {
-  variants: LowStockItem[];
-}
-
 export const getLowStock = api(
   { expose: true, method: "GET", path: "/inventory/low-stock", auth: true },
-  async (req: LowStockRequest): Promise<LowStockResponse> => {
+  async (req: { threshold?: number }): Promise<LowStockResponse> => {
     const invDs = await getDataSource();
     const catDs = await getCatalogDataSource();
-
     const variantRepo = catDs.getRepository(Variant);
+    const productRepo = catDs.getRepository(Product);
+
     const variants = await variantRepo.find({ where: { active: true } });
 
-    const threshold = req.threshold || 10;
-    const items: LowStockItem[] = [];
+    const lowStockVariants: LowStockVariant[] = [];
 
     for (const variant of variants) {
       const balance = await calculateBalance(variant.id, invDs);
-      if (balance < threshold) {
-        items.push({
+      const effectiveThreshold = req.threshold ?? variant.low_stock_threshold;
+
+      if (balance <= effectiveThreshold) {
+        const product = await productRepo.findOne({ where: { id: variant.product_id } });
+        lowStockVariants.push({
           variant_id: variant.id,
           sku: variant.sku,
           barcode: variant.barcode,
+          product_id: variant.product_id,
+          product_name: product?.name ?? "Unknown Product",
           balance,
+          threshold: effectiveThreshold,
+          status: balance === 0 ? "out" : "low",
         });
       }
     }
 
-    return { variants: items };
+    return { variants: lowStockVariants };
   }
 );
 

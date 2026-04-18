@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useCategories, useProducts, useSearchProducts } from '@/hooks/use-catalog'
+import { useCategories, useProducts, useSearchProducts, useLowStockVariants } from '@/hooks/use-catalog'
 import { useDebouncedValue } from '@/hooks/use-debounce'
 import { fetchProducts, fetchVariants, type VariantResponse } from '@/lib/api-client'
 import { SearchBar } from '@/components/pos/search-bar'
@@ -12,6 +12,7 @@ import { ProductGrid } from '@/components/pos/product-grid'
 import { CartSummaryBar } from '@/components/pos/cart-summary-bar'
 import { CartBottomSheet } from '@/components/pos/cart-bottom-sheet'
 import { BarcodeScanner } from '@/components/pos/barcode-scanner'
+import { Button } from '@/components/ui/button'
 import { useKeyboardWedge } from '@/hooks/use-keyboard-wedge'
 import { useCartStore } from '@/stores/cart-store'
 
@@ -23,6 +24,7 @@ function POSScreen() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false)
 
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
@@ -31,23 +33,37 @@ function POSScreen() {
     selectedCategory ?? undefined
   )
   const { data: searchResults = [], isLoading: isSearchLoading } = useSearchProducts(debouncedSearch)
+  const { data: lowStockVariants = [] } = useLowStockVariants()
 
   const isSearching = searchQuery.length >= 2
   const displayProducts = isSearching ? searchResults : browseProducts
   const isLoading = isSearching ? isSearchLoading : isBrowseLoading
 
+  const lowStockInfo: Record<string, typeof lowStockVariants[0]> = {}
+  for (const lsv of lowStockVariants) {
+    lowStockInfo[lsv.variant_id] = lsv
+  }
+
+  const lowStockVariantIds = new Set(lowStockVariants.map(lsv => lsv.variant_id))
+
+  const filteredProducts = showLowStockOnly
+    ? displayProducts.filter(p =>
+        (variantsByProduct[p.id] || []).some(v => lowStockVariantIds.has(v.id))
+      )
+    : displayProducts
+
   const { data: variantsByProduct = {} } = useQuery({
-    queryKey: ['variants-batch', displayProducts.map(p => p.id)],
+    queryKey: ['variants-batch', filteredProducts.map(p => p.id)],
     queryFn: async () => {
       const entries = await Promise.all(
-        displayProducts.map(async (p) => {
+        filteredProducts.map(async (p) => {
           const { variants } = await fetchVariants(p.id)
           return [p.id, variants] as const
         })
       )
       return Object.fromEntries(entries) as Record<string, VariantResponse[]>
     },
-    enabled: displayProducts.length > 0,
+    enabled: filteredProducts.length > 0,
   })
 
   const addItem = useCartStore((s) => s.addItem)
@@ -56,7 +72,7 @@ function POSScreen() {
   const getTotalCents = useCartStore((s) => s.getTotalCents)
 
   const variantToProductName: Record<string, string> = {}
-  for (const product of displayProducts) {
+  for (const product of filteredProducts) {
     const variants = variantsByProduct[product.id] || []
     for (const variant of variants) {
       variantToProductName[variant.id] = product.name
@@ -121,12 +137,27 @@ function POSScreen() {
         />
       )}
       <FavoritesBar />
+      <div className="px-4 py-2 flex items-center justify-between border-b">
+        <Button
+          variant={showLowStockOnly ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+        >
+          {showLowStockOnly ? 'Showing Low Stock' : 'Show Low Stock'}
+          {lowStockVariants.length > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800">
+              {lowStockVariants.length}
+            </span>
+          )}
+        </Button>
+      </div>
       <div className="flex-1 overflow-y-auto pb-20">
         <ProductGrid
-          products={displayProducts}
+          products={filteredProducts}
           variantsByProduct={variantsByProduct}
           onAddToCart={handleAddToCart}
           isLoading={isLoading}
+          lowStockInfo={lowStockInfo}
         />
       </div>
       <CartSummaryBar
