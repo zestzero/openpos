@@ -1,6 +1,7 @@
 import { api } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { InventoryLedger, InventorySnapshot } from "./entities";
+import { Product, Variant } from "../catalog/entities";
 import { requireRole } from "../auth/middleware";
 
 interface LedgerRequest {
@@ -124,5 +125,77 @@ export const getStock = api(
       balance,
       snapshot_at: latestSnapshot ? latestSnapshot.snapshot_at.toISOString() : null,
     };
+  }
+);
+
+interface LowStockVariant {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  product_id: string;
+  product_name: string;
+  balance: number;
+  threshold: number;
+  status: "low" | "out";
+}
+
+interface LowStockResponse {
+  variants: LowStockVariant[];
+}
+
+async function getVariantBalance(ds: Awaited<ReturnType<typeof getDataSource>>, variantId: string): Promise<number> {
+  const snapshotRepo = ds.getRepository(InventorySnapshot);
+  const ledgerRepo = ds.getRepository(InventoryLedger);
+
+  const latestSnapshot = await snapshotRepo.findOne({
+    where: { variant_id: variantId },
+    order: { snapshot_at: "DESC" },
+  });
+
+  let balance = latestSnapshot ? latestSnapshot.balance : 0;
+  const since = latestSnapshot ? latestSnapshot.snapshot_at : new Date(0);
+
+  const result = await ledgerRepo
+    .createQueryBuilder("ledger")
+    .select("SUM(ledger.delta)", "sum")
+    .where("ledger.variant_id = :id", { id: variantId })
+    .andWhere("ledger.created_at > :since", { since })
+    .getRawOne();
+
+  const deltaSum = parseInt(result?.sum || "0", 10);
+  return balance + deltaSum;
+}
+
+export const getLowStock = api(
+  { expose: true, method: "GET", path: "/inventory/low-stock", auth: true },
+  async (req: { threshold?: number }): Promise<LowStockResponse> => {
+    const ds = await getDataSource();
+    const variantRepo = ds.getRepository(Variant);
+    const productRepo = ds.getRepository(Product);
+
+    const variants = await variantRepo.find();
+
+    const lowStockVariants: LowStockVariant[] = [];
+
+    for (const variant of variants) {
+      const balance = await getVariantBalance(ds, variant.id);
+      const effectiveThreshold = req.threshold ?? variant.low_stock_threshold;
+
+      if (balance <= effectiveThreshold) {
+        const product = await productRepo.findOne({ where: { id: variant.product_id } });
+        lowStockVariants.push({
+          variant_id: variant.id,
+          sku: variant.sku,
+          barcode: variant.barcode,
+          product_id: variant.product_id,
+          product_name: product?.name ?? "Unknown Product",
+          balance,
+          threshold: effectiveThreshold,
+          status: balance === 0 ? "out" : "low",
+        });
+      }
+    }
+
+    return { variants: lowStockVariants };
   }
 );

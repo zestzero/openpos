@@ -1,6 +1,7 @@
 import { DataSource } from "typeorm";
 import { inventoryDB } from "./encore.service";
 import { InventoryLedger, InventorySnapshot } from "./entities";
+import { Product, Variant } from "../catalog/entities";
 
 let dataSource: DataSource | null = null;
 
@@ -10,7 +11,7 @@ export async function getDataSource(): Promise<DataSource> {
   dataSource = new DataSource({
     type: "postgres",
     url: inventoryDB.connectionString,
-    entities: [InventoryLedger, InventorySnapshot],
+    entities: [InventoryLedger, InventorySnapshot, Product, Variant],
     synchronize: false,
   });
 

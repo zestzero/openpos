@@ -64,6 +64,18 @@ export interface VariantResponse {
   price_cents: number;
   cost_cents: number;
   active: boolean;
+  low_stock_threshold: number;
+}
+
+export interface LowStockVariant {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  product_id: string;
+  product_name: string;
+  balance: number;
+  threshold: number;
+  status: "low" | "out";
 }
 
 // Catalog endpoints
@@ -81,4 +93,19 @@ export function fetchProducts(params?: { category_id?: string; search?: string }
 
 export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
+}
+
+export function updateVariant(id: string, data: { low_stock_threshold?: number }) {
+  return apiFetch<VariantResponse>(`/catalog/variants/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+// Inventory endpoints
+export function fetchLowStock(threshold?: number) {
+  const query = new URLSearchParams();
+  if (threshold !== undefined) query.set('threshold', String(threshold));
+  const qs = query.toString();
+  return apiFetch<{ variants: LowStockVariant[] }>(`/inventory/low-stock${qs ? `?${qs}` : ''}`);
 }

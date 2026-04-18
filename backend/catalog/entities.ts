@@ -91,6 +91,9 @@ export class Variant {
   @Column({ type: "boolean", default: true })
   active: boolean;
 
+  @Column({ name: "low_stock_threshold", type: "integer", default: 10 })
+  low_stock_threshold: number;
+
   @CreateDateColumn({ name: "created_at" })
   created_at: Date;
 

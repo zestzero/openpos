@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchCategories, fetchProducts, fetchVariants } from '@/lib/api-client';
+import { fetchCategories, fetchProducts, fetchVariants, fetchLowStock } from '@/lib/api-client';
 
 export function useCategories() {
   return useQuery({
@@ -28,5 +28,12 @@ export function useVariants(productId: string) {
     queryKey: ['variants', productId],
     queryFn: () => fetchVariants(productId).then(r => r.variants),
     enabled: !!productId,
+  });
+}
+
+export function useLowStockVariants(threshold?: number) {
+  return useQuery({
+    queryKey: ['low-stock', { threshold }],
+    queryFn: () => fetchLowStock(threshold).then(r => r.variants),
   });
 }

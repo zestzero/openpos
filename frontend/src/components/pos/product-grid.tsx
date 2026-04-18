@@ -1,14 +1,15 @@
 import { ProductTile } from './product-tile'
-import type { ProductResponse, VariantResponse } from '@/lib/api-client'
+import type { LowStockVariant, ProductResponse, VariantResponse } from '@/lib/api-client'
 
 interface ProductGridProps {
   products: ProductResponse[]
   variantsByProduct: Record<string, VariantResponse[]>
   onAddToCart: (variant: VariantResponse) => void
   isLoading?: boolean
+  lowStockInfo?: Record<string, LowStockVariant>
 }
 
-export function ProductGrid({ products, variantsByProduct, onAddToCart, isLoading }: ProductGridProps) {
+export function ProductGrid({ products, variantsByProduct, onAddToCart, isLoading, lowStockInfo }: ProductGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
@@ -36,6 +37,7 @@ export function ProductGrid({ products, variantsByProduct, onAddToCart, isLoadin
           product={product}
           variants={variantsByProduct[product.id] || []}
           onAddToCart={onAddToCart}
+          lowStockInfo={lowStockInfo}
         />
       ))}
     </div>
