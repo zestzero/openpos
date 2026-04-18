@@ -224,3 +224,46 @@ export interface ListVariantsResponse {
 export function fetchAllVariants() {
   return apiFetch<ListVariantsResponse>('/inventory/variants');
 }
+
+export interface VariantWithProductResponse {
+  id: string;
+  product_id: string;
+  sku: string;
+  barcode: string | null;
+  price_cents: number;
+  cost_cents: number;
+  active: boolean;
+  product_name: string;
+  current_stock: number;
+}
+
+export function searchVariants(query: string) {
+  const qs = new URLSearchParams({ search: query }).toString();
+  return apiFetch<{ variants: VariantWithProductResponse[] }>(`/catalog/variants/search?${qs}`);
+}
+
+export interface InventoryAdjustmentRequest {
+  variant_id: string;
+  adjustment_type: 'restock' | 'correction';
+  quantity: number;
+  reason: string;
+  reference_id?: string;
+}
+
+export interface InventoryAdjustmentResponse {
+  id: string;
+  variant_id: string;
+  adjustment_type: string;
+  quantity: number;
+  reason: string;
+  reference_id: string | null;
+  new_balance: number;
+  created_at: string;
+}
+
+export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
+  return apiFetch<InventoryAdjustmentResponse>('/inventory/ledger', {
+    method: 'POST',
+    body: JSON.stringify({ ...data, type: 'adjustment' }),
+  });
+}
