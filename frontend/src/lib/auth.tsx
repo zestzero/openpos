@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { setAuthToken, pinLogin as apiPinLogin, emailLogin as apiEmailLogin, register as apiRegister } from './api-client';
+import { setAuthToken, pinLogin as apiPinLogin, emailLogin as apiEmailLogin, registerOwner as apiRegisterOwner } from './api-client';
 
 interface AuthUser {
   token: string;
@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, password: string) => {
-    const { token } = await apiRegister(email, password);
+    const { token } = await apiRegisterOwner(email, password);
     const payload = parseJwt(token);
     setAuthToken(token);
     localStorage.setItem('openpos_token', token);

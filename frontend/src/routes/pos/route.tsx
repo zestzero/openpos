@@ -1,24 +1,17 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { OfflineBanner } from "@/components/pos/offline-banner";
 import { SyncStatusIndicator } from "@/components/pos/sync-status-indicator";
 import { PinLogin } from "@/components/pos/pin-login";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { useAuth } from "@/lib/auth";
-import { LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LogoutButton } from "@/components/auth/logout-button";
 
 export const Route = createFileRoute("/pos")({
   component: PosLayout,
 });
 
 function PosLayout() {
-  const { isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate({ to: '/pos' });
-  };
+  const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
     return <PinLogin />;
@@ -32,14 +25,7 @@ function PosLayout() {
           <span className="text-sm font-semibold text-zinc-400">OpenPOS</span>
           <div className="flex items-center gap-2">
             <SyncStatusIndicator />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLogout}
-              className="text-zinc-400 hover:text-zinc-900"
-            >
-              <LogOut className="size-4" />
-            </Button>
+            <LogoutButton variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-900" showIcon={true} />
           </div>
         </div>
         <Outlet />

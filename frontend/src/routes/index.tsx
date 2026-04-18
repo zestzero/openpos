@@ -8,7 +8,7 @@ export const Route = createFileRoute('/')({
   beforeLoad: () => {
     const token = getAuthToken();
     if (!token) {
-      throw redirect({ to: '/pos' });
+      throw redirect({ to: '/login' });
     }
     throw redirect({ to: '/pos' });
   },
