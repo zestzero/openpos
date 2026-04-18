@@ -18,6 +18,7 @@
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^0.500.0",
     "next-themes": "^0.4.6",
+    "papaparse": "^5.4.1",
     "radix-ui": "^1.4.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/router-plugin": "^1.120.0",
+    "@types/papaparse": "^5.3.14",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/uuid": "^10.0.0",

@@ -1,9 +1,11 @@
-import { api } from "encore.dev/api";
+import { api, APIError } from "encore.dev/api";
 import { getDataSource } from "./datasource";
 import { getDataSource as getCatalogDataSource } from "../catalog/datasource";
 import { InventoryLedger, InventorySnapshot } from "./entities";
 import { Variant } from "../catalog/entities";
 import { requireRole } from "../auth/middleware";
+import { catalog } from "~encore/clients";
+import { getAuthData } from "~encore/auth";
 
 interface LedgerRequest {
   variant_id: string;
@@ -408,6 +410,297 @@ export const createSnapshot = api(
       variant_id: "batch",
       balance: snapshots.reduce((sum, s) => sum + s.balance, 0),
       snapshot_at: new Date().toISOString(),
+    };
+  }
+);
+
+interface BulkRestockRow {
+  variant_id: string;
+  quantity: number;
+  reason?: string;
+}
+
+interface BulkRestockRequest {
+  rows: BulkRestockRow[];
+}
+
+interface BulkRestockResultRow {
+  variant_id: string;
+  success: boolean;
+  error?: string;
+  ledger_id?: string;
+}
+
+interface BulkRestockResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkRestockResultRow[];
+}
+
+export const bulkRestock = api(
+  { expose: true, method: "POST", path: "/inventory/bulk-restock", auth: true },
+  async (req: BulkRestockRequest): Promise<BulkRestockResponse> => {
+    requireRole("OWNER");
+    const auth = getAuthData()!;
+    const ds = await getDataSource();
+    const ledgerRepo = ds.getRepository(InventoryLedger);
+
+    const results: BulkRestockResultRow[] = [];
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const row of req.rows) {
+      if (!row.variant_id || row.quantity <= 0) {
+        results.push({
+          variant_id: row.variant_id || "",
+          success: false,
+          error: "Invalid variant_id or quantity must be > 0",
+        });
+        failureCount++;
+        continue;
+      }
+
+      try {
+        const clientId = `bulk-restock:${auth.userID}:${row.variant_id}:${Date.now()}`;
+        const entry = await createLedgerEntry({
+          variant_id: row.variant_id,
+          delta: row.quantity,
+          type: "restock",
+          reason: row.reason || "Bulk restock from CSV",
+          client_generated_id: clientId,
+        });
+        results.push({
+          variant_id: row.variant_id,
+          success: true,
+          ledger_id: entry.id,
+        });
+        successCount++;
+      } catch (err: any) {
+        results.push({
+          variant_id: row.variant_id,
+          success: false,
+          error: err.message || "Failed to create ledger entry",
+        });
+        failureCount++;
+      }
+    }
+
+    return {
+      success_count: successCount,
+      failure_count: failureCount,
+      results,
+    };
+  }
+);
+
+interface StockLevelExport {
+  variant_id: string;
+  sku: string | null;
+  barcode: string | null;
+  product_name: string | null;
+  balance: number;
+  last_updated: string | null;
+}
+
+interface ExportStockResponse {
+  levels: StockLevelExport[];
+  exported_at: string;
+}
+
+export const exportStockLevels = api(
+  { expose: true, method: "GET", path: "/inventory/export-stock", auth: true },
+  async (): Promise<ExportStockResponse> => {
+    requireRole("OWNER");
+    const ds = await getDataSource();
+    const snapshotRepo = ds.getRepository(InventorySnapshot);
+    const ledgerRepo = ds.getRepository(InventoryLedger);
+
+    const snapshots = await snapshotRepo.find();
+    const levels: StockLevelExport[] = [];
+
+    for (const snapshot of snapshots) {
+      const result = await ledgerRepo
+        .createQueryBuilder("ledger")
+        .select("SUM(ledger.delta)", "sum")
+        .where("ledger.variant_id = :id", { id: snapshot.variant_id })
+        .andWhere("ledger.created_at > :since", { since: snapshot.snapshot_at })
+        .getRawOne();
+
+      const deltaSum = parseInt(result?.sum || "0", 10);
+      const balance = snapshot.balance + deltaSum;
+
+      let variantInfo: { sku: string | null; barcode: string | null; product_name: string | null } = {
+        sku: null,
+        barcode: null,
+        product_name: null,
+      };
+      try {
+        const variant = await catalog.getVariant({ id: snapshot.variant_id });
+        variantInfo = {
+          sku: variant.sku,
+          barcode: variant.barcode,
+          product_name: variant.product_name,
+        };
+      } catch {
+        // Variant may have been deleted
+      }
+
+      levels.push({
+        variant_id: snapshot.variant_id,
+        sku: variantInfo.sku,
+        barcode: variantInfo.barcode,
+        product_name: variantInfo.product_name,
+        balance,
+        last_updated: snapshot.snapshot_at.toISOString(),
+      });
+    }
+
+    return {
+      levels,
+      exported_at: new Date().toISOString(),
+    };
+  }
+);
+
+interface StockCountRow {
+  variant_id: string;
+  counted_quantity: number;
+  reason?: string;
+}
+
+interface BulkStockCountRequest {
+  rows: StockCountRow[];
+}
+
+interface BulkStockCountResultRow {
+  variant_id: string;
+  success: boolean;
+  previous_balance?: number;
+  new_balance?: number;
+  adjustment_delta?: number;
+  error?: string;
+}
+
+interface BulkStockCountResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkStockCountResultRow[];
+}
+
+export const bulkStockCount = api(
+  { expose: true, method: "POST", path: "/inventory/bulk-stock-count", auth: true },
+  async (req: BulkStockCountRequest): Promise<BulkStockCountResponse> => {
+    requireRole("OWNER");
+    const auth = getAuthData()!;
+    const ds = await getDataSource();
+    const ledgerRepo = ds.getRepository(InventoryLedger);
+
+    const results: BulkStockCountResultRow[] = [];
+    let successCount = 0;
+    let failureCount = 0;
+
+    for (const row of req.rows) {
+      if (!row.variant_id || row.counted_quantity < 0) {
+        results.push({
+          variant_id: row.variant_id || "",
+          success: false,
+          error: "Invalid variant_id or negative counted_quantity",
+        });
+        failureCount++;
+        continue;
+      }
+
+      try {
+        const currentStock = await getStock({ id: row.variant_id });
+        const previousBalance = currentStock.balance;
+        const adjustmentDelta = row.counted_quantity - previousBalance;
+
+        if (adjustmentDelta === 0) {
+          results.push({
+            variant_id: row.variant_id,
+            success: true,
+            previous_balance: previousBalance,
+            new_balance: row.counted_quantity,
+            adjustment_delta: 0,
+          });
+          successCount++;
+          continue;
+        }
+
+        const clientId = `bulk-count:${auth.userID}:${row.variant_id}:${Date.now()}`;
+        const entry = await createLedgerEntry({
+          variant_id: row.variant_id,
+          delta: adjustmentDelta,
+          type: "adjustment",
+          reason: row.reason || "Bulk stock count correction",
+          client_generated_id: clientId,
+        });
+
+        results.push({
+          variant_id: row.variant_id,
+          success: true,
+          previous_balance: previousBalance,
+          new_balance: row.counted_quantity,
+          adjustment_delta: adjustmentDelta,
+        });
+        successCount++;
+      } catch (err: any) {
+        results.push({
+          variant_id: row.variant_id,
+          success: false,
+          error: err.message || "Failed to process stock count",
+        });
+        failureCount++;
+      }
+    }
+
+    return {
+      success_count: successCount,
+      failure_count: failureCount,
+      results,
+    };
+  }
+);
+
+interface ReconcileStockRequest {
+  variant_id: string;
+  expected_quantity: number;
+  counted_quantity: number;
+  reason: string;
+}
+
+interface ReconcileStockResponse {
+  variant_id: string;
+  previous_balance: number;
+  new_balance: number;
+  adjustment_delta: number;
+  ledger_id: string;
+}
+
+export const reconcileStock = api(
+  { expose: true, method: "POST", path: "/inventory/reconcile", auth: true },
+  async (req: ReconcileStockRequest): Promise<ReconcileStockResponse> => {
+    requireRole("OWNER");
+    const auth = getAuthData()!;
+
+    const currentStock = await getStock({ id: req.variant_id });
+    const adjustmentDelta = req.counted_quantity - req.expected_quantity;
+
+    const clientId = `reconcile:${auth.userID}:${req.variant_id}:${Date.now()}`;
+    const entry = await createLedgerEntry({
+      variant_id: req.variant_id,
+      delta: adjustmentDelta,
+      type: "adjustment",
+      reason: req.reason,
+      client_generated_id: clientId,
+    });
+
+    return {
+      variant_id: req.variant_id,
+      previous_balance: currentStock.balance,
+      new_balance: req.counted_quantity,
+      adjustment_delta: adjustmentDelta,
+      ledger_id: entry.id,
     };
   }
 );
