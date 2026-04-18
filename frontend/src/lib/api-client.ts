@@ -167,7 +167,72 @@ export function bulkStockCount(rows: BulkStockCountRow[]) {
   });
 }
 
-export interface VariantWithProductResponse extends VariantResponse {
+export interface ValuationResponse {
+  total_value_cents: number;
+  variant_count: number;
+}
+
+export function fetchValuation() {
+  return apiFetch<ValuationResponse>('/inventory/valuation');
+}
+
+export interface LowStockItem {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  balance: number;
+}
+
+export interface LowStockResponse {
+  variants: LowStockItem[];
+}
+
+export function fetchLowStock(threshold: number = 10) {
+  return apiFetch<LowStockResponse>(`/inventory/low-stock?threshold=${threshold}`);
+}
+
+export interface GlobalLedgerEntry {
+  id: string;
+  variant_id: string;
+  delta: number;
+  type: string;
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface RecentLedgerResponse {
+  ledger: GlobalLedgerEntry[];
+}
+
+export function fetchRecentLedger(limit: number = 10) {
+  return apiFetch<RecentLedgerResponse>(`/inventory/ledger?limit=${limit}`);
+}
+
+export interface VariantStockItem {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  cost_cents: number;
+  balance: number;
+}
+
+export interface ListVariantsResponse {
+  variants: VariantStockItem[];
+}
+
+export function fetchAllVariants() {
+  return apiFetch<ListVariantsResponse>('/inventory/variants');
+}
+
+export interface VariantWithProductResponse {
+  id: string;
+  product_id: string;
+  sku: string;
+  barcode: string | null;
+  price_cents: number;
+  cost_cents: number;
+  active: boolean;
   product_name: string;
   current_stock: number;
 }

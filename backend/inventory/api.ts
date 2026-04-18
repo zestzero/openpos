@@ -704,3 +704,48 @@ export const reconcileStock = api(
     };
   }
 );
+
+interface GlobalLedgerEntry {
+  id: string;
+  variant_id: string;
+  delta: number;
+  type: string;
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+interface RecentLedgerRequest {
+  limit?: number;
+}
+
+interface RecentLedgerResponse {
+  ledger: GlobalLedgerEntry[];
+}
+
+export const getRecentLedger = api(
+  { expose: true, method: "GET", path: "/inventory/ledger", auth: true },
+  async (req: RecentLedgerRequest): Promise<RecentLedgerResponse> => {
+    const ds = await getDataSource();
+    const repo = ds.getRepository(InventoryLedger);
+
+    const limit = req.limit || 10;
+
+    const entries = await repo.find({
+      order: { created_at: "DESC" },
+      take: limit,
+    });
+
+    return {
+      ledger: entries.map((e) => ({
+        id: e.id,
+        variant_id: e.variant_id,
+        delta: e.delta,
+        type: e.type,
+        reference_id: e.reference_id,
+        reason: e.reason,
+        created_at: e.created_at.toISOString(),
+      })),
+    };
+  }
+);
