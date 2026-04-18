@@ -35,6 +35,12 @@ function ErpLayout() {
         <div className="bg-white border-b px-6">
           <nav className="flex gap-4">
             <Link
+              to="/erp/"
+              className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent data-[active]:border-blue-600 data-[active]:text-blue-600"
+            >
+              Dashboard
+            </Link>
+            <Link
               to="/erp/inventory"
               className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent data-[active]:border-blue-600 data-[active]:text-blue-600"
             >
