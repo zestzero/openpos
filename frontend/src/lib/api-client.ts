@@ -282,3 +282,62 @@ export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
     body: JSON.stringify({ ...data, type: 'adjustment' }),
   });
 }
+
+// Ledger Timeline types
+export type LedgerEntryType = "sale" | "restock" | "adjustment" | "sync";
+
+export interface LedgerEntryResponse {
+  id: string;
+  variant_id?: string;
+  delta: number;
+  type: string;
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface GetLedgerResponse {
+  entries: LedgerEntryResponse[];
+  total: number;
+  hasMore: boolean;
+}
+
+export async function fetchLedger(
+  variantId: string,
+  params?: {
+    type?: LedgerEntryType;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<GetLedgerResponse> {
+  const query = new URLSearchParams();
+  const limit = params?.limit || 50;
+  const offset = params?.offset || 0;
+  query.set("limit", String(limit));
+  query.set("offset", String(offset));
+  if (params?.startDate) query.set("since", params.startDate);
+  const qs = query.toString();
+
+  const raw = await apiFetch<{ ledger: LedgerEntryResponse[]; total: number }>(
+    `/inventory/ledger/${variantId}?${qs}`
+  );
+
+  let entries = raw.ledger;
+  // Client-side type filtering (backend doesn't support type filter)
+  if (params?.type) {
+    entries = entries.filter((e) => e.type === params.type);
+  }
+  // Client-side endDate filtering
+  if (params?.endDate) {
+    const end = new Date(params.endDate).getTime();
+    entries = entries.filter((e) => new Date(e.created_at).getTime() <= end);
+  }
+
+  return {
+    entries,
+    total: raw.total,
+    hasMore: offset + limit < raw.total,
+  };
+}
