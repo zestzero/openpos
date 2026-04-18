@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { LogoutButton } from '@/components/auth/logout-button'
 
 export const Route = createFileRoute('/erp')({
   component: ErpLayout,
@@ -47,7 +48,13 @@ function ErpLayout() {
     <ErrorBoundary>
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white border-b px-6 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">OpenPOS ERP</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">OpenPOS ERP</h1>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-500">{user?.email}</span>
+              <LogoutButton variant="outline" size="sm" />
+            </div>
+          </div>
         </header>
         <div className="bg-white border-b px-6">
           <nav className="flex gap-4">
