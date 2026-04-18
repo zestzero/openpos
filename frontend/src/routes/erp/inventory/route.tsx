@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { bulkRestock, exportStockLevels, bulkStockCount, type BulkRestockRow, type BulkStockCountRow, type StockLevelExport } from '@/lib/api-client'
 import { toast } from 'sonner'
 
-export const Route = createFileRoute('/erp/inventory/')({
+export const Route = createFileRoute('/erp/inventory')({
   component: InventoryBulkPage,
 })
 
