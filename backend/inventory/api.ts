@@ -126,3 +126,69 @@ export const getStock = api(
     };
   }
 );
+
+interface LedgerEntryResponse {
+  id: string;
+  variant_id: string;
+  delta: number;
+  type: "sale" | "restock" | "adjustment" | "sync";
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+interface GetLedgerRequest {
+  variantId: string;
+  type?: "sale" | "restock" | "adjustment" | "sync";
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+  offset?: number;
+}
+
+interface GetLedgerResponse {
+  entries: LedgerEntryResponse[];
+  total: number;
+  hasMore: boolean;
+}
+
+export const getLedger = api(
+  { expose: true, method: "GET", path: "/inventory/ledger/:variantId", auth: true },
+  async (req: GetLedgerRequest): Promise<GetLedgerResponse> => {
+    const ds = await getDataSource();
+    const repo = ds.getRepository(InventoryLedger);
+
+    const limit = Math.min(req.limit || 20, 100);
+    const offset = req.offset || 0;
+
+    const query = repo.createQueryBuilder("ledger")
+      .where("ledger.variant_id = :variantId", { variantId: req.variantId });
+
+    if (req.type) {
+      query.andWhere("ledger.type = :type", { type: req.type });
+    }
+
+    if (req.startDate) {
+      query.andWhere("ledger.created_at >= :startDate", { startDate: req.startDate });
+    }
+
+    if (req.endDate) {
+      query.andWhere("ledger.created_at <= :endDate", { endDate: req.endDate });
+    }
+
+    const [entries, total] = await query
+      .orderBy("ledger.created_at", "DESC")
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      entries: entries.map((e) => ({
+        ...e,
+        created_at: e.created_at.toISOString(),
+      })),
+      total,
+      hasMore: offset + entries.length < total,
+    };
+  }
+);

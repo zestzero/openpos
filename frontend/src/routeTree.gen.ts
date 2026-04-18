@@ -10,12 +10,19 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PosRouteRouteImport } from './routes/pos/route'
+import { Route as ErpRouteRouteImport } from './routes/erp/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
+import { Route as ErpIndexRouteImport } from './routes/erp/index'
 
 const PosRouteRoute = PosRouteRouteImport.update({
   id: '/pos',
   path: '/pos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ErpRouteRoute = ErpRouteRouteImport.update({
+  id: '/erp',
+  path: '/erp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -28,32 +35,43 @@ const PosIndexRoute = PosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PosRouteRoute,
 } as any)
+const ErpIndexRoute = ErpIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ErpRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/erp': typeof ErpIndexRoute
   '/pos': typeof PosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pos' | '/pos/'
+  fullPaths: '/' | '/erp' | '/pos' | '/erp/' | '/pos/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pos'
-  id: '__root__' | '/' | '/pos' | '/pos/'
+  to: '/' | '/erp' | '/pos'
+  id: '__root__' | '/' | '/erp' | '/pos' | '/erp/' | '/pos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ErpRouteRoute: typeof ErpRouteRouteWithChildren
   PosRouteRoute: typeof PosRouteRouteWithChildren
 }
 
@@ -64,6 +82,13 @@ declare module '@tanstack/react-router' {
       path: '/pos'
       fullPath: '/pos'
       preLoaderRoute: typeof PosRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/erp': {
+      id: '/erp'
+      path: '/erp'
+      fullPath: '/erp'
+      preLoaderRoute: typeof ErpRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -80,8 +105,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosIndexRouteImport
       parentRoute: typeof PosRouteRoute
     }
+    '/erp/': {
+      id: '/erp/'
+      path: '/'
+      fullPath: '/erp/'
+      preLoaderRoute: typeof ErpIndexRouteImport
+      parentRoute: typeof ErpRouteRoute
+    }
   }
 }
+
+interface ErpRouteRouteChildren {
+  ErpIndexRoute: typeof ErpIndexRoute
+}
+
+const ErpRouteRouteChildren: ErpRouteRouteChildren = {
+  ErpIndexRoute: ErpIndexRoute,
+}
+
+const ErpRouteRouteWithChildren = ErpRouteRoute._addFileChildren(
+  ErpRouteRouteChildren,
+)
 
 interface PosRouteRouteChildren {
   PosIndexRoute: typeof PosIndexRoute
@@ -97,6 +141,7 @@ const PosRouteRouteWithChildren = PosRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ErpRouteRoute: ErpRouteRouteWithChildren,
   PosRouteRoute: PosRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
