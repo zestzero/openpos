@@ -47,7 +47,7 @@ function InventoryBulkPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: (results: Papa.ParseResult<unknown>) => {
         const parsed: ParsedRow[] = [];
         const errors: string[] = [];
 
@@ -80,7 +80,7 @@ function InventoryBulkPage() {
           setCountData(parsed);
         }
       },
-      error: (error) => {
+      error: (error: Error) => {
         toast.error(`Failed to parse CSV: ${error.message}`);
       },
     });
@@ -228,9 +228,9 @@ function InventoryBulkPage() {
                 onChange={(e) => handleFileUpload(e, "restock")}
               />
               <label htmlFor="restock-file">
-                <Button variant="outline" as="span" className="cursor-pointer">
+                <span><Button variant="outline" className="cursor-pointer">
                   Choose Restock CSV
-                </Button>
+                </Button></span>
               </label>
               <Button variant="ghost" onClick={() => handleExportTemplate("restock")}>
                 Download Template
@@ -260,9 +260,9 @@ function InventoryBulkPage() {
                 onChange={(e) => handleFileUpload(e, "count")}
               />
               <label htmlFor="count-file">
-                <Button variant="outline" as="span" className="cursor-pointer">
+                <span><Button variant="outline" className="cursor-pointer">
                   Choose Count CSV
-                </Button>
+                </Button></span>
               </label>
               <Button variant="ghost" onClick={() => handleExportTemplate("count")}>
                 Download Template

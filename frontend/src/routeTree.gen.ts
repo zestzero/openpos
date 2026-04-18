@@ -13,8 +13,10 @@ import { Route as PosRouteRouteImport } from './routes/pos/route'
 import { Route as ErpRouteRouteImport } from './routes/erp/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PosIndexRouteImport } from './routes/pos/index'
+import { Route as ErpIndexRouteImport } from './routes/erp/index'
 import { Route as InventoryAdjustmentRouteImport } from './routes/inventory/adjustment'
 import { Route as ErpInventoryRouteRouteImport } from './routes/erp/inventory/route'
+import { Route as ErpInventoryIndexRouteImport } from './routes/erp/inventory/index'
 
 const PosRouteRoute = PosRouteRouteImport.update({
   id: '/pos',
@@ -36,6 +38,11 @@ const PosIndexRoute = PosIndexRouteImport.update({
   path: '/',
   getParentRoute: () => PosRouteRoute,
 } as any)
+const ErpIndexRoute = ErpIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ErpRouteRoute,
+} as any)
 const InventoryAdjustmentRoute = InventoryAdjustmentRouteImport.update({
   id: '/inventory/adjustment',
   path: '/inventory/adjustment',
@@ -46,30 +53,39 @@ const ErpInventoryRouteRoute = ErpInventoryRouteRouteImport.update({
   path: '/inventory',
   getParentRoute: () => ErpRouteRoute,
 } as any)
+const ErpInventoryIndexRoute = ErpInventoryIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ErpInventoryRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
-  '/erp/inventory': typeof ErpInventoryRouteRoute
+  '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
+  '/erp/inventory/': typeof ErpInventoryIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/erp': typeof ErpRouteRouteWithChildren
-  '/erp/inventory': typeof ErpInventoryRouteRoute
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
+  '/erp': typeof ErpIndexRoute
   '/pos': typeof PosIndexRoute
+  '/erp/inventory': typeof ErpInventoryIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/erp': typeof ErpRouteRouteWithChildren
   '/pos': typeof PosRouteRouteWithChildren
-  '/erp/inventory': typeof ErpInventoryRouteRoute
+  '/erp/inventory': typeof ErpInventoryRouteRouteWithChildren
   '/inventory/adjustment': typeof InventoryAdjustmentRoute
+  '/erp/': typeof ErpIndexRoute
   '/pos/': typeof PosIndexRoute
+  '/erp/inventory/': typeof ErpInventoryIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -79,9 +95,11 @@ export interface FileRouteTypes {
     | '/pos'
     | '/erp/inventory'
     | '/inventory/adjustment'
+    | '/erp/'
     | '/pos/'
+    | '/erp/inventory/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/erp' | '/erp/inventory' | '/inventory/adjustment' | '/pos'
+  to: '/' | '/inventory/adjustment' | '/erp' | '/pos' | '/erp/inventory'
   id:
     | '__root__'
     | '/'
@@ -89,7 +107,9 @@ export interface FileRouteTypes {
     | '/pos'
     | '/erp/inventory'
     | '/inventory/adjustment'
+    | '/erp/'
     | '/pos/'
+    | '/erp/inventory/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -129,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PosIndexRouteImport
       parentRoute: typeof PosRouteRoute
     }
+    '/erp/': {
+      id: '/erp/'
+      path: '/'
+      fullPath: '/erp/'
+      preLoaderRoute: typeof ErpIndexRouteImport
+      parentRoute: typeof ErpRouteRoute
+    }
     '/inventory/adjustment': {
       id: '/inventory/adjustment'
       path: '/inventory/adjustment'
@@ -143,15 +170,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ErpInventoryRouteRouteImport
       parentRoute: typeof ErpRouteRoute
     }
+    '/erp/inventory/': {
+      id: '/erp/inventory/'
+      path: '/'
+      fullPath: '/erp/inventory/'
+      preLoaderRoute: typeof ErpInventoryIndexRouteImport
+      parentRoute: typeof ErpInventoryRouteRoute
+    }
   }
 }
 
+interface ErpInventoryRouteRouteChildren {
+  ErpInventoryIndexRoute: typeof ErpInventoryIndexRoute
+}
+
+const ErpInventoryRouteRouteChildren: ErpInventoryRouteRouteChildren = {
+  ErpInventoryIndexRoute: ErpInventoryIndexRoute,
+}
+
+const ErpInventoryRouteRouteWithChildren =
+  ErpInventoryRouteRoute._addFileChildren(ErpInventoryRouteRouteChildren)
+
 interface ErpRouteRouteChildren {
-  ErpInventoryRouteRoute: typeof ErpInventoryRouteRoute
+  ErpInventoryRouteRoute: typeof ErpInventoryRouteRouteWithChildren
+  ErpIndexRoute: typeof ErpIndexRoute
 }
 
 const ErpRouteRouteChildren: ErpRouteRouteChildren = {
-  ErpInventoryRouteRoute: ErpInventoryRouteRoute,
+  ErpInventoryRouteRoute: ErpInventoryRouteRouteWithChildren,
+  ErpIndexRoute: ErpIndexRoute,
 }
 
 const ErpRouteRouteWithChildren = ErpRouteRoute._addFileChildren(
