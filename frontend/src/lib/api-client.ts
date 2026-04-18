@@ -64,6 +64,18 @@ export interface VariantResponse {
   price_cents: number;
   cost_cents: number;
   active: boolean;
+  low_stock_threshold: number;
+}
+
+export interface LowStockVariant {
+  variant_id: string;
+  sku: string;
+  barcode: string | null;
+  product_id: string;
+  product_name: string;
+  balance: number;
+  threshold: number;
+  status: "low" | "out";
 }
 
 // Catalog endpoints
@@ -81,6 +93,13 @@ export function fetchProducts(params?: { category_id?: string; search?: string }
 
 export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
+}
+
+export function updateVariant(id: string, data: { low_stock_threshold?: number }) {
+  return apiFetch<VariantResponse>(`/catalog/variants/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
 }
 
 // Inventory types
@@ -176,19 +195,15 @@ export function fetchValuation() {
   return apiFetch<ValuationResponse>('/inventory/valuation');
 }
 
-export interface LowStockItem {
-  variant_id: string;
-  sku: string;
-  barcode: string | null;
-  balance: number;
-}
-
 export interface LowStockResponse {
-  variants: LowStockItem[];
+  variants: LowStockVariant[];
 }
 
-export function fetchLowStock(threshold: number = 10) {
-  return apiFetch<LowStockResponse>(`/inventory/low-stock?threshold=${threshold}`);
+export function fetchLowStock(threshold?: number) {
+  const query = new URLSearchParams();
+  if (threshold !== undefined) query.set('threshold', String(threshold));
+  const qs = query.toString();
+  return apiFetch<{ variants: LowStockVariant[] }>(`/inventory/low-stock${qs ? `?${qs}` : ''}`);
 }
 
 export interface GlobalLedgerEntry {
@@ -223,4 +238,106 @@ export interface ListVariantsResponse {
 
 export function fetchAllVariants() {
   return apiFetch<ListVariantsResponse>('/inventory/variants');
+}
+
+export interface VariantWithProductResponse {
+  id: string;
+  product_id: string;
+  sku: string;
+  barcode: string | null;
+  price_cents: number;
+  cost_cents: number;
+  active: boolean;
+  product_name: string;
+  current_stock: number;
+}
+
+export function searchVariants(query: string) {
+  const qs = new URLSearchParams({ search: query }).toString();
+  return apiFetch<{ variants: VariantWithProductResponse[] }>(`/catalog/variants/search?${qs}`);
+}
+
+export interface InventoryAdjustmentRequest {
+  variant_id: string;
+  adjustment_type: 'restock' | 'correction';
+  quantity: number;
+  reason: string;
+  reference_id?: string;
+}
+
+export interface InventoryAdjustmentResponse {
+  id: string;
+  variant_id: string;
+  adjustment_type: string;
+  quantity: number;
+  reason: string;
+  reference_id: string | null;
+  new_balance: number;
+  created_at: string;
+}
+
+export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
+  return apiFetch<InventoryAdjustmentResponse>('/inventory/ledger', {
+    method: 'POST',
+    body: JSON.stringify({ ...data, type: 'adjustment' }),
+  });
+}
+
+// Ledger Timeline types
+export type LedgerEntryType = "sale" | "restock" | "adjustment" | "sync";
+
+export interface LedgerEntryResponse {
+  id: string;
+  variant_id?: string;
+  delta: number;
+  type: string;
+  reference_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface GetLedgerResponse {
+  entries: LedgerEntryResponse[];
+  total: number;
+  hasMore: boolean;
+}
+
+export async function fetchLedger(
+  variantId: string,
+  params?: {
+    type?: LedgerEntryType;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+    offset?: number;
+  }
+): Promise<GetLedgerResponse> {
+  const query = new URLSearchParams();
+  const limit = params?.limit || 50;
+  const offset = params?.offset || 0;
+  query.set("limit", String(limit));
+  query.set("offset", String(offset));
+  if (params?.startDate) query.set("since", params.startDate);
+  const qs = query.toString();
+
+  const raw = await apiFetch<{ ledger: LedgerEntryResponse[]; total: number }>(
+    `/inventory/ledger/${variantId}?${qs}`
+  );
+
+  let entries = raw.ledger;
+  // Client-side type filtering (backend doesn't support type filter)
+  if (params?.type) {
+    entries = entries.filter((e) => e.type === params.type);
+  }
+  // Client-side endDate filtering
+  if (params?.endDate) {
+    const end = new Date(params.endDate).getTime();
+    entries = entries.filter((e) => new Date(e.created_at).getTime() <= end);
+  }
+
+  return {
+    entries,
+    total: raw.total,
+    hasMore: offset + limit < raw.total,
+  };
 }

@@ -47,7 +47,7 @@ function InventoryBulkPage() {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
+      complete: (results: Papa.ParseResult<unknown>) => {
         const parsed: ParsedRow[] = [];
         const errors: string[] = [];
 
@@ -80,7 +80,7 @@ function InventoryBulkPage() {
           setCountData(parsed);
         }
       },
-      error: (error) => {
+      error: (error: Error) => {
         toast.error(`Failed to parse CSV: ${error.message}`);
       },
     });

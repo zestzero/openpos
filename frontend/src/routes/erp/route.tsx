@@ -46,18 +46,6 @@ function ErpLayout() {
             >
               Inventory
             </Link>
-            <Link
-              to="/erp/products"
-              className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent data-[active]:border-blue-600 data-[active]:text-blue-600"
-            >
-              Products
-            </Link>
-            <Link
-              to="/erp/reports/stock"
-              className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 border-b-2 border-transparent data-[active]:border-blue-600 data-[active]:text-blue-600"
-            >
-              Reports
-            </Link>
           </nav>
         </div>
         <main className="p-6">
