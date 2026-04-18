@@ -1,4 +1,0 @@
-# Encore app configuration
-#
-# Exclude frontend from backend build
-app: {}
