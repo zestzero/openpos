@@ -62,6 +62,7 @@ export function createUser(data: CreateUserRequest) {
   });
 }
 
+
 // Catalog types (matching backend response shapes exactly)
 export interface CategoryResponse {
   id: string;

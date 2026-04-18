@@ -25,7 +25,7 @@ function PosLayout() {
           <span className="text-sm font-semibold text-zinc-400">OpenPOS</span>
           <div className="flex items-center gap-2">
             <SyncStatusIndicator />
-            <LogoutButton variant="ghost" size="sm" className="text-zinc-400 hover:text-zinc-900" showIcon={true} />
+            <LogoutButton variant="ghost" size="icon" />
           </div>
         </div>
         <Outlet />
