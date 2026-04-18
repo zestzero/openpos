@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchLedger, type LedgerEntryResponse, type LedgerEntryType } from "@/lib/api-client";
+import { fetchLedger, type LedgerEntryResponse } from "@/lib/api-client";
+
+type LedgerEntryType = "sale" | "restock" | "adjustment" | "sync";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,11 +55,11 @@ function LedgerEntryRow({ entry }: LedgerEntryRowProps) {
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border last:border-0">
       <div className="flex-shrink-0 text-2xl w-8 text-center">
-        {TYPE_ICONS[entry.type]}
+        {TYPE_ICONS[entry.type as LedgerEntryType] ?? "📋"}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge className={cn("text-xs", TYPE_COLORS[entry.type])}>
+          <Badge className={cn("text-xs", TYPE_COLORS[entry.type as LedgerEntryType] ?? "bg-gray-100 text-gray-800")}>
             {entry.type.charAt(0).toUpperCase() + entry.type.slice(1)}
           </Badge>
           <span
