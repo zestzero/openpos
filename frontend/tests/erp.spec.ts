@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('ERP page is reachable and renders correctly', async ({ page }) => {
-  await page.goto('http://localhost:5173/erp');
+  await page.goto('/erp');
   // It should at least be a react application that doesn't blank screen
   await expect(page.locator('body')).toBeVisible();
   
