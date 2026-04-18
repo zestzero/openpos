@@ -83,42 +83,86 @@ export function fetchVariants(productId: string) {
   return apiFetch<{ variants: VariantResponse[] }>(`/catalog/products/${productId}/variants`);
 }
 
-export interface VariantWithProductResponse extends VariantResponse {
-  product_name: string;
-  current_stock: number;
-}
-
-export function fetchAllVariants() {
-  return apiFetch<{ variants: VariantWithProductResponse[] }>('/catalog/variants');
-}
-
-export function searchVariants(query: string) {
-  const qs = new URLSearchParams({ search: query }).toString();
-  return apiFetch<{ variants: VariantWithProductResponse[] }>(`/catalog/variants/search?${qs}`);
-}
-
-export interface InventoryAdjustmentRequest {
+// Inventory types
+export interface StockResponse {
   variant_id: string;
-  adjustment_type: 'restock' | 'correction';
-  quantity: number;
-  reason: string;
-  reference_id?: string;
+  balance: number;
+  snapshot_at: string | null;
 }
 
-export interface InventoryAdjustmentResponse {
-  id: string;
+export interface BulkRestockRow {
   variant_id: string;
-  adjustment_type: string;
   quantity: number;
-  reason: string;
-  reference_id: string | null;
-  new_balance: number;
-  created_at: string;
+  reason?: string;
 }
 
-export function createInventoryAdjustment(data: InventoryAdjustmentRequest) {
-  return apiFetch<InventoryAdjustmentResponse>('/inventory/ledger', {
+export interface BulkRestockResultRow {
+  variant_id: string;
+  success: boolean;
+  error?: string;
+  ledger_id?: string;
+}
+
+export interface BulkRestockResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkRestockResultRow[];
+}
+
+export interface StockLevelExport {
+  variant_id: string;
+  sku: string | null;
+  barcode: string | null;
+  product_name: string | null;
+  balance: number;
+  last_updated: string | null;
+}
+
+export interface ExportStockResponse {
+  levels: StockLevelExport[];
+  exported_at: string;
+}
+
+export interface BulkStockCountRow {
+  variant_id: string;
+  counted_quantity: number;
+  reason?: string;
+}
+
+export interface BulkStockCountResultRow {
+  variant_id: string;
+  success: boolean;
+  previous_balance?: number;
+  new_balance?: number;
+  adjustment_delta?: number;
+  error?: string;
+}
+
+export interface BulkStockCountResponse {
+  success_count: number;
+  failure_count: number;
+  results: BulkStockCountResultRow[];
+}
+
+// Inventory endpoints
+export function fetchStock(variantId: string) {
+  return apiFetch<StockResponse>(`/inventory/variants/${variantId}/stock`);
+}
+
+export function bulkRestock(rows: BulkRestockRow[]) {
+  return apiFetch<BulkRestockResponse>('/inventory/bulk-restock', {
     method: 'POST',
-    body: JSON.stringify({ ...data, type: 'adjustment' }),
+    body: JSON.stringify({ rows }),
+  });
+}
+
+export function exportStockLevels() {
+  return apiFetch<ExportStockResponse>('/inventory/export-stock');
+}
+
+export function bulkStockCount(rows: BulkStockCountRow[]) {
+  return apiFetch<BulkStockCountResponse>('/inventory/bulk-stock-count', {
+    method: 'POST',
+    body: JSON.stringify({ rows }),
   });
 }

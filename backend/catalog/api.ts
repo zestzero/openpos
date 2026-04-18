@@ -296,6 +296,41 @@ export const listVariants = api(
   }
 );
 
+interface GetVariantResponse {
+  id: string;
+  product_id: string;
+  sku: string;
+  barcode: string | null;
+  price_cents: number;
+  cost_cents: number;
+  active: boolean;
+  product_name: string | null;
+}
+
+export const getVariant = api(
+  { expose: true, method: "GET", path: "/catalog/variants/:id", auth: true },
+  async (req: { id: string }): Promise<GetVariantResponse> => {
+    const ds = await getDataSource();
+    const variantRepo = ds.getRepository(Variant);
+    const variant = await variantRepo.findOne({
+      where: { id: req.id },
+      relations: ["product"],
+    });
+    if (!variant) throw APIError.notFound("Variant not found");
+
+    return {
+      id: variant.id,
+      product_id: variant.product_id,
+      sku: variant.sku,
+      barcode: variant.barcode,
+      price_cents: variant.price_cents,
+      cost_cents: variant.cost_cents,
+      active: variant.active,
+      product_name: variant.product?.name || null,
+    };
+  }
+);
+
 export const updateVariant = api(
   { expose: true, method: "PATCH", path: "/catalog/variants/:id", auth: true },
   async (req: { id: string } & UpdateVariantRequest): Promise<VariantResponse> => {
