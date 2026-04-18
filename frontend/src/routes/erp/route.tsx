@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Outlet, Link } from '@tanstack/react-router'
 import { useAuth } from '@/lib/auth'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { LogoutButton } from '@/components/auth/logout-button'
@@ -23,7 +23,7 @@ function ErpLayout() {
           <p className="text-muted-foreground mt-2">
             Please log in to access the ERP backoffice.
           </p>
-          <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">
+          <Link to="/login" className="text-blue-600 hover:underline mt-4 inline-block">
             Go to Login
           </Link>
         </div>

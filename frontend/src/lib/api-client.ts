@@ -48,6 +48,21 @@ export function registerOwner(email: string, password: string) {
   });
 }
 
+export interface CreateUserRequest {
+  email: string;
+  password: string;
+  name: string;
+  role: 'OWNER' | 'CASHIER';
+}
+
+export function createUser(data: CreateUserRequest) {
+  return apiFetch<{ userId: string }>('/auth/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+
 // Catalog types (matching backend response shapes exactly)
 export interface CategoryResponse {
   id: string;
