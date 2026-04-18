@@ -354,9 +354,13 @@ export const listVariants = api(
 
 export const getVariant = api(
   { expose: true, method: "GET", path: "/catalog/variants/:id", auth: true },
-  async (req: { id: string }): Promise<VariantResponse> => {
+  async (req: { id: string }): Promise<VariantResponse & { product_name?: string | null }> => {
     const ds = await getDataSource();
-    const variant = await ds.getRepository(Variant).findOneBy({ id: req.id });
+    const variantRepo = ds.getRepository(Variant);
+    const variant = await variantRepo.findOne({
+      where: { id: req.id },
+      relations: ["product"],
+    });
     if (!variant) throw APIError.notFound("Variant not found");
 
     return {
@@ -367,6 +371,7 @@ export const getVariant = api(
       price_cents: variant.price_cents,
       cost_cents: variant.cost_cents,
       active: variant.active,
+      product_name: variant.product?.name || null,
     };
   }
 );
