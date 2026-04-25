@@ -16,9 +16,11 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
+	"github.com/zestzero/openpos/internal/auth"
 	"github.com/zestzero/openpos/internal/catalog"
 	"github.com/zestzero/openpos/internal/database"
 	"github.com/zestzero/openpos/internal/inventory"
+	appmiddleware "github.com/zestzero/openpos/internal/middleware"
 )
 
 func main() {
@@ -69,13 +71,27 @@ func main() {
 	})
 
 	// Register domain handlers
+	authConfig := &auth.Config{
+		JWTSecret:         getEnv("JWT_SECRET", "openpos-secret-change-in-production"),
+		AccessTokenExpiry: 24 * time.Hour,
+	}
+	authService := auth.NewAuthService(pool, authConfig)
+	authHandler := auth.NewHandler(authService)
+	r.Mount("/api/auth", authHandler.Router())
+
+	// Protected routes - require authentication
+	protected := chi.NewRouter()
+	protected.Use(appmiddleware.AuthMiddleware(&appmiddleware.AuthConfig{JWTSecret: authConfig.JWTSecret}))
+
 	catalogService := catalog.NewService(pool)
 	catalogHandler := catalog.NewHandler(catalogService)
-	r.Mount("/api/catalog", catalogHandler.Routes())
+	protected.Mount("/catalog", catalogHandler.Routes())
 
 	inventoryService := inventory.NewService(pool)
 	inventoryHandler := inventory.NewHandler(inventoryService)
-	r.Mount("/api/inventory", inventoryHandler.Routes())
+	protected.Mount("/inventory", inventoryHandler.Routes())
+
+	r.Mount("/api", protected)
 
 	// Get port from environment or default
 	port := os.Getenv("PORT")
@@ -116,4 +132,11 @@ func main() {
 		log.Printf("Server shutdown error: %v", err)
 	}
 	fmt.Println("Server stopped")
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
