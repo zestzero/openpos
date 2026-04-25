@@ -39,17 +39,17 @@ function LoginRoute() {
   const buttonLabel = useMemo(() => (mode === 'password' ? 'Sign in with password' : 'Sign in with PIN'), [mode])
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-8">
-      <Card className="w-full max-w-md border-slate-200 bg-white shadow-lg">
+    <div className="hero-wash relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-8">
+      <Card className="relative w-full max-w-md border-border bg-background/95 shadow-dialog backdrop-blur-sm">
         <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-accent text-accent-foreground">
             <CheckCircle2 className="h-6 w-6" />
           </div>
           <CardTitle>Welcome to OpenPOS</CardTitle>
           <CardDescription>Cashiers use PIN login; owners can use email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1">
+          <div className="grid grid-cols-2 gap-2 rounded-pill border border-border bg-muted p-1">
             <TabButton active={mode === 'password'} onClick={() => setMode('password')} label="Password" />
             <TabButton active={mode === 'pin'} onClick={() => setMode('pin')} label="PIN" />
           </div>
@@ -87,7 +87,7 @@ function LoginRoute() {
             </Button>
 
             {mutation.isError ? (
-              <p className="text-sm text-rose-600">Unable to sign in. Check your credentials and try again.</p>
+              <p className="text-sm text-destructive">Unable to sign in. Check your credentials and try again.</p>
             ) : null}
           </form>
         </CardContent>
@@ -109,7 +109,7 @@ function TabButton({
     <Button
       type="button"
       variant={active ? 'default' : 'ghost'}
-      className="h-11 rounded-xl"
+      className="h-11 rounded-pill"
       onClick={onClick}
     >
       {label}
@@ -127,10 +127,10 @@ function Field({
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+      <span className="text-sm font-medium text-foreground">{label}</span>
       <div className="relative">
-        <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <Input className="pl-9" {...props} />
+        <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input className="pl-10" {...props} />
       </div>
     </label>
   )

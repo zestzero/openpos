@@ -48,10 +48,10 @@ function MiniAction({
   text: string
 }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-4">
-      <Icon className="h-5 w-5 text-primary" />
-      <p className="mt-2 font-semibold text-slate-900">{title}</p>
-      <p className="mt-1 text-sm text-slate-500">{text}</p>
+    <div className="rounded-card border border-border bg-muted p-4">
+      <Icon className="h-5 w-5 text-brand-foreground" />
+      <p className="mt-2 font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
     </div>
   )
 }

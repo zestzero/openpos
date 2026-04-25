@@ -18,7 +18,7 @@ const navItems: Array<{ tab: PosTab; label: string; icon: ComponentType<{ classN
 
 export function PosNav({ activeTab, onChangeTab }: PosNavProps) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+    <nav className="safe-area-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-3 pt-3 backdrop-blur-sm">
       <div className="mx-auto grid max-w-3xl grid-cols-3 gap-2">
         {navItems.map((item) => {
           const Icon = item.icon
@@ -28,7 +28,7 @@ export function PosNav({ activeTab, onChangeTab }: PosNavProps) {
               key={item.tab}
               type="button"
               variant={activeTab === item.tab ? 'default' : 'ghost'}
-              className="h-14 min-h-11 min-w-11 flex-col rounded-2xl"
+              className="h-14 min-h-11 min-w-11 flex-col rounded-pill"
               onClick={() => onChangeTab(item.tab)}
             >
               <Icon className="h-4 w-4" />

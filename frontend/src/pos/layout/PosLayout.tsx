@@ -62,16 +62,16 @@ export function PosLayout({ children }: PosLayoutProps) {
   const SummaryIcon = summary.icon
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-slate-50 text-slate-950">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
       <PosHeader user={user} online={online} onLogout={logout} />
 
-      <main className="flex-1 overflow-y-auto px-4 pb-28 pt-4">
-        <div className="mx-auto flex max-w-3xl flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4">
           {children}
 
-          <Card className="border-primary/15 bg-white">
+          <Card className="border-border bg-background">
             <CardHeader className="flex-row items-center gap-3 space-y-0">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="flex h-11 w-11 items-center justify-center rounded-card bg-accent text-accent-foreground">
                 <SummaryIcon className="h-5 w-5" />
               </div>
               <div>
@@ -107,7 +107,7 @@ export function PosLayout({ children }: PosLayoutProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <Sparkles className="h-4 w-4 text-brand" />
                 Workspace notes
               </CardTitle>
               <CardDescription>
@@ -125,9 +125,9 @@ export function PosLayout({ children }: PosLayoutProps) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-slate-50 p-4">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-slate-950">{value}</p>
+    <div className="rounded-card border border-border bg-muted p-4">
+      <p className="font-mono text-xs font-medium uppercase tracking-label text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
     </div>
   )
 }
@@ -144,7 +144,7 @@ function FeatureCard({
   return (
     <Card>
       <CardHeader>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-muted text-foreground">
           <Icon className="h-4 w-4" />
         </div>
         <CardTitle>{title}</CardTitle>

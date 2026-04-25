@@ -23,11 +23,11 @@ export const Route = createRoute({
 
 function ErpRoute() {
   return (
-    <div className="min-h-dvh bg-slate-50 px-4 py-8">
+    <div className="min-h-dvh bg-background px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <Card>
           <CardHeader>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded-card bg-accent text-accent-foreground">
               <Shield className="h-5 w-5" />
             </div>
             <CardTitle>Owner dashboard placeholder</CardTitle>
@@ -36,7 +36,7 @@ function ErpRoute() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-muted-foreground">
               Later plans will add product, inventory, and reporting workflows here.
             </p>
           </CardContent>
