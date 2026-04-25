@@ -37,8 +37,8 @@
 
 **Status:** In Progress
 
-**Plans:** 5 plans in 3 waves
-- [ ] 02-01-PLAN.md — Frontend Foundation (Vite+React, routing, auth session)
+**Plans:** 1/5 plans executed
+- [x] 02-01-PLAN.md — Frontend Foundation (Vite+React, routing, auth session)
 - [ ] 02-02-PLAN.md — Sales & Sync Backend Contract
 - [ ] 02-03-PLAN.md — POS Catalog, Cart & Totals
 - [ ] 02-04-PLAN.md — Barcode Scanning

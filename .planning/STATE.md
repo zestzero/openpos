@@ -3,12 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-25T09:12:51.686Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-04-25T15:06:19.455Z"
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 9
+  completed_plans: 5
 ---
 
 # STATE.md
@@ -22,8 +23,8 @@ progress:
 
 ## Current Position
 
-Phase: 1 (foundation-backend-core) — COMPLETE
-Plan: 4 of 4 (all complete)
+Phase: 02 (pos-frontend-offline) — EXECUTING
+Plan: 2 of 5
 
 ## Phase Overview
 
@@ -55,6 +56,13 @@ Plan: 4 of 4 (all complete)
 
 ---
 
+## Decisions
+
+- Use TanStack Router with file-scaffolded route modules and a generated route tree to keep POS and ERP route-separated.
+- Persist JWTs and cached user payloads in localStorage so the session can bootstrap instantly after refresh.
+- Keep the POS shell mobile-first with a fixed header, bottom navigation, and thumb-reach primary actions.
+- Ship a lightweight manifest plus service worker so the frontend app shell is installable and cacheable offline.
+
 ## Research Flags
 
 | Phase | Flag | Action |
@@ -67,3 +75,19 @@ Plan: 4 of 4 (all complete)
 ---
 
 *Last updated: 2026-04-25 — completed plan 01-04 (inventory ledger)*
+
+---
+
+## Session Continuity
+
+Last session: 2026-04-25T15:06:19.453Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
+
+---
+
+## Performance Metrics
+
+| Run | Duration | Tasks | Files |
+|-----|----------|-------|-------|
+| Phase 02 P01 | 8m | 3 tasks | 27 files |

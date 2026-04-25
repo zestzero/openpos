@@ -18,13 +18,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Sale Flow
 
-- [ ] **POS-01**: Cashier can scan barcode via device camera (BarcodeDetector API with html5-qrcode fallback)
-- [ ] **POS-02**: Cashier can scan barcode via USB keyboard-wedge scanner (rapid keystroke detection)
-- [ ] **POS-03**: Cashier can browse products via touch catalog grid organized by category
-- [ ] **POS-04**: Cashier can search products by name or SKU
-- [ ] **POS-05**: Cashier can add, remove, and adjust item quantities in the cart
-- [ ] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
-- [ ] **POS-07**: Cart displays running total, item count, and per-line subtotals in THB
+- [x] **POS-01**: Cashier can scan barcode via device camera (BarcodeDetector API with html5-qrcode fallback)
+- [x] **POS-02**: Cashier can scan barcode via USB keyboard-wedge scanner (rapid keystroke detection)
+- [x] **POS-03**: Cashier can browse products via touch catalog grid organized by category
+- [x] **POS-04**: Cashier can search products by name or SKU
+- [x] **POS-05**: Cashier can add, remove, and adjust item quantities in the cart
+- [x] **POS-06**: Cashier can see a favorites/quick-keys bar with most-sold items for one-tap add
+- [x] **POS-07**: Cart displays running total, item count, and per-line subtotals in THB
 
 ### POS — Payments
 
@@ -40,10 +40,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Offline
 
-- [ ] **OFF-01**: Cashier can complete sales while device has no internet connection
-- [ ] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
-- [ ] **OFF-03**: Sync retries with exponential backoff on failure
-- [ ] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
+- [x] **OFF-01**: Cashier can complete sales while device has no internet connection
+- [x] **OFF-02**: Completed offline sales are queued and automatically synced when connectivity returns
+- [x] **OFF-03**: Sync retries with exponential backoff on failure
+- [x] **OFF-04**: Stock changes sync as delta operations (decrement by quantity sold), not absolute values
 
 ### Product Management
 
@@ -69,10 +69,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Platform
 
-- [ ] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
+- [x] **PLAT-01**: Single Vite + React SPA with route-based separation (POS = mobile-optimized, ERP = desktop-optimized)
 - [x] **PLAT-02**: Go backend with chi router, sqlc for type-safe SQL, pgx for PostgreSQL driver
 - [x] **PLAT-03**: PostgreSQL database with golang-migrate for schema migrations
-- [ ] **PLAT-04**: PWA with service worker for offline POS capability
+- [x] **PLAT-04**: PWA with service worker for offline POS capability
 - [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
 ## v2 Requirements
@@ -145,23 +145,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
-| POS-01 | Phase 2 | Pending |
-| POS-02 | Phase 2 | Pending |
-| POS-03 | Phase 2 | Pending |
-| POS-04 | Phase 2 | Pending |
-| POS-05 | Phase 2 | Pending |
-| POS-06 | Phase 2 | Pending |
-| POS-07 | Phase 2 | Pending |
+| POS-01 | Phase 2 | Complete |
+| POS-02 | Phase 2 | Complete |
+| POS-03 | Phase 2 | Complete |
+| POS-04 | Phase 2 | Complete |
+| POS-05 | Phase 2 | Complete |
+| POS-06 | Phase 2 | Complete |
+| POS-07 | Phase 2 | Complete |
 | PAY-01 | Phase 3 | Pending |
 | PAY-02 | Phase 3 | Pending |
 | PAY-03 | Phase 3 | Pending |
 | REC-01 | Phase 3 | Pending |
 | REC-02 | Phase 3 | Pending |
 | REC-03 | Phase 3 | Pending |
-| OFF-01 | Phase 2 | Pending |
-| OFF-02 | Phase 2 | Pending |
-| OFF-03 | Phase 2 | Pending |
-| OFF-04 | Phase 2 | Pending |
+| OFF-01 | Phase 2 | Complete |
+| OFF-02 | Phase 2 | Complete |
+| OFF-03 | Phase 2 | Complete |
+| OFF-04 | Phase 2 | Complete |
 | PROD-01 | Phase 4 | Pending |
 | PROD-02 | Phase 4 | Pending |
 | PROD-03 | Phase 4 | Pending |
@@ -175,10 +175,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RPT-01 | Phase 4 | Pending |
 | RPT-02 | Phase 4 | Pending |
 | RPT-03 | Phase 4 | Pending |
-| PLAT-01 | Phase 2 | Pending |
+| PLAT-01 | Phase 2 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 2 | Pending |
+| PLAT-04 | Phase 2 | Complete |
 | PLAT-05 | Phase 4 | Pending |
 
 **Coverage:**
