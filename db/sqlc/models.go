@@ -27,6 +27,26 @@ type InventoryLedger struct {
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 }
 
+type Order struct {
+	ID          pgtype.UUID        `json:"id"`
+	ClientUuid  string             `json:"client_uuid"`
+	UserID      pgtype.UUID        `json:"user_id"`
+	Status      string             `json:"status"`
+	TotalAmount int64              `json:"total_amount"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OrderItem struct {
+	ID        pgtype.UUID        `json:"id"`
+	OrderID   pgtype.UUID        `json:"order_id"`
+	VariantID pgtype.UUID        `json:"variant_id"`
+	Quantity  int32              `json:"quantity"`
+	UnitPrice int64              `json:"unit_price"`
+	Subtotal  int64              `json:"subtotal"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type Product struct {
 	ID          pgtype.UUID        `json:"id"`
 	Name        string             `json:"name"`

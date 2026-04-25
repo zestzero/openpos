@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/zestzero/openpos/db/sqlc"
@@ -48,6 +49,11 @@ func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{
 		db: sqlc.New(pool),
 	}
+}
+
+// WithTx returns a transactional copy of the service.
+func (s *Service) WithTx(tx pgx.Tx) *Service {
+	return &Service{db: s.db.WithTx(tx)}
 }
 
 // StockLevel represents current stock for a variant
@@ -112,6 +118,16 @@ func (s *Service) AdjustStock(ctx context.Context, input AdjustStockInput) (Ledg
 	if input.CreatedBy != nil {
 		if err := createdBy.Scan(*input.CreatedBy); err != nil {
 			return LedgerEntry{}, fmt.Errorf("invalid created_by: %w", err)
+		}
+	}
+
+	if input.Quantity < 0 {
+		stock, err := s.GetStockLevel(ctx, input.VariantID)
+		if err != nil {
+			return LedgerEntry{}, err
+		}
+		if stock.StockLevel+input.Quantity < 0 {
+			return LedgerEntry{}, ErrNegativeStock
 		}
 	}
 
@@ -207,6 +223,14 @@ func (s *Service) DeductStock(ctx context.Context, variantID string, quantity in
 	_, err := s.db.GetVariant(ctx, variantUUID)
 	if err != nil {
 		return LedgerEntry{}, ErrVariantNotFound
+	}
+
+	stock, err := s.GetStockLevel(ctx, variantID)
+	if err != nil {
+		return LedgerEntry{}, err
+	}
+	if stock.StockLevel < quantity {
+		return LedgerEntry{}, ErrNegativeStock
 	}
 
 	var refID pgtype.UUID
