@@ -4,6 +4,7 @@ import { LayoutGrid, ScanLine, ShoppingCart } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getStoredSession, hasRole } from '@/lib/auth'
+import { PosLayout } from '@/pos/layout/PosLayout'
 import { Route as rootRoute } from './__root'
 
 export const Route = createRoute({
@@ -19,23 +20,21 @@ export const Route = createRoute({
 
 function PosRoute() {
   return (
-    <div className="min-h-dvh bg-slate-50 px-4 py-6">
-      <div className="mx-auto grid max-w-3xl gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>POS workspace placeholder</CardTitle>
-            <CardDescription>
-              The cashier shell will become a mobile-first layout in the next task.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            <MiniAction icon={LayoutGrid} title="Catalog" text="Tap-friendly categories and quick-add tiles." />
-            <MiniAction icon={ScanLine} title="Scan" text="Camera and USB barcode input slot in here." />
-            <MiniAction icon={ShoppingCart} title="Cart" text="Checkout totals and payment actions stay close." />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <PosLayout>
+      <Card>
+        <CardHeader>
+          <CardTitle>Sell fast, stay mobile</CardTitle>
+          <CardDescription>
+            The cashier shell keeps catalog, scan, and cart actions reachable without deep navigation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-3 sm:grid-cols-3">
+          <MiniAction icon={LayoutGrid} title="Catalog" text="Tap-friendly categories and quick-add tiles." />
+          <MiniAction icon={ScanLine} title="Scan" text="Camera and USB barcode input slot in here." />
+          <MiniAction icon={ShoppingCart} title="Cart" text="Checkout totals and payment actions stay close." />
+        </CardContent>
+      </Card>
+    </PosLayout>
   )
 }
 
