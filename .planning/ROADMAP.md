@@ -100,6 +100,11 @@
 
 **Status:** Not started
 
+**Plans:** 3 plans
+- [ ] 04-01-PLAN.md — Backend reporting data, cost snapshots, and category ordering
+- [ ] 04-02-PLAN.md — ERP shell, product/category management, and import workflows
+- [ ] 04-03-PLAN.md — Reporting dashboards, THB metrics, and export actions
+
 **Success Criteria:**
 1. Owner can create products with name, description, category, and images via ERP UI
 2. Owner can define variants per product (size/color) each with own SKU, barcode, price, and cost
