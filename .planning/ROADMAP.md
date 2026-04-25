@@ -35,7 +35,19 @@
 
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
 
-**Status:** Not started
+**Status:** In Progress
+
+**Plans:** 5 plans in 3 waves
+- [ ] 02-01-PLAN.md — Frontend Foundation (Vite+React, routing, auth session)
+- [ ] 02-02-PLAN.md — Sales & Sync Backend Contract
+- [ ] 02-03-PLAN.md — POS Catalog, Cart & Totals
+- [ ] 02-04-PLAN.md — Barcode Scanning
+- [ ] 02-05-PLAN.md — Offline Storage, Queue & Sync
+
+**Wave Structure:**
+- Wave 1: 02-01 + 02-02 (frontend foundation and backend contract in parallel)
+- Wave 2: 02-03 + 02-04 (catalog/cart and scanning, both need frontend shell)
+- Wave 3: 02-05 (offline sync, needs everything)
 
 **Success Criteria:**
 1. Cashier can scan a product barcode via device camera and it adds to cart
