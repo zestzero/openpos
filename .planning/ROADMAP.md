@@ -11,24 +11,17 @@
 
 **Goal:** Go backend is operational with authentication, product catalog, and inventory data models — ready for frontend consumption.
 
-**Status:** Not started
+**Status:** In progress
 
 **Depends on:** Nothing
 
 **Requirements:** AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, INV-01, INV-02, INV-03, INV-04, PLAT-02, PLAT-03
 
-**Success Criteria:**
-1. Owner can create account via API and log in with email/password receiving a JWT token
-2. Owner can create cashier accounts via API; cashiers can authenticate with PIN
-3. API enforces role-based access — cashier tokens cannot reach owner-only endpoints
-4. Product and Variant entities exist with correct parent→child hierarchy (Product → Variant with SKU, barcode, price, cost)
-5. Category entities exist and products can be assigned to categories
-6. Inventory ledger records every stock movement (sale, restock, adjustment) with delta and reference
-7. Current stock per variant is derivable from ledger (snapshot or aggregation)
-8. Stock auto-deducts when a sale order is completed (in-process call from sales to inventory)
-9. Owner can manually adjust stock via API with reason code
-10. PostgreSQL database with migrations managed via golang-migrate
-11. Docker Compose setup for local development (Go app + PostgreSQL)
+**Plans:** 4 plans
+- [ ] 01-01-PLAN.md — Foundation & Backend Infra
+- [ ] 01-02-PLAN.md — Authentication & Identity
+- [ ] 01-03-PLAN.md — Product Catalog Data Model
+- [ ] 01-04-PLAN.md — Inventory Ledger System
 
 **Canonical refs:** `.planning/research/stack.md` (Go architecture), `.planning/research/SUMMARY.md` §Pitfalls (quantity column trap, flat product schema)
 
