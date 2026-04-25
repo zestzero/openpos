@@ -6,9 +6,17 @@ function escposText(text: string) {
 }
 
 export function buildReceiptText(receipt: ReceiptSnapshot) {
+  const paidAt = new Date(receipt.paid_at)
+  const paidAtText = Number.isNaN(paidAt.getTime())
+    ? receipt.paid_at
+    : paidAt.toLocaleString('th-TH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+
   const lines = [
     receipt.store_name,
-    receipt.paid_at,
+    paidAtText,
     `Order ${receipt.order_id}`,
     ...receipt.items.map((item) => `${item.quantity} x ${item.name} ${formatTHB(item.subtotal)}`),
     `Total ${formatTHB(receipt.total_amount)}`,
@@ -17,6 +25,15 @@ export function buildReceiptText(receipt: ReceiptSnapshot) {
     `Change ${formatTHB(receipt.change_due)}`,
   ]
   return lines.join('\n')
+}
+
+function shouldUseDialogPrint() {
+  if (typeof navigator === 'undefined') {
+    return true
+  }
+  const userAgent = navigator.userAgent.toLowerCase()
+  const isAppleMobile = /iphone|ipad|ipod/.test(userAgent) || (userAgent.includes('macintosh') && navigator.maxTouchPoints > 1)
+  return isAppleMobile || !('usb' in navigator)
 }
 
 export async function printReceiptViaWebUSB(receipt: ReceiptSnapshot) {
@@ -46,4 +63,17 @@ export function printReceiptViaDialog(receipt: ReceiptSnapshot) {
   win.document.close()
   win.focus()
   win.print()
+}
+
+export async function printReceipt(receipt: ReceiptSnapshot) {
+  if (shouldUseDialogPrint()) {
+    printReceiptViaDialog(receipt)
+    return
+  }
+
+  try {
+    await printReceiptViaWebUSB(receipt)
+  } catch {
+    printReceiptViaDialog(receipt)
+  }
 }
