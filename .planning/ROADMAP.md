@@ -11,17 +11,17 @@
 
 **Goal:** Go backend is operational with authentication, product catalog, and inventory data models — ready for frontend consumption.
 
-**Status:** In progress
+**Status:** Complete
 
 **Depends on:** Nothing
 
 **Requirements:** AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, INV-01, INV-02, INV-03, INV-04, PLAT-02, PLAT-03
 
-**Plans:** 1/4 plans executed
+**Plans:** 4/4 plans executed
 - [x] 01-01-PLAN.md — Foundation & Backend Infra
 - [x] 01-02-PLAN.md — Authentication & Identity
-- [ ] 01-03-PLAN.md — Product Catalog Data Model
-- [ ] 01-04-PLAN.md — Inventory Ledger System
+- [x] 01-03-PLAN.md — Product Catalog Data Model
+- [x] 01-04-PLAN.md — Inventory Ledger System
 
 **Canonical refs:** `.planning/research/stack.md` (Go architecture), `.planning/research/SUMMARY.md` §Pitfalls (quantity column trap, flat product schema)
 
@@ -129,4 +129,4 @@
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-04-18 — full reset for Go stack migration*
+*Last updated: 2026-04-25 — Phase 1 complete, ready for Phase 2*
