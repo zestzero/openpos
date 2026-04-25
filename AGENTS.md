@@ -112,3 +112,4 @@ frontend/src/
 
 - Atomic commits per logical change
 - Commit messages: imperative mood, concise ("add auth middleware", "fix stock deduction race condition")
+- Keep temporary files and scratch artifacts inside the repository workspace; do not write them outside the repo unless there is a concrete, unavoidable reason.
