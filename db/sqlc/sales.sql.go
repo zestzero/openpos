@@ -157,6 +157,60 @@ func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID pgtype.UU
 	return items, nil
 }
 
+const createPayment = `-- name: CreatePayment :one
+INSERT INTO payments (order_id, method, tendered_amount, change_due, paid_at)
+VALUES ($1, $2, $3, $4, NOW())
+RETURNING id, order_id, method, tendered_amount, change_due, paid_at, created_at
+`
+
+type CreatePaymentParams struct {
+	OrderID        pgtype.UUID `json:"order_id"`
+	Method         string      `json:"method"`
+	TenderedAmount int64       `json:"tendered_amount"`
+	ChangeDue      int64       `json:"change_due"`
+}
+
+func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
+	row := q.db.QueryRow(ctx, createPayment,
+		arg.OrderID,
+		arg.Method,
+		arg.TenderedAmount,
+		arg.ChangeDue,
+	)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Method,
+		&i.TenderedAmount,
+		&i.ChangeDue,
+		&i.PaidAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getPaymentByOrderID = `-- name: GetPaymentByOrderID :one
+SELECT id, order_id, method, tendered_amount, change_due, paid_at, created_at
+FROM payments
+WHERE order_id = $1
+`
+
+func (q *Queries) GetPaymentByOrderID(ctx context.Context, orderID pgtype.UUID) (Payment, error) {
+	row := q.db.QueryRow(ctx, getPaymentByOrderID, orderID)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.Method,
+		&i.TenderedAmount,
+		&i.ChangeDue,
+		&i.PaidAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listOrders = `-- name: ListOrders :many
 SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
 FROM orders

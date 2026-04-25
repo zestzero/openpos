@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zestzero/openpos/db/sqlc"
 	"github.com/zestzero/openpos/internal/inventory"
@@ -22,8 +22,11 @@ var (
 type orderStore interface {
 	CreateOrder(context.Context, sqlc.CreateOrderParams) (sqlc.Order, error)
 	CreateOrderItem(context.Context, sqlc.CreateOrderItemParams) (sqlc.OrderItem, error)
+	CreatePayment(context.Context, sqlc.CreatePaymentParams) (sqlc.Payment, error)
 	GetOrderByClientUUID(context.Context, string) (sqlc.Order, error)
 	GetOrderByID(context.Context, pgtype.UUID) (sqlc.Order, error)
+	GetPaymentByOrderID(context.Context, pgtype.UUID) (sqlc.Payment, error)
+	GetVariant(context.Context, pgtype.UUID) (sqlc.Variant, error)
 	ListOrders(context.Context, sqlc.ListOrdersParams) ([]sqlc.Order, error)
 	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.OrderItem, error)
 }
@@ -81,6 +84,41 @@ type OrderItem struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type Payment struct {
+	ID             string `json:"id"`
+	OrderID        string `json:"order_id"`
+	Method         string `json:"method"`
+	TenderedAmount int64  `json:"tendered_amount"`
+	ChangeDue      int64  `json:"change_due"`
+	PaidAt         string `json:"paid_at"`
+	CreatedAt      string `json:"created_at"`
+}
+
+type ReceiptSnapshot struct {
+	StoreName      string        `json:"store_name"`
+	PaidAt         string        `json:"paid_at"`
+	OrderID        string        `json:"order_id"`
+	Items          []ReceiptItem `json:"items"`
+	TotalAmount    int64         `json:"total_amount"`
+	PaymentMethod  string        `json:"payment_method"`
+	TenderedAmount int64         `json:"tendered_amount"`
+	ChangeDue      int64         `json:"change_due"`
+}
+
+type ReceiptItem struct {
+	Name      string `json:"name"`
+	Quantity  int32  `json:"quantity"`
+	UnitPrice int64  `json:"unit_price"`
+	Subtotal  int64  `json:"subtotal"`
+}
+
+type CompletePaymentInput struct {
+	OrderID        string
+	Method         string
+	TenderedAmount int64
+	StoreName      string
+}
+
 type SyncResult struct {
 	Processed int         `json:"processed"`
 	Succeeded int         `json:"succeeded"`
@@ -130,7 +168,9 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 	if !ok {
 		return nil, fmt.Errorf("order store does not support transactions")
 	}
-	txInventory, ok := s.inventory.(interface{ WithTx(pgx.Tx) *inventory.Service })
+	txInventory, ok := s.inventory.(interface {
+		WithTx(pgx.Tx) *inventory.Service
+	})
 	if !ok {
 		return nil, fmt.Errorf("inventory store does not support transactions")
 	}
@@ -171,6 +211,68 @@ func (s *Service) GetOrder(ctx context.Context, id string) (*Order, error) {
 		return nil, ErrOrderNotFound
 	}
 	return s.loadOrder(ctx, order, true)
+}
+
+func (s *Service) CompletePayment(ctx context.Context, input CompletePaymentInput) (*ReceiptSnapshot, error) {
+	orderID, err := parseUUID(input.OrderID)
+	if err != nil {
+		return nil, ErrInvalidOrder
+	}
+
+	order, err := s.queries.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return nil, ErrOrderNotFound
+	}
+
+	if payment, err := s.queries.GetPaymentByOrderID(ctx, orderID); err == nil {
+		return s.loadReceiptSnapshot(ctx, order, payment, input.StoreName)
+	}
+
+	total := order.TotalAmount
+
+	if input.Method == "promptpay" {
+		if input.TenderedAmount != total {
+			return nil, ErrInvalidOrder
+		}
+	} else if input.TenderedAmount < total {
+		return nil, ErrInvalidOrder
+	}
+
+	changeDue := input.TenderedAmount - total
+	if input.Method == "promptpay" {
+		changeDue = 0
+	}
+
+	payment, err := s.queries.CreatePayment(ctx, sqlc.CreatePaymentParams{
+		OrderID:        orderID,
+		Method:         input.Method,
+		TenderedAmount: input.TenderedAmount,
+		ChangeDue:      changeDue,
+	})
+	if err != nil {
+		if existing, lookupErr := s.queries.GetPaymentByOrderID(ctx, orderID); lookupErr == nil {
+			return s.loadReceiptSnapshot(ctx, order, existing, input.StoreName)
+		}
+		return nil, fmt.Errorf("creating payment: %w", err)
+	}
+
+	return s.loadReceiptSnapshot(ctx, order, payment, input.StoreName)
+}
+
+func (s *Service) GetReceipt(ctx context.Context, id string, storeName string) (*ReceiptSnapshot, error) {
+	orderID, err := parseUUID(id)
+	if err != nil {
+		return nil, ErrInvalidOrder
+	}
+	order, err := s.queries.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return nil, ErrOrderNotFound
+	}
+	payment, err := s.queries.GetPaymentByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, ErrOrderNotFound
+	}
+	return s.loadReceiptSnapshot(ctx, order, payment, storeName)
 }
 
 func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, inventoryService inventoryGateway, input CreateOrderInput, totalAmount int64, created bool) (*Order, error) {
@@ -215,6 +317,39 @@ func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, i
 	}
 
 	return s.loadOrder(ctx, orderRow, created)
+}
+
+func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, payment sqlc.Payment, storeName string) (*ReceiptSnapshot, error) {
+	items, err := s.queries.ListOrderItemsByOrderID(ctx, order.ID)
+	if err != nil {
+		return nil, fmt.Errorf("loading receipt items: %w", err)
+	}
+
+	receiptItems := make([]ReceiptItem, 0, len(items))
+	for _, item := range items {
+		variant, err := s.queries.GetVariant(ctx, item.VariantID)
+		name := item.VariantID.String()
+		if err == nil {
+			name = variant.Name
+		}
+		receiptItems = append(receiptItems, ReceiptItem{
+			Name:      name,
+			Quantity:  item.Quantity,
+			UnitPrice: item.UnitPrice,
+			Subtotal:  item.Subtotal,
+		})
+	}
+
+	return &ReceiptSnapshot{
+		StoreName:      storeName,
+		PaidAt:         payment.PaidAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		OrderID:        order.ID.String(),
+		Items:          receiptItems,
+		TotalAmount:    order.TotalAmount,
+		PaymentMethod:  payment.Method,
+		TenderedAmount: payment.TenderedAmount,
+		ChangeDue:      payment.ChangeDue,
+	}, nil
 }
 
 func (s *Service) loadOrder(ctx context.Context, row sqlc.Order, created bool) (*Order, error) {

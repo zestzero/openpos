@@ -30,3 +30,13 @@ SELECT id, order_id, variant_id, quantity, unit_price, subtotal, created_at
 FROM order_items
 WHERE order_id = $1
 ORDER BY created_at ASC;
+
+-- name: CreatePayment :one
+INSERT INTO payments (order_id, method, tendered_amount, change_due, paid_at)
+VALUES ($1, $2, $3, $4, NOW())
+RETURNING id, order_id, method, tendered_amount, change_due, paid_at, created_at;
+
+-- name: GetPaymentByOrderID :one
+SELECT id, order_id, method, tendered_amount, change_due, paid_at, created_at
+FROM payments
+WHERE order_id = $1;

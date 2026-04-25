@@ -16,11 +16,13 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
+	"github.com/zestzero/openpos/db/sqlc"
 	"github.com/zestzero/openpos/internal/auth"
 	"github.com/zestzero/openpos/internal/catalog"
 	"github.com/zestzero/openpos/internal/database"
 	"github.com/zestzero/openpos/internal/inventory"
 	appmiddleware "github.com/zestzero/openpos/internal/middleware"
+	"github.com/zestzero/openpos/internal/sales"
 )
 
 func main() {
@@ -60,6 +62,12 @@ func main() {
 
 	// Setup chi router
 	r := chi.NewRouter()
+	r.Use(appmiddleware.CORSMiddleware(&appmiddleware.CORSConfig{
+		AllowedOrigins: []string{
+			getEnv("FRONTEND_ORIGIN", "http://localhost:5173"),
+			"http://localhost:4173",
+		},
+	}))
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
@@ -91,6 +99,10 @@ func main() {
 	inventoryHandler := inventory.NewHandler(inventoryService)
 	protected.Mount("/inventory", inventoryHandler.Routes())
 
+	salesService := sales.NewService(sqlc.New(pool), inventoryService)
+	salesHandler := sales.NewHandler(salesService)
+	protected.Mount("/orders", salesHandler.Routes())
+
 	r.Mount("/api", protected)
 
 	// Get port from environment or default
@@ -100,7 +112,7 @@ func main() {
 	}
 
 	log.Printf("Starting server on port %s", port)
-	
+
 	// Create server
 	srv := &http.Server{
 		Addr:         ":" + port,

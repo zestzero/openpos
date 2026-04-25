@@ -47,6 +47,16 @@ type OrderItem struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Payment struct {
+	ID             pgtype.UUID        `json:"id"`
+	OrderID        pgtype.UUID        `json:"order_id"`
+	Method         string             `json:"method"`
+	TenderedAmount int64              `json:"tendered_amount"`
+	ChangeDue      int64              `json:"change_due"`
+	PaidAt         pgtype.Timestamptz `json:"paid_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
 type Product struct {
 	ID          pgtype.UUID        `json:"id"`
 	Name        string             `json:"name"`

@@ -67,7 +67,7 @@ func TestCreateOrder(t *testing.T) {
 		order, err := svc.CreateOrder(context.Background(), CreateOrderInput{
 			ClientUUID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			UserID:     "22222222-2222-2222-2222-222222222222",
-			Items: []OrderItemInput{{VariantID: "33333333-3333-3333-3333-333333333333", Quantity: 1, UnitPrice: 1200}},
+			Items:      []OrderItemInput{{VariantID: "33333333-3333-3333-3333-333333333333", Quantity: 1, UnitPrice: 1200}},
 		})
 		if err != nil {
 			t.Fatalf("CreateOrder returned error: %v", err)
@@ -91,7 +91,7 @@ func TestCreateOrder(t *testing.T) {
 		_, err := svc.CreateOrder(context.Background(), CreateOrderInput{
 			ClientUUID: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 			UserID:     "22222222-2222-2222-2222-222222222222",
-			Items: []OrderItemInput{{VariantID: "33333333-3333-3333-3333-333333333333", Quantity: 2, UnitPrice: 100}},
+			Items:      []OrderItemInput{{VariantID: "33333333-3333-3333-3333-333333333333", Quantity: 2, UnitPrice: 100}},
 		})
 		if !errors.Is(err, ErrInsufficientStock) {
 			t.Fatalf("expected ErrInsufficientStock, got %v", err)
@@ -148,14 +148,71 @@ func TestGetOrder(t *testing.T) {
 	}
 }
 
+func TestCompletePayment(t *testing.T) {
+	t.Run("stores cash payment and returns change", func(t *testing.T) {
+		orderID := uuidPtr("11111111-1111-1111-1111-111111111111")
+		order := sqlc.Order{ID: orderID, ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 1200}
+		queries := &fakeOrderStore{
+			ordersByID:       map[string]sqlc.Order{orderID.String(): order},
+			itemsByOrderID:   map[string][]sqlc.OrderItem{orderID.String(): {{ID: uuidPtr("55555555-5555-5555-5555-555555555555"), OrderID: orderID, VariantID: uuidPtr("33333333-3333-3333-3333-333333333333"), Quantity: 1, UnitPrice: 1200, Subtotal: 1200}}},
+			variantsByID:     map[string]sqlc.Variant{"33333333-3333-3333-3333-333333333333": {ID: uuidPtr("33333333-3333-3333-3333-333333333333"), Name: "Tea"}},
+			paymentByOrderID: map[string]sqlc.Payment{},
+		}
+		inv := newFakeInventory(map[string]int64{"33333333-3333-3333-3333-333333333333": 10})
+		svc := NewService(queries, inv)
+
+		receipt, err := svc.CompletePayment(context.Background(), CompletePaymentInput{
+			OrderID:        orderID.String(),
+			Method:         "cash",
+			TenderedAmount: 1500,
+			StoreName:      "OpenPOS Store",
+		})
+		if err != nil {
+			t.Fatalf("CompletePayment returned error: %v", err)
+		}
+		if receipt.ChangeDue != 300 || receipt.PaymentMethod != "cash" {
+			t.Fatalf("unexpected receipt: %+v", receipt)
+		}
+		if queries.createPaymentCalls != 1 {
+			t.Fatalf("expected 1 payment insert, got %d", queries.createPaymentCalls)
+		}
+	})
+
+	t.Run("rejects underpayment", func(t *testing.T) {
+		orderID := uuidPtr("11111111-1111-1111-1111-111111111111")
+		queries := &fakeOrderStore{ordersByID: map[string]sqlc.Order{orderID.String(): {ID: orderID, TotalAmount: 1200}}}
+		svc := NewService(queries, newFakeInventory(nil))
+
+		_, err := svc.CompletePayment(context.Background(), CompletePaymentInput{OrderID: orderID.String(), Method: "cash", TenderedAmount: 1000, StoreName: "OpenPOS Store"})
+		if !errors.Is(err, ErrInvalidOrder) {
+			t.Fatalf("expected ErrInvalidOrder, got %v", err)
+		}
+	})
+
+	t.Run("promptpay requires exact total", func(t *testing.T) {
+		orderID := uuidPtr("11111111-1111-1111-1111-111111111111")
+		queries := &fakeOrderStore{ordersByID: map[string]sqlc.Order{orderID.String(): {ID: orderID, TotalAmount: 1200}}}
+		svc := NewService(queries, newFakeInventory(nil))
+
+		_, err := svc.CompletePayment(context.Background(), CompletePaymentInput{OrderID: orderID.String(), Method: "promptpay", TenderedAmount: 1000, StoreName: "OpenPOS Store"})
+		if !errors.Is(err, ErrInvalidOrder) {
+			t.Fatalf("expected ErrInvalidOrder, got %v", err)
+		}
+	})
+}
+
 type fakeOrderStore struct {
-	ordersByClientUUID map[string]sqlc.Order
-	ordersByID         map[string]sqlc.Order
-	itemsByOrderID     map[string][]sqlc.OrderItem
-	createOrderCalls   int
-	createItemCalls    int
-	createOrderResult  sqlc.Order
-	createItemResult   sqlc.OrderItem
+	ordersByClientUUID  map[string]sqlc.Order
+	ordersByID          map[string]sqlc.Order
+	itemsByOrderID      map[string][]sqlc.OrderItem
+	variantsByID        map[string]sqlc.Variant
+	paymentByOrderID    map[string]sqlc.Payment
+	createOrderCalls    int
+	createItemCalls     int
+	createPaymentCalls  int
+	createOrderResult   sqlc.Order
+	createItemResult    sqlc.OrderItem
+	createPaymentResult sqlc.Payment
 }
 
 func (f *fakeOrderStore) CreateOrder(_ context.Context, _ sqlc.CreateOrderParams) (sqlc.Order, error) {
@@ -187,6 +244,23 @@ func (f *fakeOrderStore) CreateOrderItem(_ context.Context, arg sqlc.CreateOrder
 	return item, nil
 }
 
+func (f *fakeOrderStore) CreatePayment(_ context.Context, arg sqlc.CreatePaymentParams) (sqlc.Payment, error) {
+	f.createPaymentCalls++
+	payment := f.createPaymentResult
+	if !payment.ID.Valid {
+		payment = sqlc.Payment{ID: uuidPtr("66666666-6666-6666-6666-666666666666")}
+	}
+	payment.OrderID = arg.OrderID
+	payment.Method = arg.Method
+	payment.TenderedAmount = arg.TenderedAmount
+	payment.ChangeDue = arg.ChangeDue
+	if f.paymentByOrderID == nil {
+		f.paymentByOrderID = map[string]sqlc.Payment{}
+	}
+	f.paymentByOrderID[arg.OrderID.String()] = payment
+	return payment, nil
+}
+
 func (f *fakeOrderStore) GetOrderByClientUUID(_ context.Context, clientUUID string) (sqlc.Order, error) {
 	if order, ok := f.ordersByClientUUID[clientUUID]; ok {
 		return order, nil
@@ -199,6 +273,20 @@ func (f *fakeOrderStore) GetOrderByID(_ context.Context, id pgtype.UUID) (sqlc.O
 		return order, nil
 	}
 	return sqlc.Order{}, pgx.ErrNoRows
+}
+
+func (f *fakeOrderStore) GetPaymentByOrderID(_ context.Context, id pgtype.UUID) (sqlc.Payment, error) {
+	if payment, ok := f.paymentByOrderID[id.String()]; ok {
+		return payment, nil
+	}
+	return sqlc.Payment{}, pgx.ErrNoRows
+}
+
+func (f *fakeOrderStore) GetVariant(_ context.Context, id pgtype.UUID) (sqlc.Variant, error) {
+	if variant, ok := f.variantsByID[id.String()]; ok {
+		return variant, nil
+	}
+	return sqlc.Variant{}, pgx.ErrNoRows
 }
 
 func (f *fakeOrderStore) ListOrderItemsByOrderID(_ context.Context, id pgtype.UUID) ([]sqlc.OrderItem, error) {
