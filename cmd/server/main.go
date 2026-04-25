@@ -16,7 +16,9 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 
+	"github.com/zestzero/openpos/internal/catalog"
 	"github.com/zestzero/openpos/internal/database"
+	"github.com/zestzero/openpos/internal/inventory"
 )
 
 func main() {
@@ -65,6 +67,15 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
+
+	// Register domain handlers
+	catalogService := catalog.NewService(pool)
+	catalogHandler := catalog.NewHandler(catalogService)
+	r.Mount("/api/catalog", catalogHandler.Routes())
+
+	inventoryService := inventory.NewService(pool)
+	inventoryHandler := inventory.NewHandler(inventoryService)
+	r.Mount("/api/inventory", inventoryHandler.Routes())
 
 	// Get port from environment or default
 	port := os.Getenv("PORT")
