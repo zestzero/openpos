@@ -1,9 +1,7 @@
 import { createRoute } from '@tanstack/react-router'
-import type { ComponentType } from 'react'
-import { LayoutGrid, ScanLine, ShoppingCart } from 'lucide-react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getStoredSession, hasRole } from '@/lib/auth'
+import { CheckoutPanel } from '@/pos/components/CheckoutPanel'
 import { PosLayout } from '@/pos/layout/PosLayout'
 import { Route as rootRoute } from './__root'
 
@@ -19,39 +17,23 @@ export const Route = createRoute({
 })
 
 function PosRoute() {
+  const demoOrder = {
+    store_name: 'OpenPOS Demo Store',
+    paid_at: new Date().toISOString(),
+    order_id: '11111111-1111-1111-1111-111111111111',
+    items: [
+      { name: 'Thai Tea', quantity: 1, unit_price: 4500, subtotal: 4500 },
+      { name: 'Snack Pack', quantity: 2, unit_price: 2500, subtotal: 5000 },
+    ],
+    total_amount: 9500,
+    payment_method: 'cash' as const,
+    tendered_amount: 10000,
+    change_due: 500,
+  }
+
   return (
     <PosLayout>
-      <Card>
-        <CardHeader>
-          <CardTitle>Sell fast, stay mobile</CardTitle>
-          <CardDescription>
-            The cashier shell keeps catalog, scan, and cart actions reachable without deep navigation.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-3">
-          <MiniAction icon={LayoutGrid} title="Catalog" text="Tap-friendly categories and quick-add tiles." />
-          <MiniAction icon={ScanLine} title="Scan" text="Camera and USB barcode input slot in here." />
-          <MiniAction icon={ShoppingCart} title="Cart" text="Checkout totals and payment actions stay close." />
-        </CardContent>
-      </Card>
+      <CheckoutPanel order={demoOrder} />
     </PosLayout>
-  )
-}
-
-function MiniAction({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: ComponentType<{ className?: string }>
-  title: string
-  text: string
-}) {
-  return (
-    <div className="rounded-card border border-border bg-muted p-4">
-      <Icon className="h-5 w-5 text-brand-foreground" />
-      <p className="mt-2 font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{text}</p>
-    </div>
   )
 }

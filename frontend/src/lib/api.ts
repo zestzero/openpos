@@ -43,6 +43,31 @@ export interface Variant {
   is_active: boolean
 }
 
+export type PaymentMethod = 'cash' | 'promptpay'
+
+export interface CompletePaymentRequest {
+  method: PaymentMethod
+  tendered_amount: number
+}
+
+export interface ReceiptItem {
+  name: string
+  quantity: number
+  unit_price: number
+  subtotal: number
+}
+
+export interface ReceiptSnapshot {
+  store_name: string
+  paid_at: string
+  order_id: string
+  items: ReceiptItem[]
+  total_amount: number
+  payment_method: PaymentMethod
+  tendered_amount: number
+  change_due: number
+}
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -115,5 +140,14 @@ export const api = {
   },
   searchVariant(query: string) {
     return requestJSON<ApiSuccess<Variant[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
+  },
+  completePayment(orderId: string, body: CompletePaymentRequest) {
+    return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/payments`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
+  getReceipt(orderId: string) {
+    return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/receipt`)
   },
 }
