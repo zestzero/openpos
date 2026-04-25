@@ -73,7 +73,7 @@
 
 **Requirements:** PAY-01, PAY-02, PAY-03, REC-01, REC-02, REC-03
 
-**Status:** Not started
+**Status:** Complete
 
 **Success Criteria:**
 1. Cashier can enter cash tendered and see change due calculated automatically
@@ -84,6 +84,9 @@
 6. Receipt shows: store name, date/time, items with qty and prices, total, payment method, change due
 
 **Canonical refs:** `.planning/research/SUMMARY.md` §Pitfalls (WebUSB iOS, tax rounding)
+
+**Plans:** 1/1 plans executed
+- [x] 03-01-PLAN.md — Payments & Receipts
 
 ---
 
@@ -141,4 +144,4 @@
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-04-25 — Phase 1 complete, ready for Phase 2*
+*Last updated: 2026-04-25 — Phase 3 complete, ready for Phase 4*
