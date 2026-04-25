@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-25T09:02:08.117Z"
+last_updated: "2026-04-25T09:03:30Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # STATE.md
@@ -23,7 +23,7 @@ progress:
 ## Current Position
 
 Phase: 1 (foundation-backend-core) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Phase Overview
 
@@ -50,6 +50,8 @@ Plan: 3 of 4
 | Product → Variant hierarchy | Never flat products; variants have own SKU/barcode/price/cost |
 | Inventory ledger + snapshot | Ledger is truth, snapshot is derived cache |
 | Delta sync for offline | Sync operations (decrement 1), not state (set to 9) |
+| pgtype.UUID with .String() | UUID conversion uses pgtype.UUID.String() method for string representation |
+| SKU/barcode validation in service | Unique constraints enforced at service layer before DB for better error messages |
 
 ---
 
@@ -64,4 +66,4 @@ Plan: 3 of 4
 
 ---
 
-*Last updated: 2026-04-18 — full reset for Go stack migration*
+*Last updated: 2026-04-25 — completed plan 01-03 (catalog implementation)*
