@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronDown, Search, Sparkles } from 'lucide-react'
+import { useLocation, useNavigate } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,9 +8,16 @@ import { Input } from '@/components/ui/input'
 import { ImportDrawer } from '../import/ImportDrawer'
 import { ErpNav } from '../navigation/ErpNav'
 
-const tabs = ['Products', 'Inventory', 'Reporting'] as const
+const tabs = [
+  { label: 'Products', to: '/erp' },
+  { label: 'Inventory', to: null },
+  { label: 'Reporting', to: '/erp/reports' },
+] as const
 
 export function ErpLayout({ children }: { children: ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
       <ErpNav />
@@ -41,19 +49,24 @@ export function ErpLayout({ children }: { children: ReactNode }) {
 
             <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
               <nav className="flex flex-wrap gap-2" role="tablist" aria-label="ERP workspace tabs">
-                {tabs.map((tab, index) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    role="tab"
-                    aria-selected={index === 0}
-                    className={index === 0
-                      ? 'rounded-pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground'
-                      : 'rounded-pill border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                {tabs.map((tab) => {
+                  const isActive = tab.to ? location.pathname === tab.to : false
+
+                  return (
+                    <button
+                      key={tab.label}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={tab.to ? () => navigate({ to: tab.to }) : undefined}
+                      className={isActive
+                        ? 'rounded-pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground'
+                        : 'rounded-pill border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
+                    >
+                      {tab.label}
+                    </button>
+                  )
+                })}
               </nav>
 
               <div className="hidden items-center gap-2 text-sm text-muted-foreground md:flex">
