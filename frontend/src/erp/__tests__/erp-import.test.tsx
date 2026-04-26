@@ -84,4 +84,24 @@ describe('ERP import workflow', () => {
     })
   })
 
+  it('blocks invalid rows and shows preview errors before submit', async () => {
+    renderWithQueryClient(<ImportDrawer />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import CSV' }))
+
+    const fileInput = screen.getByLabelText('Upload CSV or XLSX file')
+    const file = new File(
+      ['product_name,variant_name,sku,price\n,Large Cup,,'],
+      'broken.csv',
+      { type: 'text/csv' },
+    )
+
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    await screen.findByText('Missing product name')
+    expect(screen.getByText(/SKU is required/)).toBeInTheDocument()
+    expect(screen.getByText(/Price is required/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Import validated rows' })).toBeDisabled()
+  })
+
 })
