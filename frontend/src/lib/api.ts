@@ -43,6 +43,12 @@ export interface Variant {
   is_active: boolean
 }
 
+export interface ProductWithVariants {
+  product: Product
+  category?: Category
+  variants: Variant[]
+}
+
 export type PaymentMethod = 'cash' | 'promptpay'
 
 export interface CompletePaymentRequest {
@@ -135,8 +141,12 @@ export const api = {
   getCategories() {
     return requestJSON<ApiSuccess<Category[]>>('/api/catalog/categories')
   },
-  getProducts() {
-    return requestJSON<ApiSuccess<Product[]>>('/api/catalog/products')
+  getProducts(categoryId?: string) {
+    const params = new URLSearchParams()
+    if (categoryId) params.set('category_id', categoryId)
+    params.set('is_active', 'true')
+    const query = params.toString()
+    return requestJSON<ApiSuccess<ProductWithVariants[]>>(`/api/catalog/products${query ? `?${query}` : ''}`)
   },
   searchVariant(query: string) {
     return requestJSON<ApiSuccess<Variant[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
