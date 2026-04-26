@@ -105,7 +105,7 @@
 - [ ] 04-02-PLAN.md — Reporting APIs for monthly sales and gross profit
 - [x] 04-03-PLAN.md — Category sort order and reorder support
 - [x] 04-04-PLAN.md — Vitest setup for ERP UI tests
-- [ ] 04-05-PLAN.md — ERP shell, owner guard, and tabbed layout
+- [x] 04-05-PLAN.md — ERP shell, owner guard, and tabbed layout
 - [ ] 04-06-PLAN.md — Product and category CRUD workflows
 - [ ] 04-07-PLAN.md — Barcode generation and spreadsheet import
 - [ ] 04-08-PLAN.md — Reporting dashboard and THB summary cards
