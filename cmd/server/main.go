@@ -22,6 +22,7 @@ import (
 	"github.com/zestzero/openpos/internal/database"
 	"github.com/zestzero/openpos/internal/inventory"
 	appmiddleware "github.com/zestzero/openpos/internal/middleware"
+	"github.com/zestzero/openpos/internal/reporting"
 	"github.com/zestzero/openpos/internal/sales"
 )
 
@@ -102,6 +103,11 @@ func main() {
 	salesService := sales.NewService(sqlc.New(pool), inventoryService)
 	salesHandler := sales.NewHandler(salesService)
 	protected.Mount("/orders", salesHandler.Routes())
+
+	reportingService := reporting.NewService(sqlc.New(pool))
+	reportingHandler := reporting.NewHandler(reportingService)
+	// Exposes /api/reports when mounted under the protected /api router.
+	protected.Mount("/reports", reportingHandler.Routes())
 
 	r.Mount("/api", protected)
 
