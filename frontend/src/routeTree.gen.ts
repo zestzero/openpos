@@ -3,10 +3,11 @@ import { Route as indexRoute } from './routes/index'
 import { Route as loginRoute } from './routes/login'
 import { Route as posRoute } from './routes/pos'
 import { Route as erpRoute } from './routes/erp'
+import { Route as erpIndexRoute } from './routes/erp.index'
 
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   posRoute,
-  erpRoute,
+  erpRoute.addChildren([erpIndexRoute]),
 ])
