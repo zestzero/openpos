@@ -119,6 +119,9 @@ func (f *fakeReorderService) UpdateProduct(context.Context, string, CreateProduc
 func (f *fakeReorderService) CreateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error) {
 	return sqlc.Variant{}, nil
 }
+func (f *fakeReorderService) UpdateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error) {
+	return sqlc.Variant{}, nil
+}
 func (f *fakeReorderService) SearchVariant(context.Context, string) (sqlc.SearchVariantRow, error) {
 	return sqlc.SearchVariantRow{}, nil
 }

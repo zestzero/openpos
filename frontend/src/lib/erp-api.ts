@@ -44,6 +44,24 @@ export interface ProductFormValues {
   variants: VariantFormValues[]
 }
 
+export interface ImportVariantInput {
+  sku: string
+  barcode: string | null
+  name: string
+  price: number
+  cost: number | null
+  is_active: boolean
+}
+
+export interface ImportProductInput {
+  name: string
+  description: string
+  category_id: string | null
+  image_url: string | null
+  is_active: boolean
+  variants: ImportVariantInput[]
+}
+
 interface ApiSuccess<T> {
   data: T
 }
@@ -177,6 +195,15 @@ async function createProduct(values: ProductFormValues) {
   return normalizeProductRecord(response.data)
 }
 
+async function importProductsRequest(input: { products: ImportProductInput[] }) {
+  const response = await requestJSON<ApiSuccess<RawProductRecord[]>>('/api/catalog/import', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+
+  return response.data.map(normalizeProductRecord)
+}
+
 async function updateProduct(id: string, values: ProductFormValues) {
   const response = await requestJSON<ApiSuccess<RawProductRecord>>(`/api/catalog/products/${id}`, {
     method: 'PUT',
@@ -276,6 +303,10 @@ export function useCreateProductMutation() {
   })
 }
 
+export function importProducts(input: { products: ImportProductInput[] }) {
+  return importProductsRequest(input)
+}
+
 export function useUpdateProductMutation() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -310,15 +341,13 @@ export function useArchiveProductMutation() {
   const updateProductMutation = useUpdateProductMutation()
 
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: ProductFormValues }) => {
-      return updateProductMutation.mutateAsync({
-        id,
-        values: {
-          ...values,
-          isActive: false,
-        },
-      })
-    },
+    mutationFn: async ({ id, values }: { id: string; values: ProductFormValues }) => updateProductMutation.mutateAsync({
+      id,
+      values: {
+        ...values,
+        isActive: false,
+      },
+    }),
   })
 }
 
@@ -326,15 +355,13 @@ export function useArchiveVariantMutation() {
   const updateVariantMutation = useUpdateVariantMutation()
 
   return useMutation({
-    mutationFn: async ({ id, variant }: { id: string; variant: VariantFormValues }) => {
-      return updateVariantMutation.mutateAsync({
-        id,
-        variant: {
-          ...variant,
-          isActive: false,
-        },
-      })
-    },
+    mutationFn: async ({ id, variant }: { id: string; variant: VariantFormValues }) => updateVariantMutation.mutateAsync({
+      id,
+      variant: {
+        ...variant,
+        isActive: false,
+      },
+    }),
   })
 }
 
