@@ -6,7 +6,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { api } from '@/lib/api'
-import { useCart, type CartItem } from '@/pos/hooks/useCart'
+import { useCart } from '@/pos/hooks/useCart'
 import { CartItemRow } from './CartItemRow'
 
 export function CartPanel() {
