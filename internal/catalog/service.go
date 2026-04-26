@@ -393,6 +393,19 @@ func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (
 	}, nil
 }
 
+func (s *Service) ImportProducts(ctx context.Context, inputs []CreateProductInput) ([]ProductWithVariants, error) {
+	results := make([]ProductWithVariants, 0, len(inputs))
+	for idx, input := range inputs {
+		product, err := s.CreateProduct(ctx, input)
+		if err != nil {
+			return nil, fmt.Errorf("importing product row %d: %w", idx+1, err)
+		}
+		results = append(results, product)
+	}
+
+	return results, nil
+}
+
 func (s *Service) GetProduct(ctx context.Context, id string) (ProductWithVariants, error) {
 	var uuid pgtype.UUID
 	if err := uuid.Scan(id); err != nil {

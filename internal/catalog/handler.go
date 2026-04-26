@@ -18,6 +18,7 @@ type catalogService interface {
 	UpdateCategory(context.Context, string, CreateCategoryInput) (sqlc.Category, error)
 	ListProducts(context.Context, ListProductsInput) ([]ProductWithVariants, error)
 	CreateProduct(context.Context, CreateProductInput) (ProductWithVariants, error)
+	ImportProducts(context.Context, []CreateProductInput) ([]ProductWithVariants, error)
 	GetProduct(context.Context, string) (ProductWithVariants, error)
 	UpdateProduct(context.Context, string, CreateProductInput) (ProductWithVariants, error)
 	CreateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error)
@@ -49,12 +50,13 @@ func (h *Handler) Routes() http.Handler {
 		})
 
 	// Products
-	r.Group(func(r chi.Router) {
-		r.Get("/products", h.ListProducts)
-		r.Post("/products", h.CreateProduct)
-		r.Get("/products/{id}", h.GetProduct)
-		r.Put("/products/{id}", h.UpdateProduct)
-	})
+		r.Group(func(r chi.Router) {
+			r.Get("/products", h.ListProducts)
+			r.Post("/products", h.CreateProduct)
+			r.Post("/import", h.ImportProducts)
+			r.Get("/products/{id}", h.GetProduct)
+			r.Put("/products/{id}", h.UpdateProduct)
+		})
 
 	// Variants
 	r.Group(func(r chi.Router) {
@@ -287,6 +289,42 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(successResponse{Data: product})
+}
+
+func (h *Handler) ImportProducts(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Products []CreateProductInput `json:"products"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(input.Products) == 0 {
+		http.Error(w, "products are required", http.StatusBadRequest)
+		return
+	}
+
+	products, err := h.service.ImportProducts(r.Context(), input.Products)
+	if err != nil {
+		if err == ErrSKUExists {
+			http.Error(w, "SKU already exists", http.StatusConflict)
+			return
+		}
+		if err == ErrBarcodeExists {
+			http.Error(w, "barcode already exists", http.StatusConflict)
+			return
+		}
+		if err == ErrCategoryNotFound {
+			http.Error(w, "category not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(successResponse{Data: products})
 }
 
 func (h *Handler) GetProduct(w http.ResponseWriter, r *http.Request) {

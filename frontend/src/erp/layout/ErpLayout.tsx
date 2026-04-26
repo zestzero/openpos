@@ -4,6 +4,7 @@ import { ChevronDown, Search, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
+import { ImportDrawer } from '../import/ImportDrawer'
 import { ErpNav } from '../navigation/ErpNav'
 
 const tabs = ['Products', 'Inventory', 'Reporting'] as const
@@ -34,7 +35,7 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                   <Input className="h-10 rounded-pill pl-9" placeholder="Search products, variants, reports" />
                 </div>
                 <Button variant="outline">Create product</Button>
-                <Button>Import CSV</Button>
+                <ImportDrawer />
               </div>
             </div>
 

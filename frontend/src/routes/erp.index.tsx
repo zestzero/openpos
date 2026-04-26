@@ -1,8 +1,9 @@
 import { createRoute } from '@tanstack/react-router'
-import { ArrowRight, BarChart3, Boxes, FileDown, Package, Plus, Upload } from 'lucide-react'
+import { ArrowRight, BarChart3, Boxes, FileDown, Package, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ImportDrawer } from '@/erp/import/ImportDrawer'
 import { Route as erpRoute } from './erp'
 
 // erp.index route module
@@ -34,10 +35,7 @@ function ErpIndexRoute() {
               <Plus className="h-4 w-4" />
               Create product
             </Button>
-            <Button variant="outline" className="gap-2">
-              <Upload className="h-4 w-4" />
-              Import CSV
-            </Button>
+            <ImportDrawer />
             <Button variant="ghost" className="gap-2">
               <FileDown className="h-4 w-4" />
               Export report
