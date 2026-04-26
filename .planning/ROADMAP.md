@@ -100,7 +100,7 @@
 
 **Status:** Not started
 
-**Plans:** 8/9 plans executed
+**Plans:** 9/9 plans complete
 - [x] 04-01-PLAN.md — Order-item cost snapshots for stable gross profit
 - [x] 04-02-PLAN.md — Reporting APIs for monthly sales and gross profit
 - [x] 04-03-PLAN.md — Category sort order and reorder support
@@ -109,7 +109,7 @@
 - [x] 04-06-PLAN.md — Product and category CRUD workflows
 - [x] 04-07-PLAN.md — Barcode generation and spreadsheet import
 - [x] 04-08-PLAN.md — Reporting dashboard and THB summary cards
-- [ ] 04-09-PLAN.md — PDF/XLSX export actions
+- [x] 04-09-PLAN.md — PDF/XLSX export actions
 
 **Success Criteria:**
 1. Owner can create products with name, description, category, and images via ERP UI
