@@ -48,7 +48,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Product Management
 
 - [x] **PROD-01**: Owner can create products with name, description, category, and images
-- [ ] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
+- [x] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
 - [x] **PROD-03**: Owner can edit and archive products and variants
 - [x] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
 - [x] **PROD-05**: Owner can assign or generate barcodes for each variant
@@ -163,7 +163,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OFF-03 | Phase 2 | Complete |
 | OFF-04 | Phase 2 | Complete |
 | PROD-01 | Phase 4 | Complete |
-| PROD-02 | Phase 4 | Pending |
+| PROD-02 | Phase 4 | Complete |
 | PROD-03 | Phase 4 | Complete |
 | PROD-04 | Phase 4 | Complete |
 | PROD-05 | Phase 4 | Complete |

@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 04-07-PLAN.md
-last_updated: "2026-04-26T04:02:34.059Z"
+last_updated: "2026-04-26T04:20:11.779Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 19
-  completed_plans: 12
+  completed_plans: 14
 ---
 
 # STATE.md
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 04 (erp-management-reporting) — EXECUTING
-Plan: 6 of 9
+Plan: 7 of 9
 
 ## Phase Overview
 
@@ -77,6 +77,11 @@ Plan: 6 of 9
 - [Phase 04-erp-management-reporting]: Use a dedicated ERP drawer for spreadsheet import so validation and submit stay inside the owner workspace.
 - [Phase 04-erp-management-reporting]: Parse CSV/XLSX client-side, validate rows before submit, and group variants into product payloads.
 - [Phase 04-erp-management-reporting]: Reuse catalog product creation logic behind a dedicated POST /api/catalog/import endpoint.
+- [Phase 04-erp-management-reporting]: Load monthly-sales and gross-profit independently with TanStack Query, then merge rows client-side for the dashboard.
+- [Phase 04-erp-management-reporting]: Use right-side drawers for product and category create/edit flows so the ERP stays table-first.
+- [Phase 04-erp-management-reporting]: Keep catalog money values in satang internally and format with the shared THB helper at the edge.
+- [Phase 04-erp-management-reporting]: Disable archive and reorder controls while mutations are pending to avoid conflicting writes.
+- [Phase 04-erp-management-reporting]: Add import API compatibility helpers so the existing spreadsheet drawer still compiles against the new catalog hook file.
 
 ## Research Flags
 
@@ -110,3 +115,4 @@ Resume file: None
 | Phase 04-erp-management-reporting P05 | 10 min | 2 tasks | 7 files |
 | Phase 04-erp-management-reporting P02 | 8 min | 2 tasks | 11 files |
 | Phase 04-erp-management-reporting P07 | 12 min | 2 tasks | 10 files |
+| Phase 04-erp-management-reporting P06 | 1h 15m | 2 tasks | 8 files |
