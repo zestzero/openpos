@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ReportDashboard } from '../reports/ReportDashboard'
 import { ReportChart } from '../reports/ReportChart'
+import { buildReportExportFilename } from '../reports/exportReport'
 import { mergeReportingRows, reportingApi } from '@/lib/reporting-api'
+
+const { exportReportRows } = vi.hoisted(() => ({
+  exportReportRows: vi.fn(),
+}))
 
 vi.mock('@/lib/reporting-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/reporting-api')>()
@@ -16,6 +21,15 @@ vi.mock('@/lib/reporting-api', async (importOriginal) => {
       getMonthlySales: vi.fn(),
       getGrossProfit: vi.fn(),
     },
+  }
+})
+
+vi.mock('../reports/exportReport', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../reports/exportReport')>()
+
+  return {
+    ...actual,
+    exportReportRows,
   }
 })
 
@@ -91,6 +105,38 @@ describe('reporting dashboard', () => {
     expect((await screen.findAllByText('Mar 2026')).length).toBeGreaterThan(0)
     expect(await screen.findByText(/฿980\.00/)).toBeInTheDocument()
     expect(await screen.findByText(/฿340\.00/)).toBeInTheDocument()
+  })
+
+  it('exports the active dashboard rows to pdf and xlsx', async () => {
+    renderDashboard()
+
+    await screen.findByText('Monthly sales and gross profit')
+
+    await (await screen.findByRole('button', { name: 'Export PDF' })).click()
+    await (await screen.findByRole('button', { name: 'Export XLSX' })).click()
+
+    expect(exportReportRows).toHaveBeenCalledTimes(2)
+    expect(exportReportRows).toHaveBeenNthCalledWith(1, 'pdf', expect.objectContaining({
+      title: 'Monthly sales and gross profit',
+      rows: expect.arrayContaining([
+        expect.objectContaining({ month: '2026-04', revenue: 125000, grossProfit: 49000 }),
+      ]),
+    }))
+    expect(exportReportRows).toHaveBeenNthCalledWith(2, 'xlsx', expect.objectContaining({
+      title: 'Monthly sales and gross profit',
+      rows: expect.arrayContaining([
+        expect.objectContaining({ month: '2026-03', revenue: 98000, grossProfit: 34000 }),
+      ]),
+    }))
+  })
+
+  it('builds filenames from the visible report range', () => {
+    expect(buildReportExportFilename('pdf', 'Monthly sales and gross profit', [{ month: '2026-04' }, { month: '2026-03' }] as any)).toBe(
+      'monthly-sales-and-gross-profit-2026-03-to-2026-04.pdf',
+    )
+    expect(buildReportExportFilename('xlsx', 'Monthly sales and gross profit', [{ month: '2026-04' }] as any)).toBe(
+      'monthly-sales-and-gross-profit-2026-04.xlsx',
+    )
   })
 
   it('renders the chart panel directly from merged dashboard rows', () => {
