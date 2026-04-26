@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-04-26T03:33:32.746Z"
+last_updated: "2026-04-26T03:38:59.955Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 19
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # STATE.md
@@ -67,6 +67,7 @@ Plan: 3 of 9
 - [Phase 04-erp-management-reporting]: Anchor the smoke test on the shared THB formatter to keep monetary display behavior covered.
 - [Phase 04-erp-management-reporting]: Categories persist sort_order in the database so ERP list ordering stays stable across refreshes.
 - [Phase 04-erp-management-reporting]: Category reordering uses a dedicated PUT /categories/reorder endpoint with handler-side payload validation.
+- [Phase 04]: Snapshot live variant cost during order creation and preserve it with regression tests.
 
 ## Research Flags
 
