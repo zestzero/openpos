@@ -22,10 +22,10 @@ export function ReportChart({ rows }: ReportChartProps) {
   const chartRows = [...rows].reverse()
 
   return (
-    <section className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]" aria-label="Monthly trend">
+    <section className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]" aria-labelledby="monthly-trend-heading">
       <Card className="border-border/70 bg-card/95">
         <CardHeader className="space-y-2 pb-0">
-          <CardTitle className="text-xl">Monthly trend</CardTitle>
+          <CardTitle id="monthly-trend-heading" className="text-xl">Monthly trend</CardTitle>
           <CardDescription>
             Revenue and gross profit move together here, so owners can compare sales volume with margin pressure at a glance.
           </CardDescription>

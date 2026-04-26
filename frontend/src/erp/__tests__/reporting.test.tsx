@@ -3,7 +3,8 @@ import { render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ReportDashboard } from '../reports/ReportDashboard'
-import { reportingApi } from '@/lib/reporting-api'
+import { ReportChart } from '../reports/ReportChart'
+import { mergeReportingRows, reportingApi } from '@/lib/reporting-api'
 
 vi.mock('@/lib/reporting-api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/reporting-api')>()
@@ -90,5 +91,13 @@ describe('reporting dashboard', () => {
     expect((await screen.findAllByText('Mar 2026')).length).toBeGreaterThan(0)
     expect(await screen.findByText(/฿980\.00/)).toBeInTheDocument()
     expect(await screen.findByText(/฿340\.00/)).toBeInTheDocument()
+  })
+
+  it('renders the chart panel directly from merged dashboard rows', () => {
+    render(<ReportChart rows={mergeReportingRows(monthlySales, grossProfit)} />)
+
+    expect(screen.getByRole('region', { name: 'Monthly trend' })).toBeInTheDocument()
+    expect(screen.getByText('Revenue ฿1,250.00')).toBeInTheDocument()
+    expect(screen.getByText('Gross profit ฿490.00')).toBeInTheDocument()
   })
 })
