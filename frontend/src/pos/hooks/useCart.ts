@@ -13,20 +13,14 @@ export interface CartItem {
   subtotal: number // satang
 }
 
-interface CartState {
-  items: CartItem[]
-  itemCount: number
-  total: number // satang
-}
-
 interface VariantWithProductName {
   id: string
   product_id: string
   sku: string
-  barcode?: string
+  barcode?: string | null
   name: string
   price: number
-  cost?: number
+  cost?: number | null
   is_active: boolean
   productName: string
 }

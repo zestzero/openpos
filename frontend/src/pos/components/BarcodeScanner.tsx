@@ -3,7 +3,6 @@ import { Camera, CheckCircle2, XCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { api, type Variant } from '@/lib/api'
-import { formatTHB } from '@/lib/formatCurrency'
 import { useBarcodeDetector } from '@/pos/hooks/useBarcodeDetector'
 
 interface BarcodeScannerProps {

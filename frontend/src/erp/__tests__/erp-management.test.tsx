@@ -5,6 +5,16 @@ import { CategoryTable } from '../tables/CategoryTable'
 import { ProductDrawer } from '../products/ProductDrawer'
 import { ProductTable } from '../tables/ProductTable'
 
+function makeCategory(id: string, name: string) {
+  return {
+    id,
+    name,
+    description: '',
+    parent_id: null,
+    sort_order: 1,
+  }
+}
+
 describe('ERP catalog management', () => {
   it('renders product and category empty states instead of placeholders', () => {
     render(
@@ -34,12 +44,12 @@ describe('ERP catalog management', () => {
 
   it('renders the product drawer with image and nested variant fields', () => {
     render(
-      <ProductDrawer
-        open
-        categories={[
-          { id: 'cat-1', name: 'Tea' },
-          { id: 'cat-2', name: 'Coffee' },
-        ]}
+        <ProductDrawer
+          open
+          categories={[
+          makeCategory('cat-1', 'Tea'),
+          makeCategory('cat-2', 'Coffee'),
+          ]}
         onOpenChange={() => undefined}
         onSave={() => undefined}
       />,
@@ -53,12 +63,12 @@ describe('ERP catalog management', () => {
 
   it('renders the category drawer with parent category controls', () => {
     render(
-      <CategoryDrawer
-        open
-        categories={[
-          { id: 'cat-1', name: 'Tea' },
-          { id: 'cat-2', name: 'Coffee' },
-        ]}
+        <CategoryDrawer
+          open
+          categories={[
+          makeCategory('cat-1', 'Tea'),
+          makeCategory('cat-2', 'Coffee'),
+          ]}
         onOpenChange={() => undefined}
         onSave={() => undefined}
       />,
@@ -71,10 +81,10 @@ describe('ERP catalog management', () => {
 
   it('formats money values in THB inside the product table', () => {
     render(
-      <ProductTable
-        categories={[
-          { id: 'cat-1', name: 'Tea' },
-        ]}
+        <ProductTable
+          categories={[
+          makeCategory('cat-1', 'Tea'),
+          ]}
         products={[
           {
             product: {
@@ -85,7 +95,7 @@ describe('ERP catalog management', () => {
               image_url: 'https://example.com/tea.png',
               is_active: true,
             },
-            category: { id: 'cat-1', name: 'Tea' },
+            category: makeCategory('cat-1', 'Tea'),
             variants: [
               {
                 id: 'var-1',

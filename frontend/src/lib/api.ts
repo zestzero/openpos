@@ -43,6 +43,10 @@ export interface Variant {
   is_active: boolean
 }
 
+export interface SearchVariantRow extends Variant {
+  product_name: string
+}
+
 export interface ProductWithVariants {
   product: Product
   category?: Category
@@ -149,7 +153,7 @@ export const api = {
     return requestJSON<ApiSuccess<ProductWithVariants[]>>(`/api/catalog/products${query ? `?${query}` : ''}`)
   },
   searchVariant(query: string) {
-    return requestJSON<ApiSuccess<Variant[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
+    return requestJSON<ApiSuccess<SearchVariantRow[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
   },
   completePayment(orderId: string, body: CompletePaymentRequest) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/payments`, {

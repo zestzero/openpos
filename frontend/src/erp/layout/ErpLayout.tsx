@@ -18,7 +18,7 @@ const tabs = [
 export function ErpLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">

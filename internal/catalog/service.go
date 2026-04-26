@@ -5,17 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zestzero/openpos/db/sqlc"
 )
 
 var (
-	ErrSKUExists       = errors.New("SKU already exists")
-	ErrBarcodeExists   = errors.New("barcode already exists")
-	ErrProductNotFound = errors.New("product not found")
-	ErrVariantNotFound = errors.New("variant not found")
+	ErrSKUExists        = errors.New("SKU already exists")
+	ErrBarcodeExists    = errors.New("barcode already exists")
+	ErrProductNotFound  = errors.New("product not found")
+	ErrVariantNotFound  = errors.New("variant not found")
 	ErrCategoryNotFound = errors.New("category not found")
 )
 
@@ -27,7 +27,7 @@ type Service struct {
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{
 		pool: pool,
-		db: sqlc.New(pool),
+		db:   sqlc.New(pool),
 	}
 }
 
@@ -263,9 +263,9 @@ type CreateVariantInput struct {
 }
 
 type ProductWithVariants struct {
-	Product  sqlc.Product
-	Category *sqlc.Category
-	Variants []sqlc.Variant
+	Product  sqlc.Product   `json:"product"`
+	Category *sqlc.Category `json:"category,omitempty"`
+	Variants []sqlc.Variant `json:"variants"`
 }
 
 func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (ProductWithVariants, error) {

@@ -6,11 +6,18 @@ import { useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { api } from '@/lib/api'
+import { getStoredSession } from '@/lib/auth'
 import { useCart } from '@/pos/hooks/useCart'
+import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
+import { useOfflineOrders } from '@/pos/hooks/useOfflineOrders'
 import { CartItemRow } from './CartItemRow'
+import { SyncStatus } from './SyncStatus'
+import { toast } from 'sonner'
 
 export function CartPanel() {
   const navigate = useNavigate()
+  const { isOnline } = useNetworkStatus()
+  const { queueOrder } = useOfflineOrders()
   const { items, itemCount, total, updateQuantity, removeItem, clearCart, isEmpty } =
     useCart()
 
@@ -21,14 +28,36 @@ export function CartPanel() {
     onSuccess: () => {
       clearCart()
       navigate({ to: '/pos' })
+      toast.success('Sale completed successfully')
     },
-    onError: () => {
-      // Handle error - in production would show toast
-      alert('Failed to complete sale. Please try again.')
+    onError: (error) => {
+      // If online request fails, fall back to offline queue
+      void error
+      void handleOfflineFallback()
     },
   })
 
-  const handleCompleteSale = () => {
+  const handleOfflineFallback = async () => {
+    const orderId = crypto.randomUUID()
+    const session = getStoredSession()
+    const orderItems = items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+      priceSnapshot: item.price,
+    }))
+
+    await queueOrder({
+      id: orderId,
+      userId: session?.user.id ?? 'unknown',
+      items: orderItems,
+      total,
+    })
+
+    clearCart()
+    toast.info('Order saved offline and will sync when connection returns')
+  }
+
+  const handleCompleteSale = async () => {
     const orderId = crypto.randomUUID()
     const orderItems = items.map((item) => ({
       variant_id: item.variantId,
@@ -36,10 +65,20 @@ export function CartPanel() {
       price_snapshot: item.price,
     }))
 
-    createOrderMutation.mutate({
-      id: orderId,
-      items: orderItems,
-    })
+    if (isOnline) {
+      // Try online first
+      try {
+        await createOrderMutation.mutateAsync({
+          id: orderId,
+          items: orderItems,
+        })
+      } catch {
+        // Error handled in onError callback
+      }
+    } else {
+      // Offline: queue locally
+      await handleOfflineFallback()
+    }
   }
 
   if (isEmpty) {
@@ -58,10 +97,13 @@ export function CartPanel() {
     <div className="flex flex-col">
       <div className="flex items-center justify-between border-b pb-3">
         <h2 className="text-lg font-semibold">Cart ({itemCount} items)</h2>
-        <Button variant="ghost" size="sm" onClick={clearCart}>
-          <Trash2 className="mr-1 h-4 w-4" />
-          Clear All
-        </Button>
+        <div className="flex items-center gap-3">
+          <SyncStatus />
+          <Button variant="ghost" size="sm" onClick={clearCart}>
+            <Trash2 className="mr-1 h-4 w-4" />
+            Clear All
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-2">
@@ -91,6 +133,11 @@ export function CartPanel() {
         >
           {createOrderMutation.isPending ? 'Processing...' : 'Complete Sale'}
         </Button>
+        {!isOnline && (
+          <p className="mt-2 text-center text-xs text-amber-600">
+            Offline mode - order will be queued
+          </p>
+        )}
       </div>
     </div>
   )

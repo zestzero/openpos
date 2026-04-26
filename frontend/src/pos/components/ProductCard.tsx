@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/formatCurrency'
-import { api, type ProductWithVariants } from '@/lib/api'
+import { type ProductWithVariants } from '@/lib/api'
 import { useCart } from '@/pos/hooks/useCart'
 import { useFavorites } from '@/pos/hooks/useFavorites'
 

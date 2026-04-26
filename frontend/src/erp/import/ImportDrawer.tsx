@@ -123,11 +123,11 @@ function validateRows(baseRows: ImportRowDraft[]): ImportPreviewRow[] {
     if (row.priceSatang != null && row.priceSatang < 0) errors.push('Price must be non-negative')
     if (row.costSatang != null && row.costSatang < 0) errors.push('Cost must be non-negative')
 
-    if (row.sku && duplicateSkuRows.get(row.sku)?.length > 1) {
+    if (row.sku && (duplicateSkuRows.get(row.sku)?.length ?? 0) > 1) {
       errors.push('SKU must be unique inside the import file')
     }
 
-    if (row.barcode && duplicateBarcodeRows.get(row.barcode)?.length > 1) {
+    if (row.barcode && (duplicateBarcodeRows.get(row.barcode)?.length ?? 0) > 1) {
       errors.push('Barcode must be unique inside the import file')
     }
 

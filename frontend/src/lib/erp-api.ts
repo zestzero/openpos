@@ -66,12 +66,6 @@ interface ApiSuccess<T> {
   data: T
 }
 
-interface RawProductRecord {
-  Product: CatalogProduct
-  Category: CatalogCategory | null
-  Variants: CatalogVariant[]
-}
-
 export class ErpApiError extends Error {
   readonly status: number
 
@@ -120,14 +114,6 @@ function safeParseJSON(text: string) {
   }
 }
 
-function normalizeProductRecord(record: RawProductRecord): CatalogProductRecord {
-  return {
-    product: record.Product,
-    category: record.Category,
-    variants: record.Variants,
-  }
-}
-
 function buildCategoryPayload(values: CategoryFormValues) {
   return {
     name: values.name,
@@ -160,8 +146,8 @@ async function fetchCategories() {
 }
 
 async function fetchProducts() {
-  const response = await requestJSON<ApiSuccess<RawProductRecord[]>>('/api/catalog/products')
-  return response.data.map(normalizeProductRecord)
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/products')
+  return response.data
 }
 
 async function createCategory(values: CategoryFormValues) {
@@ -188,28 +174,28 @@ async function reorderCategories(ids: string[]) {
 }
 
 async function createProduct(values: ProductFormValues) {
-  const response = await requestJSON<ApiSuccess<RawProductRecord>>('/api/catalog/products', {
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord>>('/api/catalog/products', {
     method: 'POST',
     body: JSON.stringify(buildProductPayload(values)),
   })
-  return normalizeProductRecord(response.data)
+  return response.data
 }
 
 async function importProductsRequest(input: { products: ImportProductInput[] }) {
-  const response = await requestJSON<ApiSuccess<RawProductRecord[]>>('/api/catalog/import', {
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/import', {
     method: 'POST',
     body: JSON.stringify(input),
   })
 
-  return response.data.map(normalizeProductRecord)
+  return response.data
 }
 
 async function updateProduct(id: string, values: ProductFormValues) {
-  const response = await requestJSON<ApiSuccess<RawProductRecord>>(`/api/catalog/products/${id}`, {
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord>>(`/api/catalog/products/${id}`, {
     method: 'PUT',
     body: JSON.stringify(buildProductPayload(values)),
   })
-  return normalizeProductRecord(response.data)
+  return response.data
 }
 
 async function createVariant(productId: string, variant: VariantFormValues) {

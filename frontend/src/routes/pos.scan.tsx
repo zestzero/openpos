@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Barcode, Camera, CheckCircle2, Keyboard, XCircle } from 'lucide-react'
+import { Camera, CheckCircle2, Keyboard, XCircle } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
+import { createRoute } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -15,8 +16,6 @@ export const Route = createRoute({
   path: 'scan',
   component: ScanPage,
 })
-
-import { createRoute } from '@tanstack/react-router'
 
 function ScanPage() {
   const navigate = useNavigate()
@@ -74,7 +73,7 @@ function ScanPage() {
     setLastError(null)
   }
 
-  const handleScanError = (code: string, error: string) => {
+  const handleScanError = (_code: string, error: string) => {
     setLastError(error)
     setShowError(true)
     

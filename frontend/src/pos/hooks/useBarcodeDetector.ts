@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { Html5QrcodeSupportedFormats } from 'html5-qrcode'
 
 export interface UseBarcodeDetectorReturn {
   isSupported: boolean
@@ -9,8 +10,16 @@ export interface UseBarcodeDetectorReturn {
   stopScanning: () => void
 }
 
-// BarcodeDetector formats to support
-const BARCODE_FORMATS = [
+interface BarcodeDetection {
+  rawValue: string
+}
+
+interface BarcodeDetectorLike {
+  detect(video: HTMLVideoElement): Promise<BarcodeDetection[]>
+}
+
+// Native BarcodeDetector formats to support
+const BARCODE_DETECTOR_FORMATS = [
   'ean_13',
   'ean_8',
   'code_128',
@@ -18,13 +27,24 @@ const BARCODE_FORMATS = [
   'upc_a',
   'upc_e',
   'qr_code',
-] as const
+]
+
+// html5-qrcode uses its own enum values
+const HTML5_QRCODE_FORMATS: Html5QrcodeSupportedFormats[] = [
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.QR_CODE,
+]
 
 // HTML5-QRCode configuration
 const HTML5_QRCODE_CONFIG = {
   fps: 10,
   qrbox: { width: 250, height: 250 },
-  formatsToSupport: BARCODE_FORMATS,
+  formatsToSupport: HTML5_QRCODE_FORMATS,
 }
 
 export function useBarcodeDetector(): UseBarcodeDetectorReturn {
@@ -38,7 +58,7 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
 
   const streamRef = useRef<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const detectorRef = useRef<InstanceType<typeof BarcodeDetector> | null>(null)
+  const detectorRef = useRef<BarcodeDetectorLike | null>(null)
   const html5QrcodeScannerRef = useRef<unknown | null>(null)
   const animationFrameRef = useRef<number | null>(null)
   const isHtml5FallbackRef = useRef(false)
@@ -83,7 +103,7 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
   }, [])
 
   const detectBarcodes = useCallback(
-    async (video: HTMLVideoElement, detector: BarcodeDetector) => {
+    async (video: HTMLVideoElement, detector: BarcodeDetectorLike) => {
       if (!video.videoWidth || !video.videoHeight) {
         animationFrameRef.current = requestAnimationFrame(() => detectBarcodes(video, detector))
         return
@@ -126,13 +146,15 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
 
       try {
         // Check if BarcodeDetector is available
-        if (isSupported && 'BarcodeDetector' in window) {
+        const windowWithBarcodeDetector = window as Window & {
+          BarcodeDetector?: new (options: { formats: string[] }) => BarcodeDetectorLike
+        }
+
+        if (isSupported && windowWithBarcodeDetector.BarcodeDetector) {
           // Use native BarcodeDetector API
-          const BarcodeDetectorClass = window.BarcodeDetector as {
-            new (options: { formats: readonly string[] }): BarcodeDetector
-          }
+          const BarcodeDetectorClass = windowWithBarcodeDetector.BarcodeDetector
           detectorRef.current = new BarcodeDetectorClass({
-            formats: BARCODE_FORMATS,
+            formats: BARCODE_DETECTOR_FORMATS,
           })
 
           // Get camera stream
