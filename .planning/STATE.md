@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-25T16:25:12.480Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-04-26T03:29:39.626Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 6
+  total_plans: 19
+  completed_plans: 7
 ---
 
 # STATE.md
@@ -23,8 +23,8 @@ progress:
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
+Phase: 04 (erp-management-reporting) — EXECUTING
+Plan: 2 of 9
 
 ## Phase Overview
 
@@ -62,6 +62,9 @@ Plan: Not started
 - Persist JWTs and cached user payloads in localStorage so the session can bootstrap instantly after refresh.
 - Keep the POS shell mobile-first with a fixed header, bottom navigation, and thumb-reach primary actions.
 - Ship a lightweight manifest plus service worker so the frontend app shell is installable and cacheable offline.
+- [Phase 04-erp-management-reporting]: Use a dedicated Vitest config with jsdom so ERP tests stay isolated from app build settings.
+- [Phase 04-erp-management-reporting]: Centralize DOM matcher and cleanup setup in frontend/src/test/setup.ts for all ERP specs.
+- [Phase 04-erp-management-reporting]: Anchor the smoke test on the shared THB formatter to keep monetary display behavior covered.
 
 ## Research Flags
 
@@ -80,8 +83,8 @@ Plan: Not started
 
 ## Session Continuity
 
-Last session: 2026-04-25T15:06:19.453Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-26T03:29:39.624Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
 
 ---
@@ -91,3 +94,4 @@ Resume file: None
 | Run | Duration | Tasks | Files |
 |-----|----------|-------|-------|
 | Phase 02 P01 | 8m | 3 tasks | 27 files |
+| Phase 04-erp-management-reporting P04 | 5 min | 1 tasks | 5 files |

@@ -21,14 +21,14 @@ var (
 
 type orderStore interface {
 	CreateOrder(context.Context, sqlc.CreateOrderParams) (sqlc.Order, error)
-	CreateOrderItem(context.Context, sqlc.CreateOrderItemParams) (sqlc.OrderItem, error)
+	CreateOrderItem(context.Context, sqlc.CreateOrderItemParams) (sqlc.CreateOrderItemRow, error)
 	CreatePayment(context.Context, sqlc.CreatePaymentParams) (sqlc.Payment, error)
 	GetOrderByClientUUID(context.Context, string) (sqlc.Order, error)
 	GetOrderByID(context.Context, pgtype.UUID) (sqlc.Order, error)
 	GetPaymentByOrderID(context.Context, pgtype.UUID) (sqlc.Payment, error)
 	GetVariant(context.Context, pgtype.UUID) (sqlc.Variant, error)
 	ListOrders(context.Context, sqlc.ListOrdersParams) ([]sqlc.Order, error)
-	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.OrderItem, error)
+	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.ListOrderItemsByOrderIDRow, error)
 }
 
 type inventoryGateway interface {
@@ -299,12 +299,22 @@ func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, i
 		if err != nil {
 			return nil, err
 		}
+		variant, err := store.GetVariant(ctx, variantID)
+		if err != nil {
+			return nil, fmt.Errorf("loading variant cost for %s: %w", item.VariantID, err)
+		}
+		costAtSale := pgtype.Int8{}
+		if variant.Cost.Valid {
+			costAtSale.Int64 = variant.Cost.Int64
+			costAtSale.Valid = true
+		}
 		if _, err := store.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
-			OrderID:   orderRow.ID,
-			VariantID: variantID,
-			Quantity:  item.Quantity,
-			UnitPrice: item.UnitPrice,
-			Subtotal:  subtotal,
+			OrderID:    orderRow.ID,
+			VariantID:  variantID,
+			Quantity:   item.Quantity,
+			UnitPrice:  item.UnitPrice,
+			Subtotal:   subtotal,
+			CostAtSale: costAtSale,
 		}); err != nil {
 			return nil, fmt.Errorf("creating order item: %w", err)
 		}
@@ -404,7 +414,7 @@ func mustParseUUID(value string) pgtype.UUID {
 	return id
 }
 
-func toOrder(row sqlc.Order, items []sqlc.OrderItem) Order {
+func toOrder(row sqlc.Order, items []sqlc.ListOrderItemsByOrderIDRow) Order {
 	order := Order{
 		ID:          row.ID.String(),
 		ClientUUID:  row.ClientUuid,

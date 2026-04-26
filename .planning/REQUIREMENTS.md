@@ -73,7 +73,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PLAT-02**: Go backend with chi router, sqlc for type-safe SQL, pgx for PostgreSQL driver
 - [x] **PLAT-03**: PostgreSQL database with golang-migrate for schema migrations
 - [x] **PLAT-04**: PWA with service worker for offline POS capability
-- [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
+- [x] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
 ## v2 Requirements
 
@@ -179,7 +179,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
 | PLAT-04 | Phase 2 | Complete |
-| PLAT-05 | Phase 4 | Pending |
+| PLAT-05 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 32 total

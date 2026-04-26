@@ -104,7 +104,7 @@
 - [ ] 04-01-PLAN.md — Order-item cost snapshots for stable gross profit
 - [ ] 04-02-PLAN.md — Reporting APIs for monthly sales and gross profit
 - [ ] 04-03-PLAN.md — Category sort order and reorder support
-- [ ] 04-04-PLAN.md — Vitest setup for ERP UI tests
+- [x] 04-04-PLAN.md — Vitest setup for ERP UI tests
 - [ ] 04-05-PLAN.md — ERP shell, owner guard, and tabbed layout
 - [ ] 04-06-PLAN.md — Product and category CRUD workflows
 - [ ] 04-07-PLAN.md — Barcode generation and spreadsheet import
