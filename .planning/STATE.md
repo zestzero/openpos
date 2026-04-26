@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-04-26T03:29:39.626Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-04-26T03:33:32.746Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 19
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # STATE.md
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 04 (erp-management-reporting) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 
 ## Phase Overview
 
@@ -65,6 +65,8 @@ Plan: 2 of 9
 - [Phase 04-erp-management-reporting]: Use a dedicated Vitest config with jsdom so ERP tests stay isolated from app build settings.
 - [Phase 04-erp-management-reporting]: Centralize DOM matcher and cleanup setup in frontend/src/test/setup.ts for all ERP specs.
 - [Phase 04-erp-management-reporting]: Anchor the smoke test on the shared THB formatter to keep monetary display behavior covered.
+- [Phase 04-erp-management-reporting]: Categories persist sort_order in the database so ERP list ordering stays stable across refreshes.
+- [Phase 04-erp-management-reporting]: Category reordering uses a dedicated PUT /categories/reorder endpoint with handler-side payload validation.
 
 ## Research Flags
 
@@ -83,8 +85,8 @@ Plan: 2 of 9
 
 ## Session Continuity
 
-Last session: 2026-04-26T03:29:39.624Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-04-26T03:33:32.744Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
 
 ---
