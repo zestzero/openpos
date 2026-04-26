@@ -196,13 +196,13 @@ func (q *Queries) GetCategory(ctx context.Context, id pgtype.UUID) (GetCategoryR
 }
 
 const getNextCategorySortOrder = `-- name: GetNextCategorySortOrder :one
-SELECT COALESCE(MAX(sort_order), -1) + 1 AS sort_order
+SELECT COALESCE(MAX(sort_order), -1)::BIGINT + 1 AS sort_order
 FROM categories
 `
 
-func (q *Queries) GetNextCategorySortOrder(ctx context.Context) (int64, error) {
+func (q *Queries) GetNextCategorySortOrder(ctx context.Context) (int32, error) {
 	row := q.db.QueryRow(ctx, getNextCategorySortOrder)
-	var sort_order int64
+	var sort_order int32
 	err := row.Scan(&sort_order)
 	return sort_order, err
 }

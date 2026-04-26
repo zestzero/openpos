@@ -18,6 +18,14 @@ type Category struct {
 	SortOrder   int64              `json:"sort_order"`
 }
 
+type GrossProfitReport struct {
+	Month           string `json:"month"`
+	OrderCount      int64  `json:"order_count"`
+	Revenue         int64  `json:"revenue"`
+	CostOfGoodsSold int64  `json:"cost_of_goods_sold"`
+	GrossProfit     int64  `json:"gross_profit"`
+}
+
 type InventoryLedger struct {
 	ID             pgtype.UUID        `json:"id"`
 	VariantID      pgtype.UUID        `json:"variant_id"`
@@ -26,6 +34,13 @@ type InventoryLedger struct {
 	ReferenceID    pgtype.UUID        `json:"reference_id"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	CreatedBy      pgtype.UUID        `json:"created_by"`
+}
+
+type MonthlySalesReport struct {
+	Month             string `json:"month"`
+	OrderCount        int64  `json:"order_count"`
+	TotalRevenue      int64  `json:"total_revenue"`
+	AverageOrderValue int64  `json:"average_order_value"`
 }
 
 type Order struct {

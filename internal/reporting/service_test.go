@@ -12,7 +12,7 @@ func TestServiceMonthlySales(t *testing.T) {
 	t.Parallel()
 
 	queries := &fakeReportingQueries{
-		monthlySales: []sqlc.ListMonthlySalesRow{{Month: "2026-04", OrderCount: 2, TotalRevenue: 3500, AverageOrderValue: 1750}},
+		monthlySales: []sqlc.MonthlySalesReport{{Month: "2026-04", OrderCount: 2, TotalRevenue: 3500, AverageOrderValue: 1750}},
 	}
 	service := NewService(queries)
 
@@ -32,7 +32,7 @@ func TestServiceGrossProfit(t *testing.T) {
 	t.Parallel()
 
 	queries := &fakeReportingQueries{
-		grossProfit: []sqlc.ListGrossProfitRow{{Month: "2026-04", OrderCount: 2, Revenue: 3500, CostOfGoodsSold: 2100, GrossProfit: 1400}},
+		grossProfit: []sqlc.GrossProfitReport{{Month: "2026-04", OrderCount: 2, Revenue: 3500, CostOfGoodsSold: 2100, GrossProfit: 1400}},
 	}
 	service := NewService(queries)
 
@@ -60,20 +60,20 @@ func TestServicePropagatesQueryErrors(t *testing.T) {
 }
 
 type fakeReportingQueries struct {
-	monthlySales    []sqlc.ListMonthlySalesRow
+	monthlySales    []sqlc.MonthlySalesReport
 	monthlySalesErr error
-	grossProfit     []sqlc.ListGrossProfitRow
+	grossProfit     []sqlc.GrossProfitReport
 	grossProfitErr  error
 }
 
-func (f *fakeReportingQueries) ListMonthlySales(context.Context) ([]sqlc.ListMonthlySalesRow, error) {
+func (f *fakeReportingQueries) ListMonthlySales(context.Context) ([]sqlc.MonthlySalesReport, error) {
 	if f.monthlySalesErr != nil {
 		return nil, f.monthlySalesErr
 	}
 	return f.monthlySales, nil
 }
 
-func (f *fakeReportingQueries) ListGrossProfit(context.Context) ([]sqlc.ListGrossProfitRow, error) {
+func (f *fakeReportingQueries) ListGrossProfit(context.Context) ([]sqlc.GrossProfitReport, error) {
 	if f.grossProfitErr != nil {
 		return nil, f.grossProfitErr
 	}
