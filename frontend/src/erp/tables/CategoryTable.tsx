@@ -6,12 +6,13 @@ import type { CatalogCategory } from '@/lib/erp-api'
 
 type CategoryTableProps = {
   categories: CatalogCategory[]
+  reorderBusy?: boolean
   onCreateCategory: () => void
   onEditCategory: (category: CatalogCategory) => void
   onReorderCategories: (ids: string[]) => void
 }
 
-export function CategoryTable({ categories, onCreateCategory, onEditCategory, onReorderCategories }: CategoryTableProps) {
+export function CategoryTable({ categories, reorderBusy = false, onCreateCategory, onEditCategory, onReorderCategories }: CategoryTableProps) {
   const moveCategory = (index: number, targetIndex: number) => {
     if (targetIndex < 0 || targetIndex >= categories.length) {
       return
@@ -66,13 +67,13 @@ export function CategoryTable({ categories, onCreateCategory, onEditCategory, on
                   <td className="px-6 py-4">Active</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index - 1)} disabled={index === 0}>
+                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index - 1)} disabled={index === 0 || reorderBusy}>
                         <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index + 1)} disabled={index === categories.length - 1}>
+                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index + 1)} disabled={index === categories.length - 1 || reorderBusy}>
                         <ArrowDown className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" className="gap-2" onClick={() => onEditCategory(category)}>
+                      <Button variant="outline" size="sm" className="gap-2" onClick={() => onEditCategory(category)} disabled={reorderBusy}>
                         <PencilLine className="h-4 w-4" />
                         Edit
                       </Button>

@@ -9,6 +9,7 @@ import type { CatalogCategory, CatalogProductRecord } from '@/lib/erp-api'
 type ProductTableProps = {
   products: CatalogProductRecord[]
   categories: CatalogCategory[]
+  archiveBusy?: boolean
   onCreateProduct: () => void
   onEditProduct: (product: CatalogProductRecord) => void
   onArchiveProduct: (product: CatalogProductRecord) => void
@@ -19,6 +20,7 @@ type ProductTableProps = {
 export function ProductTable({
   products,
   categories,
+  archiveBusy = false,
   onCreateProduct,
   onEditProduct,
   onArchiveProduct,
@@ -95,7 +97,7 @@ export function ProductTable({
                             <PencilLine className="h-4 w-4" />
                             Edit
                           </Button>
-                          <Button variant="destructive" size="sm" className="gap-2" onClick={() => onArchiveProduct(record)}>
+                          <Button variant="destructive" size="sm" className="gap-2" onClick={() => onArchiveProduct(record)} disabled={archiveBusy}>
                             <Archive className="h-4 w-4" />
                             Archive
                           </Button>
@@ -108,7 +110,7 @@ export function ProductTable({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Nested variants</p>
-                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, record.variants.map((variant) => variant.id))}>
+                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, record.variants.map((variant) => variant.id))} disabled={archiveBusy}>
                               Reorder variants
                             </Button>
                           </div>
@@ -139,13 +141,13 @@ export function ProductTable({
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index - 1)} disabled={index === 0}>
+                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index - 1)} disabled={index === 0 || archiveBusy}>
                                         <ChevronUp className="h-4 w-4" />
                                       </Button>
-                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === record.variants.length - 1}>
+                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === record.variants.length - 1 || archiveBusy}>
                                         <ChevronDown className="h-4 w-4" />
                                       </Button>
-                                      <Button variant="destructive" size="sm" onClick={() => onArchiveVariant(record, variant.id)}>
+                                      <Button variant="destructive" size="sm" onClick={() => onArchiveVariant(record, variant.id)} disabled={archiveBusy}>
                                         <Archive className="mr-2 h-4 w-4" />
                                         Archive variant
                                       </Button>

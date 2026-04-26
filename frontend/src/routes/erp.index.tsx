@@ -46,6 +46,8 @@ function ErpIndexRoute() {
   const updateVariantMutation = useUpdateVariantMutation()
   const archiveProductMutation = useArchiveProductMutation()
   const archiveVariantMutation = useArchiveVariantMutation()
+  const archiveBusy = archiveProductMutation.isPending || archiveVariantMutation.isPending
+  const reorderBusy = reorderCategoriesMutation.isPending
 
   const [productDrawerOpen, setProductDrawerOpen] = useState(false)
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false)
@@ -129,6 +131,7 @@ function ErpIndexRoute() {
         <ProductTable
           products={products}
           categories={categories}
+          archiveBusy={archiveBusy}
           onCreateProduct={openCreateProduct}
           onEditProduct={openEditProduct}
           onArchiveProduct={async (product) => {
@@ -140,6 +143,7 @@ function ErpIndexRoute() {
 
         <CategoryTable
           categories={categories}
+          reorderBusy={reorderBusy}
           onCreateCategory={openCreateCategory}
           onEditCategory={openEditCategory}
           onReorderCategories={async (ids) => {
