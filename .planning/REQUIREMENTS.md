@@ -63,7 +63,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Reporting
 
-- [ ] **RPT-01**: Owner can view monthly sales summary (total revenue, total orders, average order value)
+- [x] **RPT-01**: Owner can view monthly sales summary (total revenue, total orders, average order value)
 - [x] **RPT-02**: Owner can view gross profit report (revenue minus cost of goods sold)
 - [ ] **RPT-03**: Owner can export reports to PDF or Excel
 
@@ -172,7 +172,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INV-02 | Phase 1 | Complete |
 | INV-03 | Phase 1 | Complete |
 | INV-04 | Phase 1 | Complete |
-| RPT-01 | Phase 4 | Pending |
+| RPT-01 | Phase 4 | Complete |
 | RPT-02 | Phase 4 | Complete |
 | RPT-03 | Phase 4 | Pending |
 | PLAT-01 | Phase 2 | Complete |

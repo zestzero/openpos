@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-04-26T03:47:56.867Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-04-26T03:48:32.408Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 19
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # STATE.md
@@ -24,7 +24,7 @@ progress:
 ## Current Position
 
 Phase: 04 (erp-management-reporting) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 
 ## Phase Overview
 
@@ -71,6 +71,9 @@ Plan: 4 of 9
 - [Phase 04-erp-management-reporting]: Kept the ERP route owner-gated and composed it with an outlet-based shell.
 - [Phase 04-erp-management-reporting]: Used a fixed left nav, top utility bar, and tab strip to match the desktop ERP contract.
 - [Phase 04-erp-management-reporting]: Covered the owner guard and shell with a focused Vitest suite.
+- [Phase 04-erp-management-reporting]: Use SQL views for the monthly sales and gross profit read models so the backend exposes stable reporting rows.
+- [Phase 04-erp-management-reporting]: Mount reporting under the protected /api router so owner-only access is enforced at the server edge.
+- [Phase 04-erp-management-reporting]: Keep money values as satang integers and surface reporting payloads through a consistent {data: ...} JSON envelope.
 
 ## Research Flags
 
@@ -89,8 +92,8 @@ Plan: 4 of 9
 
 ## Session Continuity
 
-Last session: 2026-04-26T03:47:56.865Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-04-26T03:48:32.406Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
 
 ---
@@ -102,3 +105,4 @@ Resume file: None
 | Phase 02 P01 | 8m | 3 tasks | 27 files |
 | Phase 04-erp-management-reporting P04 | 5 min | 1 tasks | 5 files |
 | Phase 04-erp-management-reporting P05 | 10 min | 2 tasks | 7 files |
+| Phase 04-erp-management-reporting P02 | 8 min | 2 tasks | 11 files |
