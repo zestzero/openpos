@@ -1,7 +1,8 @@
-import { LogOut, Store, Wifi, WifiOff } from 'lucide-react'
+import { LogOut, Store, Wifi, WifiOff, LayoutDashboard } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import type { AuthUser } from '@/lib/auth'
+import { Link } from '@tanstack/react-router'
 
 interface PosHeaderProps {
   user: AuthUser | null
@@ -10,6 +11,8 @@ interface PosHeaderProps {
 }
 
 export function PosHeader({ user, online, onLogout }: PosHeaderProps) {
+  const isOwner = user?.role === 'owner'
+
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
       <div className="flex min-w-0 items-center gap-3">
@@ -25,6 +28,14 @@ export function PosHeader({ user, online, onLogout }: PosHeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        {isOwner && (
+          <Link to="/erp">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              ERP
+            </Button>
+          </Link>
+        )}
         <div className="inline-flex items-center gap-1 rounded-pill border border-input bg-background px-3 py-1 text-xs font-medium text-foreground shadow-card">
           {online ? <Wifi className="h-3.5 w-3.5 text-brand-foreground" /> : <WifiOff className="h-3.5 w-3.5 text-destructive" />}
           <span>{online ? 'Online' : 'Offline'}</span>

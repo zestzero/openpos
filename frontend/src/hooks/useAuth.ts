@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
@@ -20,6 +21,7 @@ async function loadSession() {
 
 export function useAuth() {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const sessionQuery = useQuery({
     queryKey: authQueryKey,
     queryFn: loadSession,
@@ -58,6 +60,7 @@ export function useAuth() {
   const logout = () => {
     clearSession()
     queryClient.setQueryData(authQueryKey, null)
+    navigate({ to: '/login', replace: true })
   }
 
   return {

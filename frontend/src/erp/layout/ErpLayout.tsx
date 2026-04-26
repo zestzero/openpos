@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { ChevronDown, Search, Sparkles } from 'lucide-react'
-import { useLocation, useNavigate } from '@tanstack/react-router'
+import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from 'lucide-react'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/hooks/useAuth'
 
 import { ImportDrawer } from '../import/ImportDrawer'
 import { ErpNav } from '../navigation/ErpNav'
@@ -17,6 +18,7 @@ const tabs = [
 export function ErpLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout } = useAuth()
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
@@ -42,8 +44,17 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input className="h-10 rounded-pill pl-9" placeholder="Search products, variants, reports" />
                 </div>
+                <Link to="/pos">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <ScanLine className="h-4 w-4" />
+                    POS
+                  </Button>
+                </Link>
                 <Button variant="outline">Create product</Button>
                 <ImportDrawer />
+                <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out" title="Log out">
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
