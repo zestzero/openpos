@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Camera, CheckCircle2, Keyboard, XCircle } from 'lucide-react'
+import { Camera, CheckCircle2, XCircle } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { createRoute } from '@tanstack/react-router'
 
@@ -19,16 +19,12 @@ export const Route = createRoute({
 
 function ScanPage() {
   const navigate = useNavigate()
-  
-  // Track scanned variants for display
   const [scannedVariants, setScannedVariants] = useState<Variant[]>([])
   const [lastError, setLastError] = useState<string | null>(null)
   const [showError, setShowError] = useState(false)
 
-  // Keyboard wedge scanner
   const { isEnabled: isKeyboardWedgeEnabled, lastScan: keyboardScan, isScanning: isKeyboardScanning, toggle: toggleKeyboardWedge } = useKeyboardWedge()
 
-  // Handle keyboard wedge scans
   useEffect(() => {
     if (keyboardScan) {
       handleVariantSearch(keyboardScan)
@@ -85,85 +81,73 @@ function ScanPage() {
 
   return (
     <PosLayout>
-      <div className="flex flex-col gap-6">
-        {/* Section 1: Camera Scan */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+      <div className="flex flex-col gap-4">
+        <Card className="border-border/70 bg-card shadow-sm">
+          <CardHeader className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+              Secondary entry point
+            </p>
+            <CardTitle className="flex items-center gap-2 text-xl">
               <Camera className="h-5 w-5" />
-              Scan with Camera
+              Scan when you need a faster lane
             </CardTitle>
             <CardDescription>
-              Use your device camera to scan product barcodes
+              Use the camera or USB wedge scanner to drop a product into the sale without leaving the POS shell.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <BarcodeScanner
-              onScanSuccess={handleScanSuccess}
-              onScanError={handleScanError}
-            />
-          </CardContent>
-        </Card>
+          <CardContent className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)]">
+            <div className="rounded-2xl border border-border/70 bg-background p-3 sm:p-4">
+              <BarcodeScanner
+                onScanSuccess={handleScanSuccess}
+                onScanError={handleScanError}
+              />
+            </div>
 
-        {/* Section 2: Keyboard Wedge */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Keyboard className="h-5 w-5" />
-              USB Scanner
-            </CardTitle>
-            <CardDescription>
-              Connect a USB barcode scanner for keyboard-wedge input
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            {/* Toggle and Status */}
-            <div className="flex items-center justify-between">
+            <div className="space-y-4 rounded-2xl border border-border/70 bg-muted/25 p-4">
               <div className="flex items-center gap-3">
                 <Button
                   variant={isKeyboardWedgeEnabled ? 'default' : 'outline'}
                   size="sm"
                   onClick={toggleKeyboardWedge}
                 >
-                  {isKeyboardWedgeEnabled ? 'Enabled' : 'Disabled'}
+                  {isKeyboardWedgeEnabled ? 'Wedge on' : 'Wedge off'}
                 </Button>
                 <span className="text-sm text-muted-foreground">
                   {isKeyboardWedgeEnabled
                     ? isKeyboardScanning
-                      ? 'Listening...'
-                      : 'Ready to scan'
-                    : 'Disabled'}
+                      ? 'Listening for a scan'
+                      : 'Ready for the next barcode'
+                    : 'USB scanner is paused'}
                 </span>
               </div>
+
+              {!isKeyboardWedgeEnabled ? (
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Turn the wedge on only when a handheld scanner is plugged in.
+                </p>
+              ) : (
+                <div className="rounded-xl border border-border/70 bg-background p-4">
+                  <p className="text-sm font-medium text-foreground">Quick steps</p>
+                  <ul className="mt-2 space-y-2 text-sm leading-6 text-muted-foreground">
+                    <li>1. Point the camera or wedge at a barcode.</li>
+                    <li>2. Confirm the match in the recent scans list.</li>
+                    <li>3. Go back to the cart when you are done.</li>
+                  </ul>
+                </div>
+              )}
             </div>
-
-            {/* Instructions */}
-            {!isKeyboardWedgeEnabled && (
-              <p className="text-sm text-muted-foreground">
-                Enable keyboard wedge to use USB barcode scanner
-              </p>
-            )}
-
-            {isKeyboardWedgeEnabled && (
-              <div className="rounded-lg bg-muted p-4">
-                <p className="text-sm font-medium">Instructions:</p>
-                <ul className="mt-2 list-inside list-disc text-sm text-muted-foreground">
-                  <li>Plug in your USB barcode scanner</li>
-                  <li>Click in any text field or just scan</li>
-                  <li>Scan an item to add it to the cart</li>
-                </ul>
-              </div>
-            )}
           </CardContent>
         </Card>
 
-        {/* Recent Scans */}
         {scannedVariants.length > 0 && (
-          <Card>
-            <CardHeader>
+          <Card className="border-border/70 bg-card shadow-sm">
+            <CardHeader className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                Recent scans
+              </p>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="h-5 w-5 text-green-600" />
-                Recent Scans
+                Added items
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -171,7 +155,7 @@ function ScanPage() {
                 {scannedVariants.map((variant, index) => (
                   <div
                     key={`${variant.id}-${index}`}
-                    className="flex items-center justify-between rounded-lg border border-border p-3"
+                    className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3"
                   >
                     <div>
                       <p className="font-medium">{variant.name}</p>
@@ -192,18 +176,16 @@ function ScanPage() {
           </Card>
         )}
 
-        {/* Error Display */}
         {showError && lastError && (
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-red-500 bg-red-50 p-4 dark:bg-red-950">
+          <div className="flex items-center justify-center gap-2 rounded-2xl border border-red-500 bg-red-50 p-4 dark:bg-red-950">
             <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
             <p className="font-medium text-red-800 dark:text-red-200">{lastError}</p>
           </div>
         )}
 
-        {/* Navigation */}
         <div className="flex justify-center pb-4">
           <Button variant="outline" onClick={() => navigate({ to: '/pos' })}>
-            Go to Cart
+            Back to selling floor
           </Button>
         </div>
       </div>
