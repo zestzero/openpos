@@ -83,30 +83,43 @@ export function CartPanel() {
 
   if (isEmpty) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <ShoppingCart className="h-12 w-12 text-muted-foreground" />
-        <p className="text-lg text-muted-foreground">Your cart is empty</p>
-        <Button variant="outline" onClick={() => navigate({ to: '/pos/catalog' })}>
-          Browse Catalog
+      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-8 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-background text-muted-foreground">
+          <ShoppingCart className="h-6 w-6" />
+        </div>
+        <p className="mt-4 text-lg font-semibold text-foreground">Cart is waiting</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          Search, tap a quick key, or open the catalog to start a sale.
+        </p>
+        <Button className="mt-5 h-11 px-5" variant="outline" onClick={() => navigate({ to: '/pos/catalog' })}>
+          Browse catalog
         </Button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between border-b pb-3">
-        <h2 className="text-lg font-semibold">Cart ({itemCount} items)</h2>
-        <div className="flex items-center gap-3">
+    <div className="rounded-2xl border border-border/70 bg-card shadow-sm">
+      <div className="flex items-start justify-between gap-3 border-b border-border/70 p-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Review cart
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-foreground">
+            {itemCount} item{itemCount === 1 ? '' : 's'} ready to finish
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
           <SyncStatus />
           <Button variant="ghost" size="sm" onClick={clearCart}>
             <Trash2 className="mr-1 h-4 w-4" />
-            Clear All
+            Clear
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="max-h-[32rem] overflow-y-auto p-2 sm:p-3">
         {items.map((item) => (
           <CartItemRow
             key={item.variantId}
@@ -117,27 +130,30 @@ export function CartPanel() {
         ))}
       </div>
 
-      <div className="border-t pt-4">
-        <div className="mb-4 flex items-center justify-between">
-          <span className="text-muted-foreground">Item count:</span>
+      <div className="border-t border-border/70 p-4">
+        <div className="mb-3 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Item count</span>
           <span className="font-medium">{itemCount}</span>
         </div>
         <div className="mb-4 flex items-center justify-between text-xl font-bold">
-          <span>Total:</span>
+          <span>Total</span>
           <span className="text-primary">{formatCurrency(total)}</span>
         </div>
         <Button
-          className="h-14 w-full text-lg font-semibold"
+          className="h-14 w-full rounded-2xl text-lg font-semibold"
           onClick={handleCompleteSale}
           disabled={createOrderMutation.isPending}
         >
-          {createOrderMutation.isPending ? 'Processing...' : 'Complete Sale'}
+          {createOrderMutation.isPending ? 'Processing...' : 'Finish sale'}
         </Button>
         {!isOnline && (
           <p className="mt-2 text-center text-xs text-amber-600">
             Offline mode - order will be queued
           </p>
         )}
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          Adjust quantities or remove a line item before finishing.
+        </p>
       </div>
     </div>
   )

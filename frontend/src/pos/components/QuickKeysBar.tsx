@@ -11,8 +11,8 @@ export function QuickKeysBar() {
 
   if (favorites.length === 0) {
     return (
-      <div className="flex h-[72px] items-center justify-center rounded-md border border-dashed text-sm text-muted-foreground">
-        Add items to see quick keys
+      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-4 text-sm text-muted-foreground">
+        Pin a repeat seller from search or the catalog to build one-tap quick keys.
       </div>
     )
   }
@@ -39,15 +39,15 @@ export function QuickKeysBar() {
   }
 
   return (
-    <div className="flex h-[72px] gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
       {favorites.map((item) => (
         <Button
           key={item.variantId}
           variant="outline"
-          className="h-full min-w-[100px] shrink-0 flex-col gap-1 px-3 py-2"
+          className="min-h-[4.75rem] min-w-[10rem] shrink-0 flex-col items-start justify-between gap-1 rounded-2xl px-3 py-3 text-left"
           onClick={() => handleQuickAdd(item)}
         >
-          <span className="truncate text-sm font-medium">{item.variantName}</span>
+          <span className="line-clamp-2 text-sm font-medium leading-5">{item.variantName}</span>
           <span className="text-xs font-semibold text-primary">
             {formatCurrency(item.price)}
           </span>

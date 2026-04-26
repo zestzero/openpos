@@ -43,21 +43,21 @@ export function CatalogCategoryNav({
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" aria-label="Product categories">
       <Button
         variant={selectedCategory === null ? 'default' : 'outline'}
         size="sm"
-        className="min-h-[44px] shrink-0 rounded-full px-4"
+        className="min-h-[46px] shrink-0 rounded-full px-4"
         onClick={() => onSelectCategory(null)}
       >
-        All
+        All items
       </Button>
       {categories.map((category) => (
         <Button
           key={category.id}
           variant={selectedCategory === category.id ? 'default' : 'outline'}
           size="sm"
-          className="min-h-[44px] shrink-0 rounded-full px-4"
+          className="min-h-[46px] shrink-0 rounded-full px-4"
           onClick={() => onSelectCategory(category.id)}
         >
           {category.name}
