@@ -22,6 +22,7 @@ type catalogService interface {
 	GetProduct(context.Context, string) (ProductWithVariants, error)
 	UpdateProduct(context.Context, string, CreateProductInput) (ProductWithVariants, error)
 	CreateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error)
+	UpdateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error)
 	SearchVariant(context.Context, string) (sqlc.SearchVariantRow, error)
 	ReorderCategories(context.Context, []string) error
 }
@@ -62,6 +63,7 @@ func (h *Handler) Routes() http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Post("/products/{productID}/variants", h.CreateVariant)
 	})
+	r.Put("/variants/{id}", h.UpdateVariant)
 
 	// Search
 	r.Get("/variants/search", h.SearchVariant)
@@ -441,6 +443,70 @@ func (h *Handler) CreateVariant(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == ErrProductNotFound {
 			http.Error(w, "product not found", http.StatusNotFound)
+			return
+		}
+		if err == ErrSKUExists {
+			http.Error(w, "SKU already exists", http.StatusConflict)
+			return
+		}
+		if err == ErrBarcodeExists {
+			http.Error(w, "barcode already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(successResponse{Data: variant})
+}
+
+func (h *Handler) UpdateVariant(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	var input struct {
+		Sku      string `json:"sku"`
+		Barcode  string `json:"barcode"`
+		Name     string `json:"name"`
+		Price    int64  `json:"price"`
+		Cost     int64  `json:"cost"`
+		IsActive *bool  `json:"is_active"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if input.Sku == "" || input.Name == "" {
+		http.Error(w, "sku and name are required", http.StatusBadRequest)
+		return
+	}
+
+	if input.Price < 0 {
+		http.Error(w, "price must be non-negative", http.StatusBadRequest)
+		return
+	}
+
+	isActive := true
+	if input.IsActive != nil {
+		isActive = *input.IsActive
+	}
+
+	variant, err := h.service.UpdateVariant(r.Context(), id, CreateVariantInput{
+		Sku:      input.Sku,
+		Barcode:  input.Barcode,
+		Name:     input.Name,
+		Price:    input.Price,
+		Cost:     input.Cost,
+		IsActive: &isActive,
+	})
+	if err != nil {
+		if err == ErrVariantNotFound {
+			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}
 		if err == ErrSKUExists {

@@ -643,6 +643,69 @@ func (s *Service) CreateVariant(ctx context.Context, productID string, input Cre
 	})
 }
 
+func (s *Service) UpdateVariant(ctx context.Context, id string, input CreateVariantInput) (sqlc.Variant, error) {
+	var uuid pgtype.UUID
+	if err := uuid.Scan(id); err != nil {
+		return sqlc.Variant{}, fmt.Errorf("invalid variant id: %w", err)
+	}
+
+	var barcode pgtype.Text
+	if input.Barcode != "" {
+		barcode.String = input.Barcode
+		barcode.Valid = true
+	}
+
+	var cost pgtype.Int8
+	if input.Cost > 0 {
+		cost.Int64 = input.Cost
+		cost.Valid = true
+	}
+
+	variantIsActive := pgtype.Bool{Valid: true, Bool: true}
+	if input.IsActive != nil {
+		variantIsActive.Bool = *input.IsActive
+	}
+
+	skuExists, err := s.db.CheckSKUExists(ctx, sqlc.CheckSKUExistsParams{
+		Sku:     input.Sku,
+		Column2: uuid,
+	})
+	if err != nil {
+		return sqlc.Variant{}, fmt.Errorf("checking SKU: %w", err)
+	}
+	if skuExists {
+		return sqlc.Variant{}, ErrSKUExists
+	}
+
+	if input.Barcode != "" {
+		barcodeExists, err := s.db.CheckBarcodeExists(ctx, sqlc.CheckBarcodeExistsParams{
+			Barcode: pgtype.Text{String: input.Barcode, Valid: true},
+			Column2: uuid,
+		})
+		if err != nil {
+			return sqlc.Variant{}, fmt.Errorf("checking barcode: %w", err)
+		}
+		if barcodeExists {
+			return sqlc.Variant{}, ErrBarcodeExists
+		}
+	}
+
+	variant, err := s.db.UpdateVariant(ctx, sqlc.UpdateVariantParams{
+		ID:       uuid,
+		Sku:      input.Sku,
+		Barcode:  barcode,
+		Name:     input.Name,
+		Price:    input.Price,
+		Cost:     cost,
+		IsActive: variantIsActive,
+	})
+	if err != nil {
+		return sqlc.Variant{}, ErrVariantNotFound
+	}
+
+	return variant, nil
+}
+
 func (s *Service) SearchVariant(ctx context.Context, query string) (sqlc.SearchVariantRow, error) {
 	return s.db.SearchVariant(ctx, pgtype.Text{String: query, Valid: true})
 }
