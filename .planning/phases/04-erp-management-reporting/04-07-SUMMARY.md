@@ -62,6 +62,7 @@ completed: 2026-04-26
 ## Task Commits
 
 1. **Task 1: Implement barcode helpers and import parsing** - `096a152` (feat)
+   - Follow-up API wiring commit: `130ba5e` (feat)
 2. **Task 2: Add import validation coverage** - `78079d8` (test)
 
 ## Files Created/Modified
