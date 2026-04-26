@@ -5,9 +5,9 @@ ON CONFLICT (client_uuid) DO NOTHING
 RETURNING id, client_uuid, user_id, status, total_amount, created_at, updated_at;
 
 -- name: CreateOrderItem :one
-INSERT INTO order_items (order_id, variant_id, quantity, unit_price, subtotal)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, order_id, variant_id, quantity, unit_price, subtotal, created_at;
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at;
 
 -- name: GetOrderByClientUUID :one
 SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
@@ -26,7 +26,7 @@ ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
 
 -- name: ListOrderItemsByOrderID :many
-SELECT id, order_id, variant_id, quantity, unit_price, subtotal, created_at
+SELECT id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at
 FROM order_items
 WHERE order_id = $1
 ORDER BY created_at ASC;

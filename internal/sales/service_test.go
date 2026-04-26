@@ -18,7 +18,11 @@ func TestCreateOrder(t *testing.T) {
 		queries := &fakeOrderStore{
 			ordersByClientUUID: map[string]sqlc.Order{},
 			ordersByID:         map[string]sqlc.Order{"11111111-1111-1111-1111-111111111111": created},
-			createOrderResult:  created,
+			variantsByID: map[string]sqlc.Variant{
+				"33333333-3333-3333-3333-333333333333": {ID: uuidPtr("33333333-3333-3333-3333-333333333333"), Cost: int8Ptr(1200)},
+				"44444444-4444-4444-4444-444444444444": {ID: uuidPtr("44444444-4444-4444-4444-444444444444"), Cost: int8Ptr(500)},
+			},
+			createOrderResult: created,
 		}
 		inv := newFakeInventory(map[string]int64{
 			"33333333-3333-3333-3333-333333333333": 10,
@@ -57,7 +61,7 @@ func TestCreateOrder(t *testing.T) {
 		queries := &fakeOrderStore{
 			ordersByClientUUID: map[string]sqlc.Order{"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa": existing},
 			ordersByID:         map[string]sqlc.Order{"11111111-1111-1111-1111-111111111111": existing},
-			itemsByOrderID: map[string][]sqlc.OrderItem{
+			itemsByOrderID: map[string][]sqlc.ListOrderItemsByOrderIDRow{
 				"11111111-1111-1111-1111-111111111111": {{ID: uuidPtr("55555555-5555-5555-5555-555555555555"), OrderID: uuidPtr("11111111-1111-1111-1111-111111111111"), VariantID: uuidPtr("33333333-3333-3333-3333-333333333333"), Quantity: 1, UnitPrice: 1200, Subtotal: 1200}},
 			},
 		}
@@ -106,7 +110,12 @@ func TestCreateOrder(t *testing.T) {
 }
 
 func TestSyncOrdersProcessesSequentially(t *testing.T) {
-	queries := &fakeOrderStore{ordersByClientUUID: map[string]sqlc.Order{}}
+	queries := &fakeOrderStore{
+		ordersByClientUUID: map[string]sqlc.Order{},
+		variantsByID: map[string]sqlc.Variant{
+			"33333333-3333-3333-3333-333333333333": {ID: uuidPtr("33333333-3333-3333-3333-333333333333"), Cost: int8Ptr(100)},
+		},
+	}
 	inv := newFakeInventory(map[string]int64{"33333333-3333-3333-3333-333333333333": 10, "44444444-4444-4444-4444-444444444444": 0})
 	svc := NewService(queries, inv)
 
@@ -132,7 +141,7 @@ func TestGetOrder(t *testing.T) {
 	order := sqlc.Order{ID: uuidPtr("11111111-1111-1111-1111-111111111111"), ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 500}
 	queries := &fakeOrderStore{
 		ordersByID: map[string]sqlc.Order{"11111111-1111-1111-1111-111111111111": order},
-		itemsByOrderID: map[string][]sqlc.OrderItem{
+		itemsByOrderID: map[string][]sqlc.ListOrderItemsByOrderIDRow{
 			"11111111-1111-1111-1111-111111111111": {{ID: uuidPtr("55555555-5555-5555-5555-555555555555"), OrderID: uuidPtr("11111111-1111-1111-1111-111111111111"), VariantID: uuidPtr("33333333-3333-3333-3333-333333333333"), Quantity: 1, UnitPrice: 500, Subtotal: 500}},
 		},
 	}
@@ -154,7 +163,7 @@ func TestCompletePayment(t *testing.T) {
 		order := sqlc.Order{ID: orderID, ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 1200}
 		queries := &fakeOrderStore{
 			ordersByID:       map[string]sqlc.Order{orderID.String(): order},
-			itemsByOrderID:   map[string][]sqlc.OrderItem{orderID.String(): {{ID: uuidPtr("55555555-5555-5555-5555-555555555555"), OrderID: orderID, VariantID: uuidPtr("33333333-3333-3333-3333-333333333333"), Quantity: 1, UnitPrice: 1200, Subtotal: 1200}}},
+			itemsByOrderID:   map[string][]sqlc.ListOrderItemsByOrderIDRow{orderID.String(): {{ID: uuidPtr("55555555-5555-5555-5555-555555555555"), OrderID: orderID, VariantID: uuidPtr("33333333-3333-3333-3333-333333333333"), Quantity: 1, UnitPrice: 1200, Subtotal: 1200}}},
 			variantsByID:     map[string]sqlc.Variant{"33333333-3333-3333-3333-333333333333": {ID: uuidPtr("33333333-3333-3333-3333-333333333333"), Name: "Tea"}},
 			paymentByOrderID: map[string]sqlc.Payment{},
 		}
@@ -204,14 +213,14 @@ func TestCompletePayment(t *testing.T) {
 type fakeOrderStore struct {
 	ordersByClientUUID  map[string]sqlc.Order
 	ordersByID          map[string]sqlc.Order
-	itemsByOrderID      map[string][]sqlc.OrderItem
+	itemsByOrderID      map[string][]sqlc.ListOrderItemsByOrderIDRow
 	variantsByID        map[string]sqlc.Variant
 	paymentByOrderID    map[string]sqlc.Payment
 	createOrderCalls    int
 	createItemCalls     int
 	createPaymentCalls  int
 	createOrderResult   sqlc.Order
-	createItemResult    sqlc.OrderItem
+	createItemResult    sqlc.CreateOrderItemRow
 	createPaymentResult sqlc.Payment
 }
 
@@ -226,21 +235,34 @@ func (f *fakeOrderStore) CreateOrder(_ context.Context, _ sqlc.CreateOrderParams
 	return f.createOrderResult, nil
 }
 
-func (f *fakeOrderStore) CreateOrderItem(_ context.Context, arg sqlc.CreateOrderItemParams) (sqlc.OrderItem, error) {
+func (f *fakeOrderStore) CreateOrderItem(_ context.Context, arg sqlc.CreateOrderItemParams) (sqlc.CreateOrderItemRow, error) {
 	f.createItemCalls++
 	item := f.createItemResult
 	if !item.ID.Valid {
-		item = sqlc.OrderItem{ID: uuidPtr("55555555-5555-5555-5555-555555555555")}
+		item = sqlc.CreateOrderItemRow{ID: uuidPtr("55555555-5555-5555-5555-555555555555")}
 	}
 	item.OrderID = arg.OrderID
 	item.VariantID = arg.VariantID
 	item.Quantity = arg.Quantity
 	item.UnitPrice = arg.UnitPrice
 	item.Subtotal = arg.Subtotal
-	if f.itemsByOrderID == nil {
-		f.itemsByOrderID = map[string][]sqlc.OrderItem{}
+	item.CostAtSale = arg.CostAtSale
+	if !item.CreatedAt.Valid {
+		item.CreatedAt = timestamptzNow()
 	}
-	f.itemsByOrderID[arg.OrderID.String()] = append(f.itemsByOrderID[arg.OrderID.String()], item)
+	if f.itemsByOrderID == nil {
+		f.itemsByOrderID = map[string][]sqlc.ListOrderItemsByOrderIDRow{}
+	}
+	f.itemsByOrderID[arg.OrderID.String()] = append(f.itemsByOrderID[arg.OrderID.String()], sqlc.ListOrderItemsByOrderIDRow{
+		ID:         item.ID,
+		OrderID:    item.OrderID,
+		VariantID:  item.VariantID,
+		Quantity:   item.Quantity,
+		UnitPrice:  item.UnitPrice,
+		Subtotal:   item.Subtotal,
+		CostAtSale: item.CostAtSale,
+		CreatedAt:  item.CreatedAt,
+	})
 	return item, nil
 }
 
@@ -289,11 +311,11 @@ func (f *fakeOrderStore) GetVariant(_ context.Context, id pgtype.UUID) (sqlc.Var
 	return sqlc.Variant{}, pgx.ErrNoRows
 }
 
-func (f *fakeOrderStore) ListOrderItemsByOrderID(_ context.Context, id pgtype.UUID) ([]sqlc.OrderItem, error) {
+func (f *fakeOrderStore) ListOrderItemsByOrderID(_ context.Context, id pgtype.UUID) ([]sqlc.ListOrderItemsByOrderIDRow, error) {
 	if items, ok := f.itemsByOrderID[id.String()]; ok {
 		return items, nil
 	}
-	return []sqlc.OrderItem{}, nil
+	return []sqlc.ListOrderItemsByOrderIDRow{}, nil
 }
 
 func (f *fakeOrderStore) ListOrders(_ context.Context, _ sqlc.ListOrdersParams) ([]sqlc.Order, error) {
@@ -329,4 +351,12 @@ func uuidPtr(value string) pgtype.UUID {
 	var id pgtype.UUID
 	_ = id.Scan(value)
 	return id
+}
+
+func int8Ptr(value int64) pgtype.Int8 {
+	return pgtype.Int8{Int64: value, Valid: true}
+}
+
+func timestamptzNow() pgtype.Timestamptz {
+	return pgtype.Timestamptz{Valid: true}
 }

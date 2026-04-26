@@ -15,6 +15,7 @@ type Category struct {
 	ParentID    pgtype.UUID        `json:"parent_id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	SortOrder   int64              `json:"sort_order"`
 }
 
 type InventoryLedger struct {
@@ -38,13 +39,14 @@ type Order struct {
 }
 
 type OrderItem struct {
-	ID        pgtype.UUID        `json:"id"`
-	OrderID   pgtype.UUID        `json:"order_id"`
-	VariantID pgtype.UUID        `json:"variant_id"`
-	Quantity  int32              `json:"quantity"`
-	UnitPrice int64              `json:"unit_price"`
-	Subtotal  int64              `json:"subtotal"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID         pgtype.UUID        `json:"id"`
+	OrderID    pgtype.UUID        `json:"order_id"`
+	VariantID  pgtype.UUID        `json:"variant_id"`
+	Quantity   int32              `json:"quantity"`
+	UnitPrice  int64              `json:"unit_price"`
+	Subtotal   int64              `json:"subtotal"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	CostAtSale pgtype.Int8        `json:"cost_at_sale"`
 }
 
 type Payment struct {

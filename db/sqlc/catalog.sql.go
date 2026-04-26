@@ -44,25 +44,42 @@ func (q *Queries) CheckSKUExists(ctx context.Context, arg CheckSKUExistsParams) 
 }
 
 const createCategory = `-- name: CreateCategory :one
-INSERT INTO categories (name, description, parent_id)
-VALUES ($1, $2, $3)
-RETURNING id, name, description, parent_id, created_at, updated_at
+INSERT INTO categories (name, description, parent_id, sort_order)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, description, parent_id, sort_order, created_at, updated_at
 `
 
 type CreateCategoryParams struct {
 	Name        string      `json:"name"`
 	Description pgtype.Text `json:"description"`
 	ParentID    pgtype.UUID `json:"parent_id"`
+	SortOrder   int64       `json:"sort_order"`
 }
 
-func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
-	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Description, arg.ParentID)
-	var i Category
+type CreateCategoryRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	ParentID    pgtype.UUID        `json:"parent_id"`
+	SortOrder   int64              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (CreateCategoryRow, error) {
+	row := q.db.QueryRow(ctx, createCategory,
+		arg.Name,
+		arg.Description,
+		arg.ParentID,
+		arg.SortOrder,
+	)
+	var i CreateCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.ParentID,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -148,23 +165,46 @@ func (q *Queries) CreateVariant(ctx context.Context, arg CreateVariantParams) (V
 }
 
 const getCategory = `-- name: GetCategory :one
-SELECT id, name, description, parent_id, created_at, updated_at
+SELECT id, name, description, parent_id, sort_order, created_at, updated_at
 FROM categories
 WHERE id = $1
 `
 
-func (q *Queries) GetCategory(ctx context.Context, id pgtype.UUID) (Category, error) {
+type GetCategoryRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	ParentID    pgtype.UUID        `json:"parent_id"`
+	SortOrder   int64              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetCategory(ctx context.Context, id pgtype.UUID) (GetCategoryRow, error) {
 	row := q.db.QueryRow(ctx, getCategory, id)
-	var i Category
+	var i GetCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.ParentID,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getNextCategorySortOrder = `-- name: GetNextCategorySortOrder :one
+SELECT COALESCE(MAX(sort_order), -1) + 1 AS sort_order
+FROM categories
+`
+
+func (q *Queries) GetNextCategorySortOrder(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, getNextCategorySortOrder)
+	var sort_order int64
+	err := row.Scan(&sort_order)
+	return sort_order, err
 }
 
 const getProduct = `-- name: GetProduct :one
@@ -340,25 +380,36 @@ func (q *Queries) GetVariantBySKU(ctx context.Context, sku string) (Variant, err
 }
 
 const listCategories = `-- name: ListCategories :many
-SELECT id, name, description, parent_id, created_at, updated_at
+SELECT id, name, description, parent_id, sort_order, created_at, updated_at
 FROM categories
-ORDER BY name
+ORDER BY sort_order, name
 `
 
-func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
+type ListCategoriesRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	ParentID    pgtype.UUID        `json:"parent_id"`
+	SortOrder   int64              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListCategories(ctx context.Context) ([]ListCategoriesRow, error) {
 	rows, err := q.db.Query(ctx, listCategories)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Category
+	var items []ListCategoriesRow
 	for rows.Next() {
-		var i Category
+		var i ListCategoriesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Description,
 			&i.ParentID,
+			&i.SortOrder,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -571,7 +622,7 @@ const updateCategory = `-- name: UpdateCategory :one
 UPDATE categories
 SET name = $2, description = $3, parent_id = $4, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, name, description, parent_id, created_at, updated_at
+RETURNING id, name, description, parent_id, sort_order, created_at, updated_at
 `
 
 type UpdateCategoryParams struct {
@@ -581,23 +632,50 @@ type UpdateCategoryParams struct {
 	ParentID    pgtype.UUID `json:"parent_id"`
 }
 
-func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+type UpdateCategoryRow struct {
+	ID          pgtype.UUID        `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	ParentID    pgtype.UUID        `json:"parent_id"`
+	SortOrder   int64              `json:"sort_order"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (UpdateCategoryRow, error) {
 	row := q.db.QueryRow(ctx, updateCategory,
 		arg.ID,
 		arg.Name,
 		arg.Description,
 		arg.ParentID,
 	)
-	var i Category
+	var i UpdateCategoryRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
 		&i.ParentID,
+		&i.SortOrder,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateCategorySortOrder = `-- name: UpdateCategorySortOrder :exec
+UPDATE categories
+SET sort_order = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+`
+
+type UpdateCategorySortOrderParams struct {
+	ID        pgtype.UUID `json:"id"`
+	SortOrder int64       `json:"sort_order"`
+}
+
+func (q *Queries) UpdateCategorySortOrder(ctx context.Context, arg UpdateCategorySortOrderParams) error {
+	_, err := q.db.Exec(ctx, updateCategorySortOrder, arg.ID, arg.SortOrder)
+	return err
 }
 
 const updateProduct = `-- name: UpdateProduct :one
