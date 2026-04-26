@@ -107,7 +107,7 @@
 - [x] 04-04-PLAN.md — Vitest setup for ERP UI tests
 - [x] 04-05-PLAN.md — ERP shell, owner guard, and tabbed layout
 - [ ] 04-06-PLAN.md — Product and category CRUD workflows
-- [ ] 04-07-PLAN.md — Barcode generation and spreadsheet import
+- [x] 04-07-PLAN.md — Barcode generation and spreadsheet import
 - [ ] 04-08-PLAN.md — Reporting dashboard and THB summary cards
 - [ ] 04-09-PLAN.md — PDF/XLSX export actions
 
