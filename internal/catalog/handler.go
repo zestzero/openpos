@@ -1,19 +1,37 @@
 package catalog
 
 import (
+	"context"
+	"errors"
 	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/zestzero/openpos/db/sqlc"
 )
+
+type catalogService interface {
+	ListCategories(context.Context) ([]sqlc.Category, error)
+	CreateCategory(context.Context, CreateCategoryInput) (sqlc.Category, error)
+	GetCategory(context.Context, string) (sqlc.Category, error)
+	UpdateCategory(context.Context, string, CreateCategoryInput) (sqlc.Category, error)
+	ListProducts(context.Context, ListProductsInput) ([]ProductWithVariants, error)
+	CreateProduct(context.Context, CreateProductInput) (ProductWithVariants, error)
+	GetProduct(context.Context, string) (ProductWithVariants, error)
+	UpdateProduct(context.Context, string, CreateProductInput) (ProductWithVariants, error)
+	CreateVariant(context.Context, string, CreateVariantInput) (sqlc.Variant, error)
+	SearchVariant(context.Context, string) (sqlc.SearchVariantRow, error)
+	ReorderCategories(context.Context, []string) error
+}
 
 // Handler handles HTTP requests for catalog
 type Handler struct {
-	service *Service
+	service catalogService
 }
 
 // NewHandler creates a new catalog handler
-func NewHandler(service *Service) *Handler {
+func NewHandler(service catalogService) *Handler {
 	return &Handler{service: service}
 }
 
@@ -22,12 +40,13 @@ func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
 
 	// Categories
-	r.Group(func(r chi.Router) {
-		r.Get("/categories", h.ListCategories)
-		r.Post("/categories", h.CreateCategory)
-		r.Get("/categories/{id}", h.GetCategory)
-		r.Put("/categories/{id}", h.UpdateCategory)
-	})
+		r.Group(func(r chi.Router) {
+			r.Get("/categories", h.ListCategories)
+			r.Post("/categories", h.CreateCategory)
+			r.Get("/categories/{id}", h.GetCategory)
+			r.Put("/categories/{id}", h.UpdateCategory)
+			r.Put("/categories/reorder", h.ReorderCategories)
+		})
 
 	// Products
 	r.Group(func(r chi.Router) {
@@ -56,6 +75,10 @@ type errorResponse struct {
 
 type successResponse struct {
 	Data interface{} `json:"data"`
+}
+
+type reorderCategoriesRequest struct {
+	IDs []string `json:"ids"`
 }
 
 // Category handlers
@@ -150,6 +173,43 @@ func (h *Handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(successResponse{Data: category})
+}
+
+func (h *Handler) ReorderCategories(w http.ResponseWriter, r *http.Request) {
+	var input reorderCategoriesRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if len(input.IDs) == 0 {
+		http.Error(w, "ids are required", http.StatusBadRequest)
+		return
+	}
+
+	seen := make(map[string]struct{}, len(input.IDs))
+	for _, id := range input.IDs {
+		if id == "" {
+			http.Error(w, "ids are required", http.StatusBadRequest)
+			return
+		}
+		if _, ok := seen[id]; ok {
+			http.Error(w, "ids must be unique", http.StatusBadRequest)
+			return
+		}
+		seen[id] = struct{}{}
+	}
+
+	if err := h.service.ReorderCategories(r.Context(), input.IDs); err != nil {
+		if errors.Is(err, ErrCategoryNotFound) {
+			http.Error(w, "category not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // Product handlers
