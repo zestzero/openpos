@@ -8,6 +8,7 @@ import { formatReportingMonth, mergeReportingRows, reportingApi, summarizeReport
 
 import { ReportCards } from './ReportCards'
 import { ReportChart } from './ReportChart'
+import { ReportExportButtons } from './ReportExportButtons'
 
 export function ReportDashboard() {
   const monthlySalesQuery = useQuery({
@@ -50,12 +51,16 @@ export function ReportDashboard() {
           </div>
 
           {summary?.current ? (
-            <div className="rounded-card border border-border bg-background px-4 py-3 text-sm">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Latest month</p>
-              <p className="mt-2 text-lg font-semibold text-foreground">{formatReportingMonth(summary.current.month)}</p>
-              <p className="mt-1 text-muted-foreground">
-                {summary.current.orderCount.toLocaleString('en-US')} orders · {summary.rows.length} months loaded
-              </p>
+            <div className="flex flex-col gap-3 rounded-card border border-border bg-background px-4 py-3 text-sm">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Latest month</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">{formatReportingMonth(summary.current.month)}</p>
+                <p className="mt-1 text-muted-foreground">
+                  {summary.current.orderCount.toLocaleString('en-US')} orders · {summary.rows.length} months loaded
+                </p>
+              </div>
+
+              <ReportExportButtons title="Monthly sales and gross profit" rows={summary.rows} />
             </div>
           ) : null}
         </div>
