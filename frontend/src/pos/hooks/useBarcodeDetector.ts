@@ -10,6 +10,10 @@ export interface UseBarcodeDetectorReturn {
   stopScanning: () => void
 }
 
+interface UseBarcodeDetectorOptions {
+  onScan?: (code: string) => void
+}
+
 interface BarcodeDetection {
   rawValue: string
 }
@@ -47,7 +51,8 @@ const HTML5_QRCODE_CONFIG = {
   formatsToSupport: HTML5_QRCODE_FORMATS,
 }
 
-export function useBarcodeDetector(): UseBarcodeDetectorReturn {
+export function useBarcodeDetector(options: UseBarcodeDetectorOptions = {}): UseBarcodeDetectorReturn {
+  const { onScan } = options
   const [isSupported] = useState(() => {
     return 'BarcodeDetector' in window
   })
@@ -103,7 +108,7 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
   }, [])
 
   const detectBarcodes = useCallback(
-    async (video: HTMLVideoElement, detector: BarcodeDetectorLike) => {
+    async function detectBarcodes(video: HTMLVideoElement, detector: BarcodeDetectorLike) {
       if (!video.videoWidth || !video.videoHeight) {
         animationFrameRef.current = requestAnimationFrame(() => detectBarcodes(video, detector))
         return
@@ -114,6 +119,7 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
         if (barcodes.length > 0) {
           const code = barcodes[0].rawValue
           setLastScan(code)
+          onScan?.(code)
 
           // Prevent duplicate reads: stop scanning for 500ms after detection
           scanTimeoutRef.current = setTimeout(() => {
@@ -129,8 +135,33 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
 
       animationFrameRef.current = requestAnimationFrame(() => detectBarcodes(video, detector))
     },
-    []
+    [onScan]
   )
+
+  const startHtml5QrcodeScanner = useCallback(async (videoElementId: string) => {
+    // Dynamically import html5-qrcode
+    const { Html5QrcodeScanner } = await import('html5-qrcode')
+
+    isHtml5FallbackRef.current = true
+
+    const scanner = new Html5QrcodeScanner(videoElementId, HTML5_QRCODE_CONFIG, /* verbose= */ false)
+
+    html5QrcodeScannerRef.current = scanner
+
+    scanner.render(
+      (decodedText: string) => {
+        // Successful scan
+        setLastScan(decodedText)
+        onScan?.(decodedText)
+      },
+      (errorMessage: string) => {
+        // Scan error - ignore, this happens frequently during scanning
+        console.debug('HTML5-QRCode scan error:', errorMessage)
+      }
+    )
+
+    setIsScanning(true)
+  }, [onScan])
 
   const startScanning = useCallback(
     async (videoElementId: string) => {
@@ -182,7 +213,7 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
         }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-        
+
         if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
           setError('Camera permission denied. Please allow camera access to scan barcodes.')
         } else if (errorMessage.includes('NotFoundError') || errorMessage.includes('not found')) {
@@ -191,38 +222,14 @@ export function useBarcodeDetector(): UseBarcodeDetectorReturn {
           // Try html5-qrcode fallback
           try {
             await startHtml5QrcodeScanner(videoElementId)
-          } catch (fallbackErr) {
+          } catch {
             setError(`Failed to start scanner: ${errorMessage}`)
           }
         }
       }
     },
-    [isSupported, detectBarcodes]
+    [detectBarcodes, isSupported, startHtml5QrcodeScanner]
   )
-
-  const startHtml5QrcodeScanner = async (videoElementId: string) => {
-    // Dynamically import html5-qrcode
-    const { Html5QrcodeScanner } = await import('html5-qrcode')
-
-    isHtml5FallbackRef.current = true
-
-    const scanner = new Html5QrcodeScanner(videoElementId, HTML5_QRCODE_CONFIG, /* verbose= */ false)
-
-    html5QrcodeScannerRef.current = scanner
-
-    scanner.render(
-      (decodedText: string) => {
-        // Successful scan
-        setLastScan(decodedText)
-      },
-      (errorMessage: string) => {
-        // Scan error - ignore, this happens frequently during scanning
-        console.debug('HTML5-QRCode scan error:', errorMessage)
-      }
-    )
-
-    setIsScanning(true)
-  }
 
   return {
     isSupported,

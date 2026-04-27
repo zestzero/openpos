@@ -7,6 +7,10 @@ export interface UseKeyboardWedgeReturn {
   toggle: () => void
 }
 
+interface UseKeyboardWedgeOptions {
+  onScan?: (code: string) => void
+}
+
 // Maximum time between keystrokes to consider as scanner input (ms)
 const SCANNER_KEY_INTERVAL_MS = 50
 
@@ -16,7 +20,8 @@ const MIN_BARCODE_LENGTH = 4
 // Timeout after Enter to consider scan complete (ms)
 const SCAN_COMPLETE_TIMEOUT_MS = 100
 
-export function useKeyboardWedge(): UseKeyboardWedgeReturn {
+export function useKeyboardWedge(options: UseKeyboardWedgeOptions = {}): UseKeyboardWedgeReturn {
+  const { onScan } = options
   const [isEnabled, setIsEnabled] = useState(true)
   const [lastScan, setLastScan] = useState<string | null>(null)
   const [isScanning, setIsScanning] = useState(false)
@@ -84,6 +89,7 @@ export function useKeyboardWedge(): UseKeyboardWedgeReturn {
       if (code.length >= MIN_BARCODE_LENGTH) {
         setLastScan(code)
         setIsScanning(false)
+        onScan?.(code)
         // Clear buffer after successful scan
         bufferRef.current = ''
       } else {
@@ -112,7 +118,7 @@ export function useKeyboardWedge(): UseKeyboardWedgeReturn {
       bufferRef.current = ''
       setIsScanning(false)
     }, SCAN_COMPLETE_TIMEOUT_MS)
-  }, [isEnabled])
+  }, [isEnabled, onScan])
 
   // Set up event listener
   useEffect(() => {
