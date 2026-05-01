@@ -1,12 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
 
- import { useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ArrowLeft, ScanBarcode, Wand2, XCircle } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { createRoute } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
-import { api, type Variant } from '@/lib/api'
+import { api, type SearchVariantRow, type Variant } from '@/lib/api'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { PosLayout } from '@/pos/layout/PosLayout'
 import { BarcodeScanner } from '@/pos/components/BarcodeScanner'
@@ -57,7 +57,7 @@ function ScanPage() {
     }
   }, [])
 
-  const handleScanSuccess = useCallback((variant: Variant) => {
+  const handleScanSuccess = useCallback((variant: SearchVariantRow) => {
     setScannedVariants((prev) => [...prev.slice(-4), variant]) // Keep last 5
     setLastError(null)
     setShowError(false)

@@ -2,11 +2,11 @@ import { useCallback, useState } from 'react'
 import { Camera, CheckCircle2, XCircle } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { api, type Variant } from '@/lib/api'
+import { api, type SearchVariantRow } from '@/lib/api'
 import { useBarcodeDetector } from '@/pos/hooks/useBarcodeDetector'
 
 interface BarcodeScannerProps {
-  onScanSuccess: (variant: Variant) => void
+  onScanSuccess: (variant: SearchVariantRow) => void
   onScanError: (code: string, error: string) => void
 }
 

@@ -12,17 +12,18 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (client_uuid, user_id, status, total_amount)
-VALUES ($1, $2, $3, $4)
+INSERT INTO orders (client_uuid, user_id, status, total_amount, discount_amount)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (client_uuid) DO NOTHING
-RETURNING id, client_uuid, user_id, status, total_amount, created_at, updated_at
+RETURNING id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 `
 
 type CreateOrderParams struct {
-	ClientUuid  string      `json:"client_uuid"`
-	UserID      pgtype.UUID `json:"user_id"`
-	Status      string      `json:"status"`
-	TotalAmount int64       `json:"total_amount"`
+	ClientUuid     string      `json:"client_uuid"`
+	UserID         pgtype.UUID `json:"user_id"`
+	Status         string      `json:"status"`
+	TotalAmount    int64       `json:"total_amount"`
+	DiscountAmount int64       `json:"discount_amount"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.UserID,
 		arg.Status,
 		arg.TotalAmount,
+		arg.DiscountAmount,
 	)
 	var i Order
 	err := row.Scan(
@@ -39,6 +41,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.UserID,
 		&i.Status,
 		&i.TotalAmount,
+		&i.DiscountAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -128,7 +131,7 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 }
 
 const getOrderByClientUUID = `-- name: GetOrderByClientUUID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 WHERE client_uuid = $1
 `
@@ -142,6 +145,7 @@ func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (
 		&i.UserID,
 		&i.Status,
 		&i.TotalAmount,
+		&i.DiscountAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -149,7 +153,7 @@ func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 WHERE id = $1
 `
@@ -163,6 +167,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, erro
 		&i.UserID,
 		&i.Status,
 		&i.TotalAmount,
+		&i.DiscountAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -238,7 +243,7 @@ func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID pgtype.UU
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -264,6 +269,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.UserID,
 			&i.Status,
 			&i.TotalAmount,
+			&i.DiscountAmount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

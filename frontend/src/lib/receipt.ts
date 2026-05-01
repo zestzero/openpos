@@ -1,6 +1,20 @@
 import { formatTHB } from '@/lib/formatCurrency'
 import type { ReceiptSnapshot } from '@/lib/api'
 
+interface WebUSBDevice {
+  configuration: { value?: number } | null
+  open(): Promise<void>
+  selectConfiguration(configurationValue: number): Promise<void>
+  claimInterface(interfaceNumber: number): Promise<void>
+  transferOut(endpointNumber: number, data: BufferSource): Promise<unknown>
+}
+
+interface WebUSBNavigator extends Navigator {
+  usb: {
+    requestDevice(options: { filters: Array<Record<string, unknown>> }): Promise<WebUSBDevice>
+  }
+}
+
 function escposText(text: string) {
   return new TextEncoder().encode(`${text}\n`)
 }
@@ -19,11 +33,12 @@ export function buildReceiptText(receipt: ReceiptSnapshot) {
     paidAtText,
     `Order ${receipt.order_id}`,
     ...receipt.items.map((item) => `${item.quantity} x ${item.name} ${formatTHB(item.subtotal)}`),
+    receipt.discount_amount > 0 ? `Discount ${formatTHB(receipt.discount_amount)}` : null,
     `Total ${formatTHB(receipt.total_amount)}`,
     `Paid ${receipt.payment_method}`,
     `Tendered ${formatTHB(receipt.tendered_amount)}`,
     `Change ${formatTHB(receipt.change_due)}`,
-  ]
+  ].filter((line): line is string => line !== null)
   return lines.join('\n')
 }
 
@@ -40,7 +55,7 @@ export async function printReceiptViaWebUSB(receipt: ReceiptSnapshot) {
   if (!('usb' in navigator)) {
     throw new Error('WebUSB unavailable')
   }
-  const device = await (navigator as Navigator & { usb: { requestDevice: (options: { filters: Array<Record<string, unknown>> }) => Promise<any> } }).usb.requestDevice({ filters: [] })
+  const device = await (navigator as WebUSBNavigator).usb.requestDevice({ filters: [] })
   await device.open()
   if (!device.configuration) {
     await device.selectConfiguration(1)

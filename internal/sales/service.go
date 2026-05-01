@@ -51,9 +51,10 @@ func (s *Service) SetPool(pool *pgxpool.Pool) {
 }
 
 type CreateOrderInput struct {
-	ClientUUID string
-	UserID     string
-	Items      []OrderItemInput
+	ClientUUID     string
+	UserID         string
+	DiscountAmount int64
+	Items          []OrderItemInput
 }
 
 type OrderItemInput struct {
@@ -63,15 +64,16 @@ type OrderItemInput struct {
 }
 
 type Order struct {
-	ID          string      `json:"id"`
-	ClientUUID  string      `json:"client_uuid"`
-	UserID      string      `json:"user_id"`
-	Status      string      `json:"status"`
-	TotalAmount int64       `json:"total_amount"`
-	Items       []OrderItem `json:"items"`
-	CreatedAt   string      `json:"created_at"`
-	UpdatedAt   string      `json:"updated_at"`
-	Created     bool        `json:"-"`
+	ID             string      `json:"id"`
+	ClientUUID     string      `json:"client_uuid"`
+	UserID         string      `json:"user_id"`
+	Status         string      `json:"status"`
+	DiscountAmount int64       `json:"discount_amount"`
+	TotalAmount    int64       `json:"total_amount"`
+	Items          []OrderItem `json:"items"`
+	CreatedAt      string      `json:"created_at"`
+	UpdatedAt      string      `json:"updated_at"`
+	Created        bool        `json:"-"`
 }
 
 type OrderItem struct {
@@ -99,6 +101,7 @@ type ReceiptSnapshot struct {
 	PaidAt         string        `json:"paid_at"`
 	OrderID        string        `json:"order_id"`
 	Items          []ReceiptItem `json:"items"`
+	DiscountAmount int64         `json:"discount_amount"`
 	TotalAmount    int64         `json:"total_amount"`
 	PaymentMethod  string        `json:"payment_method"`
 	TenderedAmount int64         `json:"tendered_amount"`
@@ -152,7 +155,11 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 		}
 	}
 
-	totalAmount := totalFor(input.Items)
+	itemsTotal := totalFor(input.Items)
+	if input.DiscountAmount < 0 || input.DiscountAmount > itemsTotal {
+		return nil, ErrInvalidOrder
+	}
+	totalAmount := itemsTotal - input.DiscountAmount
 
 	if s.pool == nil {
 		return s.createOrderWithStores(ctx, s.queries, s.inventory, input, totalAmount, true)
@@ -277,10 +284,11 @@ func (s *Service) GetReceipt(ctx context.Context, id string, storeName string) (
 
 func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, inventoryService inventoryGateway, input CreateOrderInput, totalAmount int64, created bool) (*Order, error) {
 	orderRow, err := store.CreateOrder(ctx, sqlc.CreateOrderParams{
-		ClientUuid:  input.ClientUUID,
-		UserID:      mustParseUUID(input.UserID),
-		Status:      "completed",
-		TotalAmount: totalAmount,
+		ClientUuid:     input.ClientUUID,
+		UserID:         mustParseUUID(input.UserID),
+		Status:         "completed",
+		TotalAmount:    totalAmount,
+		DiscountAmount: input.DiscountAmount,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -355,6 +363,7 @@ func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, pay
 		PaidAt:         payment.PaidAt.Time.Format("2006-01-02T15:04:05Z07:00"),
 		OrderID:        order.ID.String(),
 		Items:          receiptItems,
+		DiscountAmount: order.DiscountAmount,
 		TotalAmount:    order.TotalAmount,
 		PaymentMethod:  payment.Method,
 		TenderedAmount: payment.TenderedAmount,
@@ -380,6 +389,9 @@ func validateCreateOrderInput(input CreateOrderInput) error {
 		return ErrInvalidOrder
 	}
 	if len(input.Items) == 0 {
+		return ErrInvalidOrder
+	}
+	if input.DiscountAmount < 0 {
 		return ErrInvalidOrder
 	}
 	for _, item := range input.Items {
@@ -416,14 +428,15 @@ func mustParseUUID(value string) pgtype.UUID {
 
 func toOrder(row sqlc.Order, items []sqlc.ListOrderItemsByOrderIDRow) Order {
 	order := Order{
-		ID:          row.ID.String(),
-		ClientUUID:  row.ClientUuid,
-		UserID:      row.UserID.String(),
-		Status:      row.Status,
-		TotalAmount: row.TotalAmount,
-		CreatedAt:   row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   row.UpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
-		Items:       make([]OrderItem, 0, len(items)),
+		ID:             row.ID.String(),
+		ClientUUID:     row.ClientUuid,
+		UserID:         row.UserID.String(),
+		Status:         row.Status,
+		DiscountAmount: row.DiscountAmount,
+		TotalAmount:    row.TotalAmount,
+		CreatedAt:      row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:      row.UpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		Items:          make([]OrderItem, 0, len(items)),
 	}
 	for _, item := range items {
 		order.Items = append(order.Items, OrderItem{

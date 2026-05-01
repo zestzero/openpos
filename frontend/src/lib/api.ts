@@ -72,6 +72,7 @@ export interface ReceiptSnapshot {
   paid_at: string
   order_id: string
   items: ReceiptItem[]
+  discount_amount: number
   total_amount: number
   payment_method: PaymentMethod
   tendered_amount: number
@@ -164,7 +165,7 @@ export const api = {
   getReceipt(orderId: string) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/receipt`)
   },
-  createOrder(orderData: { id: string; items: { variant_id: string; quantity: number; price_snapshot: number }[] }) {
+  createOrder(orderData: { id: string; discount_amount: number; items: { variant_id: string; quantity: number; price_snapshot: number }[] }) {
     return requestJSON<ApiSuccess<{ id: string; status: string }>>('/api/orders', {
       method: 'POST',
       body: JSON.stringify(orderData),

@@ -39,8 +39,9 @@ type successResponse struct {
 
 // Request types for order creation
 type createOrderRequest struct {
-	ClientUUID string `json:"client_uuid"`
-	Items      []orderItemInput `json:"items"`
+	ClientUUID     string           `json:"client_uuid"`
+	DiscountAmount int64            `json:"discount_amount"`
+	Items          []orderItemInput `json:"items"`
 }
 
 type orderItemInput struct {
@@ -148,9 +149,10 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order, err := h.service.CreateOrder(r.Context(), CreateOrderInput{
-		ClientUUID: req.ClientUUID,
-		UserID:     userID,
-		Items:      items,
+		ClientUUID:     req.ClientUUID,
+		UserID:         userID,
+		DiscountAmount: req.DiscountAmount,
+		Items:          items,
 	})
 	if err != nil {
 		if err == ErrInvalidOrder {
@@ -207,9 +209,10 @@ func (h *Handler) SyncOrders(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		inputs[i] = CreateOrderInput{
-			ClientUUID: order.ClientUUID,
-			UserID:     userID,
-			Items:      items,
+			ClientUUID:     order.ClientUUID,
+			UserID:         userID,
+			DiscountAmount: order.DiscountAmount,
+			Items:          items,
 		}
 	}
 

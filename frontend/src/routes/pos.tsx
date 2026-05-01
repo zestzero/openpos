@@ -1,10 +1,14 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import { useState } from 'react'
 import { Link, createRoute } from '@tanstack/react-router'
 
 import { getStoredSession, hasRole } from '@/lib/auth'
+import { useCart } from '@/pos/hooks/useCart'
 import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
 import { CatalogGrid } from '@/pos/components/CatalogGrid'
 import { CartPanel } from '@/pos/components/CartPanel'
+import { BarcodeScanner } from '@/pos/components/BarcodeScanner'
 import { SearchBar } from '@/pos/components/SearchBar'
 import { QuickKeysBar } from '@/pos/components/QuickKeysBar'
 import { PosLayout } from '@/pos/layout/PosLayout'
@@ -23,6 +27,7 @@ export const Route = createRoute({
 
 function PosRoute() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const { addItem } = useCart()
 
   return (
     <PosLayout>
@@ -35,10 +40,10 @@ function PosRoute() {
                   Fast sell mode
                 </p>
                 <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  Find item, tap quick key, and finish the sale without leaving the flow.
+                  Scan first, search second, and keep the order moving.
                 </h1>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                  Search by name, SKU, or barcode, then move straight into the cart.
+                  Add items with the camera or keyboard wedge, then fall back to manual search when the scanner is not cooperating.
                 </p>
               </div>
 
@@ -50,7 +55,23 @@ function PosRoute() {
               </Link>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+              <BarcodeScanner
+                onScanSuccess={(variant) => {
+                  addItem({
+                    id: variant.id,
+                    product_id: variant.product_id,
+                    sku: variant.sku,
+                    barcode: variant.barcode ?? undefined,
+                    name: variant.name,
+                    price: variant.price,
+                    cost: variant.cost ?? undefined,
+                    is_active: variant.is_active,
+                    productName: variant.product_name,
+                  })
+                }}
+                onScanError={() => undefined}
+              />
               <SearchBar />
             </div>
           </section>

@@ -44,13 +44,14 @@ type MonthlySalesReport struct {
 }
 
 type Order struct {
-	ID          pgtype.UUID        `json:"id"`
-	ClientUuid  string             `json:"client_uuid"`
-	UserID      pgtype.UUID        `json:"user_id"`
-	Status      string             `json:"status"`
-	TotalAmount int64              `json:"total_amount"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type OrderItem struct {

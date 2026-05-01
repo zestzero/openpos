@@ -1,8 +1,8 @@
 -- name: CreateOrder :one
-INSERT INTO orders (client_uuid, user_id, status, total_amount)
-VALUES ($1, $2, $3, $4)
+INSERT INTO orders (client_uuid, user_id, status, total_amount, discount_amount)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (client_uuid) DO NOTHING
-RETURNING id, client_uuid, user_id, status, total_amount, created_at, updated_at;
+RETURNING id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale)
@@ -10,17 +10,17 @@ VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at;
 
 -- name: GetOrderByClientUUID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 WHERE client_uuid = $1;
 
 -- name: GetOrderByID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 WHERE id = $1;
 
 -- name: ListOrders :many
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2;
