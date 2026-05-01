@@ -27,7 +27,7 @@ export function CatalogGrid({ categoryId }: CatalogGridProps) {
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="min-h-[110px] animate-pulse rounded-2xl bg-muted"
+            className="min-h-[17rem] animate-pulse rounded-card border border-border bg-card shadow-card"
           />
         ))}
       </div>
@@ -36,8 +36,9 @@ export function CatalogGrid({ categoryId }: CatalogGridProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-8">
-        <p className="text-destructive">Failed to load products</p>
+      <div className="flex flex-col items-center justify-center gap-4 rounded-card border border-border bg-card px-6 py-10 text-center shadow-card">
+        <p className="text-sm font-medium text-foreground">Failed to load products</p>
+        <p className="max-w-sm text-sm leading-6 text-muted-foreground">Try again. If the network is unstable, the catalog will recover automatically once the connection returns.</p>
         <Button variant="outline" onClick={() => refetch()}>
           Retry
         </Button>
@@ -47,9 +48,9 @@ export function CatalogGrid({ categoryId }: CatalogGridProps) {
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/80 bg-muted/20 py-10 text-center text-muted-foreground">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-card px-6 py-10 text-center text-muted-foreground shadow-card">
         <p className="font-medium text-foreground">No products in this category</p>
-        <p className="text-sm">Pick a different category to keep the selling floor moving.</p>
+        <p className="max-w-sm text-sm leading-6">Pick a different category, or clear the filter to bring the full shelf back into view.</p>
       </div>
     )
   }

@@ -1,60 +1,30 @@
-import type { ComponentType } from 'react'
-import { Barcode, LayoutGrid, ShoppingCart } from 'lucide-react'
-import { useNavigate, useLocation } from '@tanstack/react-router'
+import { type ComponentType } from 'react'
+import { History, LayoutGrid, MoreHorizontal, ShoppingCart } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+export type PosTab = 'sales' | 'history' | 'stock' | 'more'
 
-export type PosTab = 'catalog' | 'scan' | 'cart'
-
-interface PosNavProps {
-  activeTab?: PosTab
-  onChangeTab?: (tab: PosTab) => void
-}
-
-const navItems: Array<{ tab: PosTab; label: string; icon: ComponentType<{ className?: string }>; path: string }> = [
-  { tab: 'catalog', label: 'Catalog', icon: LayoutGrid, path: '/pos/catalog' },
-  { tab: 'scan', label: 'Scan', icon: Barcode, path: '/pos/scan' },
-  { tab: 'cart', label: 'Cart', icon: ShoppingCart, path: '/pos' },
+const navItems: Array<{ tab: PosTab; label: string; icon: ComponentType<{ className?: string }>; active?: boolean }> = [
+  { tab: 'sales', label: 'Sales', icon: ShoppingCart, active: true },
+  { tab: 'history', label: 'History', icon: History },
+  { tab: 'stock', label: 'Stock', icon: LayoutGrid },
+  { tab: 'more', label: 'More', icon: MoreHorizontal },
 ]
 
-export function PosNav({ activeTab, onChangeTab }: PosNavProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-
-  // Determine active tab based on current path
-  const currentPath = location.pathname
-  const currentTab = activeTab || navItems.find(item => 
-    item.path === currentPath || 
-    (currentPath === '/pos' && item.tab === 'cart') ||
-    (currentPath === '/pos/catalog' && item.tab === 'catalog')
-  )?.tab || 'cart'
-
-  const handleNavClick = (tab: PosTab, path: string) => {
-    // If there's an onChangeTab callback, use that (for internal state mode)
-    if (onChangeTab) {
-      onChangeTab(tab)
-    }
-    // Always navigate to the route
-    navigate({ to: path })
-  }
-
+export function PosNav() {
   return (
-    <nav className="safe-area-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-3 pt-3 backdrop-blur-sm">
-      <div className="mx-auto grid max-w-3xl grid-cols-3 gap-2">
+    <nav className="fixed bottom-0 left-0 z-50 w-full px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+      <div className="mx-auto flex max-w-lg items-center gap-1 rounded-full border border-border/70 bg-card/95 p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.08)] backdrop-blur-xl">
         {navItems.map((item) => {
           const Icon = item.icon
-
           return (
-            <Button
+            <button
               key={item.tab}
               type="button"
-              variant={currentTab === item.tab ? 'default' : 'ghost'}
-              className="h-14 min-h-11 min-w-11 flex-col rounded-pill"
-              onClick={() => handleNavClick(item.tab, item.path)}
+              className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors active:scale-[0.98] ${item.active ? 'bg-primary text-primary-foreground shadow-card' : 'text-muted-foreground hover:bg-muted hover:text-foreground'}`}
             >
               <Icon className="h-4 w-4" />
-              <span className="text-xs font-medium">{item.label}</span>
-            </Button>
+              <span>{item.label}</span>
+            </button>
           )
         })}
       </div>

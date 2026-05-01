@@ -1,12 +1,10 @@
 import type { ReactNode } from 'react'
 import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from 'lucide-react'
-import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useAuth } from '@/hooks/useAuth'
+import { clearSession } from '@/lib/auth'
 
-import { ImportDrawer } from '../import/ImportDrawer'
 import { ErpNav } from '../navigation/ErpNav'
 
 const tabs = [
@@ -16,9 +14,7 @@ const tabs = [
 ] as const
 
 export function ErpLayout({ children }: { children: ReactNode }) {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { logout } = useAuth()
+  const pathname = typeof window !== 'undefined' && window.location.pathname !== '/' ? window.location.pathname : '/erp'
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
@@ -44,15 +40,22 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input className="h-10 rounded-pill pl-9" placeholder="Search products, variants, reports" />
                 </div>
-                <Link to="/pos">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <ScanLine className="h-4 w-4" />
-                    POS
-                  </Button>
-                </Link>
+                <a href="/pos" className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted">
+                  <ScanLine className="h-4 w-4" />
+                  POS
+                </a>
                 <Button variant="outline">Create product</Button>
-                <ImportDrawer />
-                <Button variant="ghost" size="icon" onClick={logout} aria-label="Log out" title="Log out">
+                <Button variant="outline">Import</Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    clearSession()
+                    window.location.assign('/login')
+                  }}
+                  aria-label="Log out"
+                  title="Log out"
+                >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
@@ -61,21 +64,20 @@ export function ErpLayout({ children }: { children: ReactNode }) {
             <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
               <nav className="flex flex-wrap gap-2" role="tablist" aria-label="ERP workspace tabs">
                 {tabs.map((tab) => {
-                  const isActive = tab.to ? location.pathname === tab.to : false
+                  const isActive = tab.to ? pathname === tab.to : false
 
                   return (
-                    <button
+                    <a
                       key={tab.label}
-                      type="button"
+                      href={tab.to ?? '#'}
                       role="tab"
                       aria-selected={isActive}
-                      onClick={tab.to ? () => navigate({ to: tab.to }) : undefined}
                       className={isActive
                         ? 'rounded-pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground'
                         : 'rounded-pill border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
                     >
                       {tab.label}
-                    </button>
+                    </a>
                   )
                 })}
               </nav>

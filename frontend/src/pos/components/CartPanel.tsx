@@ -117,12 +117,12 @@ export function CartPanel() {
       setSubmitError(null)
 
       const orderPayload = {
-        id: session.orderId,
+        client_uuid: session.orderId,
         discount_amount: discountAmount,
         items: items.map((item) => ({
           variant_id: item.variantId,
           quantity: item.quantity,
-          price_snapshot: item.price,
+          unit_price: item.price,
         })),
       }
 
@@ -151,8 +151,8 @@ export function CartPanel() {
 
   if (isEmpty && !hasDraft) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-8 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-background text-muted-foreground">
+      <div className="rounded-card border border-dashed border-border bg-card p-8 text-center shadow-card">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
           <ReceiptText className="h-6 w-6" />
         </div>
         <p className="mt-4 text-lg font-semibold text-foreground">Order lane ready</p>
@@ -164,7 +164,7 @@ export function CartPanel() {
   }
 
   return (
-    <div className="rounded-[1.75rem] border border-border/70 bg-card shadow-sm">
+    <div className="rounded-card border border-border/70 bg-card shadow-card">
       <div className="flex items-start justify-between gap-3 border-b border-border/70 p-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
@@ -185,7 +185,7 @@ export function CartPanel() {
       </div>
 
       {hasDraft && step === 'cart' && (
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-muted/20 px-4 py-3 text-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-muted/25 px-4 py-3 text-sm">
           <div>
             <p className="font-medium text-foreground">Saved checkout session found</p>
             <p className="text-muted-foreground">Resume or abandon the held order.</p>
@@ -223,7 +223,7 @@ export function CartPanel() {
               <span>Subtotal</span>
               <span className="text-primary">{formatCurrency(total)}</span>
             </div>
-            <Button className="h-14 w-full rounded-2xl text-lg font-semibold" onClick={startCheckout} disabled={items.length === 0}>
+            <Button className="h-14 w-full rounded-card text-lg font-semibold shadow-card" onClick={startCheckout} disabled={items.length === 0}>
               Complete order
             </Button>
             <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -235,7 +235,7 @@ export function CartPanel() {
 
       {step === 'review' && (
         <div className="space-y-4 p-4">
-          <div className="rounded-2xl border border-border/70 bg-background p-4">
+          <div className="rounded-card border border-border/70 bg-background p-4 shadow-card">
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
@@ -294,7 +294,7 @@ export function CartPanel() {
             </Button>
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-background p-4">
+          <div className="rounded-card border border-border/70 bg-background p-4 shadow-card">
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Amount due</span>
@@ -323,14 +323,14 @@ export function CartPanel() {
                     <img
                       alt="PromptPay QR"
                       src={promptPayQr}
-                      className="mx-auto h-48 w-48 rounded-2xl border border-border/70 bg-white p-2"
+                      className="mx-auto h-48 w-48 rounded-card border border-border/70 bg-background p-2"
                     />
                   )}
                 </div>
               )}
 
               {submitError && (
-                <div className="rounded-2xl border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+                <div className="rounded-card border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
                   {submitError}
                 </div>
               )}

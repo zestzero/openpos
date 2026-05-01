@@ -27,9 +27,9 @@ export function CatalogCategoryNav({
   if (isLoading) {
     return (
       <div className="flex gap-2 overflow-x-auto pb-2">
-        <div className="h-10 w-20 animate-pulse rounded-full bg-muted" />
-        <div className="h-10 w-20 animate-pulse rounded-full bg-muted" />
-        <div className="h-10 w-20 animate-pulse rounded-full bg-muted" />
+        <div className="h-10 w-24 animate-pulse rounded-full bg-muted" />
+        <div className="h-10 w-24 animate-pulse rounded-full bg-muted" />
+        <div className="h-10 w-28 animate-pulse rounded-full bg-muted" />
       </div>
     )
   }
@@ -43,11 +43,13 @@ export function CatalogCategoryNav({
   }
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" aria-label="Product categories">
+    <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar" aria-label="Product categories">
       <Button
         variant={selectedCategory === null ? 'default' : 'outline'}
         size="sm"
-        className="min-h-[46px] shrink-0 rounded-full px-4"
+        className={selectedCategory === null
+          ? 'min-h-[42px] shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold shadow-card'
+          : 'min-h-[42px] shrink-0 rounded-full border-border bg-background px-6 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
         onClick={() => onSelectCategory(null)}
       >
         All items
@@ -57,7 +59,9 @@ export function CatalogCategoryNav({
           key={category.id}
           variant={selectedCategory === category.id ? 'default' : 'outline'}
           size="sm"
-          className="min-h-[46px] shrink-0 rounded-full px-4"
+          className={selectedCategory === category.id
+            ? 'min-h-[42px] shrink-0 rounded-full px-6 py-2.5 text-sm font-semibold shadow-card'
+            : 'min-h-[42px] shrink-0 rounded-full border-border bg-background px-6 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
           onClick={() => onSelectCategory(category.id)}
         >
           {category.name}

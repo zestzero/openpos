@@ -79,6 +79,23 @@ export interface ReceiptSnapshot {
   change_due: number
 }
 
+export interface CreateOrderRequest {
+  client_uuid: string
+  discount_amount: number
+  items: Array<{
+    variant_id: string
+    quantity: number
+    unit_price: number
+  }>
+}
+
+export interface OrderResponse {
+  id: string
+  client_uuid: string
+  status: string
+  total_amount: number
+}
+
 export class ApiError extends Error {
   readonly status: number
 
@@ -154,7 +171,7 @@ export const api = {
     return requestJSON<ApiSuccess<ProductWithVariants[]>>(`/api/catalog/products${query ? `?${query}` : ''}`)
   },
   searchVariant(query: string) {
-    return requestJSON<ApiSuccess<SearchVariantRow[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
+    return requestJSON<ApiSuccess<SearchVariantRow>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
   },
   completePayment(orderId: string, body: CompletePaymentRequest) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/payments`, {
@@ -165,8 +182,8 @@ export const api = {
   getReceipt(orderId: string) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/receipt`)
   },
-  createOrder(orderData: { id: string; discount_amount: number; items: { variant_id: string; quantity: number; price_snapshot: number }[] }) {
-    return requestJSON<ApiSuccess<{ id: string; status: string }>>('/api/orders', {
+  createOrder(orderData: CreateOrderRequest) {
+    return requestJSON<ApiSuccess<OrderResponse>>('/api/orders', {
       method: 'POST',
       body: JSON.stringify(orderData),
     })

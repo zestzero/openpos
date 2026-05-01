@@ -1,14 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { useState } from 'react'
-import { Link, createRoute } from '@tanstack/react-router'
+import { createRoute } from '@tanstack/react-router'
 
 import { getStoredSession, hasRole } from '@/lib/auth'
 import { useCart } from '@/pos/hooks/useCart'
+import { formatCurrency } from '@/lib/formatCurrency'
 import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
 import { CatalogGrid } from '@/pos/components/CatalogGrid'
 import { CartPanel } from '@/pos/components/CartPanel'
-import { BarcodeScanner } from '@/pos/components/BarcodeScanner'
 import { SearchBar } from '@/pos/components/SearchBar'
 import { QuickKeysBar } from '@/pos/components/QuickKeysBar'
 import { PosLayout } from '@/pos/layout/PosLayout'
@@ -27,91 +27,73 @@ export const Route = createRoute({
 
 function PosRoute() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { addItem } = useCart()
+  const { itemCount, total } = useCart()
 
   return (
     <PosLayout>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(20rem,0.95fr)]">
-        <div className="space-y-4">
-          <section className="rounded-[1.75rem] border border-border/70 bg-card p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Fast sell mode
-                </p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  Scan first, search second, and keep the order moving.
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                  Add items with the camera or keyboard wedge, then fall back to manual search when the scanner is not cooperating.
-                </p>
-              </div>
-
-              <Link
-                to="/pos/scan"
-                className="inline-flex h-11 items-center justify-center rounded-pill border border-border bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                Open scan mode
-              </Link>
+      <div className="w-full space-y-6 pb-40">
+        <section className="rounded-card border border-border/70 bg-card p-4 shadow-card sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Selling floor</p>
+              <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Keep the register moving without losing the thread.</h2>
+              <p className="max-w-prose text-sm leading-6 text-muted-foreground sm:text-base">
+                Search fast, pin repeat sellers, and keep the cart visible while the line keeps moving.
+              </p>
             </div>
 
-            <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-              <BarcodeScanner
-                onScanSuccess={(variant) => {
-                  addItem({
-                    id: variant.id,
-                    product_id: variant.product_id,
-                    sku: variant.sku,
-                    barcode: variant.barcode ?? undefined,
-                    name: variant.name,
-                    price: variant.price,
-                    cost: variant.cost ?? undefined,
-                    is_active: variant.is_active,
-                    productName: variant.product_name,
-                  })
-                }}
-                onScanError={() => undefined}
-              />
-              <SearchBar />
+            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+              <span className="rounded-full border border-border bg-background px-3 py-1.5">{itemCount} items</span>
+              <span className="rounded-full border border-border bg-background px-3 py-1.5">{formatCurrency(total)} in cart</span>
             </div>
-          </section>
+          </div>
 
-          <section className="space-y-3">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Quick keys
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Repeat sellers stay one tap away.
-                </p>
-              </div>
-            </div>
+          <div className="mt-4 flex flex-wrap gap-2 rounded-full border border-border bg-background p-1.5">
+            <button className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-card">Register</button>
+            <button className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Stock Management</button>
+          </div>
 
+          <div className="mt-4 space-y-3">
+            <SearchBar />
             <QuickKeysBar />
-          </section>
+          </div>
+        </section>
 
-          <section className="space-y-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                Catalog browse
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Keep the shelf visible so item discovery never feels like a detour.
-              </p>
+        <section className="space-y-3">
+          <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <div className="shrink-0">
+              <CatalogCategoryNav selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
             </div>
+          </div>
+        </section>
 
-            <CatalogCategoryNav
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-            />
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)]">
+          <div className="space-y-3">
             <CatalogGrid categoryId={selectedCategory} />
-          </section>
-        </div>
+          </div>
 
-        <aside className="xl:sticky xl:top-24 xl:self-start">
-          <CartPanel />
-        </aside>
+          <aside id="cart-panel" className="scroll-mt-24 xl:sticky xl:top-24 xl:self-start">
+            <CartPanel />
+          </aside>
+        </section>
+      </div>
+
+      <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 xl:hidden">
+        <a
+          href="#cart-panel"
+          className="flex w-full items-center justify-between rounded-full border border-border bg-foreground px-5 py-4 text-background shadow-[0_14px_30px_rgba(0,0,0,0.14)] transition-transform active:scale-[0.98]"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-background/10 text-xs font-semibold text-background">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-foreground">
+                {itemCount}
+              </span>
+              <span className="text-xs font-semibold">Cart</span>
+            </span>
+            <span className="text-sm font-semibold">View cart</span>
+          </div>
+          <span className="text-lg font-semibold tracking-tight">{formatCurrency(total)}</span>
+        </a>
       </div>
     </PosLayout>
   )

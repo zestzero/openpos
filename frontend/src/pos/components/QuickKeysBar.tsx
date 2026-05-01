@@ -11,7 +11,7 @@ export function QuickKeysBar() {
 
   if (favorites.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 p-4 text-sm text-muted-foreground">
+      <div className="rounded-card border border-dashed border-border bg-card p-4 text-sm leading-6 text-muted-foreground shadow-card">
         Pin a repeat seller from search or the catalog to build one-tap quick keys.
       </div>
     )
@@ -44,7 +44,7 @@ export function QuickKeysBar() {
         <Button
           key={item.variantId}
           variant="outline"
-          className="min-h-[4.75rem] min-w-[10rem] shrink-0 flex-col items-start justify-between gap-1 rounded-2xl px-3 py-3 text-left"
+          className="min-h-[4.75rem] min-w-[10rem] shrink-0 flex-col items-start justify-between gap-1 rounded-card border-border bg-background px-3 py-3 text-left shadow-card hover:bg-muted"
           onClick={() => handleQuickAdd(item)}
         >
           <span className="line-clamp-2 text-sm font-medium leading-5">{item.variantName}</span>

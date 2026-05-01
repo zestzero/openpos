@@ -23,31 +23,15 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
 
     try {
       const response = await api.searchVariant(code)
-      
-      if (response.data && response.data.length > 0) {
-        // Found variant
-        const variant = response.data[0]
-        setStatus('success')
-        onScanSuccess(variant)
+      const variant = response.data
+      setStatus('success')
+      onScanSuccess(variant)
 
-        // Auto-restart scanning after 2 seconds
-        setTimeout(() => {
-          setStatus('idle')
-          setScannedCode(null)
-        }, 2000)
-      } else {
-        // Not found
-        setStatus('error')
-        setErrorMessage(`Product not found: ${code}`)
-        onScanError(code, `Product not found: ${code}`)
-
-        // Auto-restart scanning after 2 seconds
-        setTimeout(() => {
-          setStatus('idle')
-          setScannedCode(null)
-          setErrorMessage(null)
-        }, 2000)
-      }
+      // Auto-restart scanning after 2 seconds
+      setTimeout(() => {
+        setStatus('idle')
+        setScannedCode(null)
+      }, 2000)
     } catch (err) {
       setStatus('error')
       const errorMsg = err instanceof Error ? err.message : 'Search failed'

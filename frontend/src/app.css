@@ -1,33 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 
-  --color-background: #ffffff;
-  --color-foreground: #0d0d0d;
+  --color-background: #f3fcf3;
+  --color-foreground: #151d18;
   --color-card: #ffffff;
-  --color-card-foreground: #0d0d0d;
+  --color-card-foreground: #151d18;
   --color-popover: #ffffff;
-  --color-popover-foreground: #0d0d0d;
+  --color-popover-foreground: #151d18;
+  --color-surface: #f3fcf3;
+  --color-surface-bright: #f3fcf3;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #edf6ed;
+  --color-surface-container: #e7f0e8;
+  --color-surface-container-high: #e1ebe2;
+  --color-surface-container-highest: #dce5dc;
+  --color-primary-container: #18e299;
+  --color-on-primary-container: #005f3d;
+  --color-outline: #6b7b70;
   --color-border: rgba(0, 0, 0, 0.05);
-  --color-input: rgba(0, 0, 0, 0.08);
+  --color-input: rgba(0, 0, 0, 0.05);
   --color-ring: #18e299;
-  --color-primary: #0d0d0d;
+  --color-primary: #006c47;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f5f5f5;
-  --color-secondary-foreground: #0d0d0d;
-  --color-muted: #fafafa;
-  --color-muted-foreground: #666666;
-  --color-accent: #d4fae8;
-  --color-accent-foreground: #0fa76e;
+  --color-secondary: #5f5e5e;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #edf6ed;
+  --color-muted-foreground: #6b7b70;
+  --color-accent: #dce5dc;
+  --color-accent-foreground: #474646;
   --color-brand: #18e299;
-  --color-brand-foreground: #0fa76e;
+  --color-brand-foreground: #005f3d;
   --color-destructive: #d45656;
   --color-destructive-foreground: #ffffff;
 
@@ -105,6 +115,32 @@ body {
   color: var(--color-foreground);
 }
 
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  pointer-events: none;
+  z-index: -10;
+  border-radius: 9999px;
+  filter: blur(100px);
+}
+
+body::before {
+  top: -10%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: rgb(24 226 153 / 0.05);
+}
+
+body::after {
+  left: -5%;
+  bottom: -5%;
+  width: 40%;
+  height: 40%;
+  background: rgb(24 226 153 / 0.03);
+}
+
 button,
 input {
   font: inherit;
@@ -120,9 +156,18 @@ input {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -154,6 +199,16 @@ input {
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-outline: var(--outline);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

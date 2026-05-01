@@ -29,22 +29,9 @@ function ScanPage() {
   const handleVariantSearch = useCallback(async (code: string) => {
     try {
       const response = await api.searchVariant(code)
-
-      if (response.data && response.data.length > 0) {
-        const variant = response.data[0]
-        setScannedVariants((prev) => [...prev.slice(-4), variant])
-        setLastError(null)
-        setShowError(false)
-        return
-      }
-
-      setLastError(`Product not found: ${code}`)
-      setShowError(true)
-
-      window.setTimeout(() => {
-        setShowError(false)
-        setLastError(null)
-      }, 2000)
+      setScannedVariants((prev) => [...prev.slice(-4), response.data])
+      setLastError(null)
+      setShowError(false)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Search failed'
       setLastError(errorMsg)
