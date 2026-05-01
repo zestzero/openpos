@@ -1,174 +1,206 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-04-25
+**Analysis Date:** 2026-05-02
 
 ## Directory Layout
 
-```
+```text
 openpos/
-├── .agents/                    # Agent skills and configurations
-├── .config/                    # Configuration for tools (opencode, shell strategy)
 ├── cmd/
-│   └── server/
-│       └── main.go             # Application entry point
-├── internal/
-│   └── {domain}/               # Domain modules (handler.go, service.go)
+│   └── server/                # Go application entry point
 ├── db/
-│   ├── migrations/             # Database schema migrations
-│   │   └── *.sql               # Forward and rollback migrations
-│   ├── queries/                # sqlc query definitions
-│   │   └── {domain}.sql        # SQL queries per domain
-│   └── sqlc/                   # Generated Go code (DO NOT EDIT)
+│   ├── migrations/            # PostgreSQL schema migrations
+│   ├── queries/               # sqlc source SQL per domain
+│   └── sqlc/                  # Generated Go database code
 ├── frontend/
-│   └── src/
-│       ├── api/                # API client functions
-│       ├── components/         # Shared UI components
-│       ├── pos/                # POS-specific pages and components
-│       ├── erp/                # ERP-specific pages and components
-│       ├── hooks/              # Custom React hooks
-│       ├── lib/                # Utilities (formatting, constants)
-│       └── routes/            # TanStack Router route definitions
-├── .gitignore
-├── AGENTS.md                   # Project conventions and stack
-├── docker-compose.yml         # Local development services
-├── Dockerfile                 # Multi-stage build for production
-├── go.mod                      # Go module definition
-├── package.json               # Frontend dependencies
-├── tsconfig.json              # TypeScript configuration
-└── vite.config.ts             # Vite build configuration
+│   ├── public/                # PWA shell assets and service worker
+│   └── src/                   # React app, routes, features, utilities
+├── internal/                  # Backend domain packages
+│   ├── auth/
+│   ├── catalog/
+│   ├── inventory/
+│   ├── sales/
+│   ├── reporting/
+│   ├── middleware/
+│   └── database/
+├── .planning/codebase/        # Architecture and mapping docs
+├── Dockerfile                 # Production container build
+├── docker-compose.yml         # Local app + PostgreSQL runtime
+├── go.mod                     # Go module definition
+├── go.sum                     # Go dependency lockfile
+├── sqlc.yaml                  # sqlc generator config
+├── README.md                  # Setup and run instructions
+└── DEPLOYMENT.md              # Deployment notes
 ```
 
 ## Directory Purposes
 
 **`cmd/server/`:**
-- Purpose: Application entry point
-- Contains: `main.go` - starts the server, sets up router, middleware
-- Key files: `cmd/server/main.go`
+- Purpose: process startup and dependency wiring.
+- Contains: `cmd/server/main.go`.
+- Key files: `cmd/server/main.go`.
 
-**`internal/{domain}/`:**
-- Purpose: Domain-specific business logic and HTTP handlers
-- Contains: `handler.go` (chi HTTP handlers), `service.go` (business logic)
-- Pattern: Create new directory per domain (e.g., `internal/product/`, `internal/order/`)
+**`internal/auth/`:**
+- Purpose: login, user creation, JWT issuance, cashier management.
+- Contains: `internal/auth/handler.go`, `internal/auth/service.go`.
+
+**`internal/catalog/`:**
+- Purpose: category, product, and variant CRUD plus variant search.
+- Contains: `internal/catalog/handler.go`, `internal/catalog/service.go`.
+
+**`internal/inventory/`:**
+- Purpose: stock ledger, current stock lookup, and manual adjustments.
+- Contains: `internal/inventory/handler.go`, `internal/inventory/service.go`.
+
+**`internal/sales/`:**
+- Purpose: order creation, offline sync replay, and receipt generation.
+- Contains: `internal/sales/handler.go`, `internal/sales/service.go`.
+
+**`internal/reporting/`:**
+- Purpose: reporting read models and API endpoints.
+- Contains: `internal/reporting/handler.go`, `internal/reporting/service.go`.
+
+**`internal/middleware/`:**
+- Purpose: cross-cutting HTTP middleware.
+- Contains: `internal/middleware/auth.go`, `internal/middleware/cors.go`.
+
+**`internal/database/`:**
+- Purpose: create and close the PostgreSQL connection pool.
+- Contains: `internal/database/db.go`.
 
 **`db/migrations/`:**
-- Purpose: Schema evolution
-- Contains: `.up.sql` (apply) and `.down.sql` (rollback) migration files
-- Naming: Sequential prefix (e.g., `001_create_products.up.sql`)
-- Key files: All `.sql` migration files
+- Purpose: schema source of truth.
+- Contains: paired `.up.sql` and `.down.sql` files such as `db/migrations/000001_init.up.sql` and `db/migrations/011_add_order_discount.up.sql`.
 
 **`db/queries/`:**
-- Purpose: SQL queries for sqlc code generation
-- Contains: `{domain}.sql` files with query definitions
-- Pattern: One file per domain, queries annotated with sqlc comments
-- Key files: `db/queries/product.sql`, `db/queries/order.sql`
+- Purpose: SQL definitions consumed by sqlc.
+- Contains: `db/queries/auth.sql`, `db/queries/catalog.sql`, `db/queries/inventory.sql`, `db/queries/sales.sql`, `db/queries/reporting.sql`.
 
 **`db/sqlc/`:**
-- Purpose: Generated Go code from sqlc
-- Contains: Generated type definitions and query methods
-- Note: **DO NOT EDIT** - regenerate with `sqlc generate`
-
-**`frontend/src/api/`:**
-- Purpose: API client functions
-- Contains: HTTP client wrappers, API function calls
-- Pattern: Functions returning TanStack Query compatible results
-- Key files: `frontend/src/api/products.ts`, `frontend/src/api/orders.ts`
-
-**`frontend/src/components/`:**
-- Purpose: Shared UI components
-- Contains: Reusable components (buttons, inputs, dialogs)
-- Notes: Uses shadcn/ui, import from here not @radix-ui directly
-
-**`frontend/src/pos/`:**
-- Purpose: Point-of-sale specific pages and components
-- Contains: POS UI, order creation, checkout flow
-
-**`frontend/src/erp/`:**
-- Purpose: Enterprise resource planning pages
-- Contains: Admin dashboard, inventory management, reports
-
-**`frontend/src/hooks/`:**
-- Purpose: Custom React hooks
-- Contains: `useLocalStorage`, `useOffline`, etc.
-
-**`frontend/src/lib/`:**
-- Purpose: Utilities and constants
-- Contains: Formatting helpers, constants, configuration
-- Key files: Currency formatting, date utilities
+- Purpose: generated query types and model structs.
+- Contains: `db/sqlc/db.go`, `db/sqlc/models.go`, `db/sqlc/*.sql.go`.
+- Generated: yes.
 
 **`frontend/src/routes/`:**
-- Purpose: TanStack Router route definitions
-- Contains: Route tree configuration, file-based routing
+- Purpose: file-based TanStack Router routes.
+- Contains: `frontend/src/routes/__root.tsx`, `frontend/src/routes/login.tsx`, `frontend/src/routes/pos.tsx`, `frontend/src/routes/erp.tsx`, and child routes.
+
+**`frontend/src/lib/`:**
+- Purpose: API clients, auth/session helpers, IndexedDB, formatting, and reporting utilities.
+- Contains: `frontend/src/lib/api.ts`, `frontend/src/lib/auth.ts`, `frontend/src/lib/db.ts`, `frontend/src/lib/erp-api.ts`, `frontend/src/lib/reporting-api.ts`.
+
+**`frontend/src/pos/`:**
+- Purpose: cashier workspace.
+- Contains: `frontend/src/pos/components/`, `frontend/src/pos/hooks/`, `frontend/src/pos/layout/PosLayout.tsx`.
+
+**`frontend/src/erp/`:**
+- Purpose: owner/admin workspace.
+- Contains: `frontend/src/erp/layout/ErpLayout.tsx`, `frontend/src/erp/tables/`, `frontend/src/erp/products/`, `frontend/src/erp/reports/`, `frontend/src/erp/categories/`, `frontend/src/erp/import/`.
+
+**`frontend/src/components/ui/`:**
+- Purpose: shared design-system primitives.
+- Contains: shadcn-style building blocks such as `frontend/src/components/ui/button.tsx`, `card.tsx`, `dialog.tsx`, `input.tsx`.
+
+**`frontend/public/`:**
+- Purpose: PWA shell assets.
+- Contains: `frontend/public/sw.js`, `frontend/public/manifest.webmanifest`, `frontend/public/favicon.svg`, `frontend/public/icons.svg`.
 
 ## Key File Locations
 
 **Entry Points:**
-- `cmd/server/main.go`: Backend server startup
-- `frontend/src/main.tsx`: Frontend React app entry
+- `cmd/server/main.go`: backend bootstrap.
+- `frontend/src/main.tsx`: frontend bootstrap.
+- `frontend/src/routeTree.gen.ts`: generated router tree.
 
 **Configuration:**
-- `docker-compose.yml`: Local dev services (PostgreSQL)
-- `go.mod`: Go dependencies
-- `package.json`: Node dependencies
-- `tsconfig.json`: TypeScript configuration
-- `vite.config.ts`: Vite build configuration
+- `go.mod`: backend dependencies and Go version.
+- `sqlc.yaml`: sqlc generation settings.
+- `frontend/package.json`: frontend scripts and dependencies.
+- `frontend/vite.config.ts`: Vite build config and `@` alias.
+- `docker-compose.yml`: local PostgreSQL and app services.
+- `Dockerfile`: production container build.
 
-**Database:**
-- `db/migrations/`: Schema migrations
-- `db/queries/`: SQL queries
+**Core Logic:**
+- `internal/auth/service.go`: JWT and login rules.
+- `internal/catalog/service.go`: catalog CRUD and uniqueness checks.
+- `internal/inventory/service.go`: stock ledger and deductions.
+- `internal/sales/service.go`: order creation, payment, and sync.
+- `internal/reporting/service.go`: reporting read models.
+- `frontend/src/lib/api.ts`: POS API client.
+- `frontend/src/lib/erp-api.ts`: ERP API client and query hooks.
+- `frontend/src/lib/reporting-api.ts`: reporting API client and row transforms.
+
+**Testing:**
+- `internal/*/*_test.go`: backend unit and handler tests.
+- `db/migrations/orders_migrations_test.go`: migration checks.
+- `frontend/src/erp/__tests__/*.test.tsx`: ERP UI tests.
+- `frontend/vitest.config.ts`: Vitest config.
 
 ## Naming Conventions
 
-**Files:**
-- Go: `lowercase_with_underscores.go` (e.g., `user_service.go`)
-- TypeScript: `camelCase.ts` (e.g., `apiClient.ts`)
-- SQL: `lowercase_with_underscores.sql` (e.g., `create_products.sql`)
+**Go files:**
+- `handler.go` for HTTP transport, `service.go` for domain rules, `*_test.go` for tests.
+- Package names are lowercase singular, such as `auth`, `catalog`, `sales`, `reporting`.
 
-**Directories:**
-- Go packages: lowercase, singular (e.g., `internal/product/`)
-- Frontend directories: lowercase (e.g., `frontend/src/api/`)
+**Frontend files:**
+- Feature folders are lowercase, such as `frontend/src/pos/` and `frontend/src/erp/`.
+- Route files use TanStack Router file names like `pos.scan.tsx` and `erp.reports.tsx`.
+- Shared primitives live in `frontend/src/components/ui/`.
 
-**Domain Modules (Go):**
-- Handler: `{domain}/handler.go`
-- Service: `{domain}/service.go`
+**SQL and migrations:**
+- SQL query files stay lowercase with domain names, such as `db/queries/catalog.sql`.
+- Migration files use sequential prefixes, such as `db/migrations/005_create_orders.up.sql`.
+- Every migration change ships with `.up.sql` and `.down.sql` pairs.
 
 ## Where to Add New Code
 
-**New Backend Domain:**
-- Create `internal/{domain}/handler.go` for HTTP handlers
-- Create `internal/{domain}/service.go` for business logic
-- Create `db/queries/{domain}.sql` for database queries
-- Run `sqlc generate` after adding queries
-- Create `db/migrations/` if schema changes needed
+**New backend domain:**
+- Add HTTP transport in `internal/{domain}/handler.go`.
+- Add business logic in `internal/{domain}/service.go`.
+- Add queries in `db/queries/{domain}.sql`.
+- Add schema changes in `db/migrations/`.
 
-**New Frontend Feature:**
-- API client: `frontend/src/api/{feature}.ts`
-- Components (shared): `frontend/src/components/{feature}/`
-- Components (POS-specific): `frontend/src/pos/{feature}/`
-- Components (ERP-specific): `frontend/src/erp/{feature}/`
-- Routes: Update `frontend/src/routes/` tree
+**New backend middleware:**
+- Add shared request behavior in `internal/middleware/{name}.go`.
 
-**New Database Schema:**
-- Create migration: `migrate create -ext sql -dir db/migrations -seq {name}`
-- Create queries: `db/queries/{domain}.sql`
-- Generate code: `sqlc generate`
+**New POS feature:**
+- Add components in `frontend/src/pos/components/`.
+- Add state/hooks in `frontend/src/pos/hooks/`.
+- Add route pages in `frontend/src/routes/pos*.tsx`.
+
+**New ERP feature:**
+- Add components in `frontend/src/erp/{feature}/`.
+- Add route pages in `frontend/src/routes/erp*.tsx`.
+- Add API helpers in `frontend/src/lib/erp-api.ts` or split into a new file under `frontend/src/lib/`.
+
+**New shared UI primitive:**
+- Add reusable control in `frontend/src/components/ui/`.
+
+**New offline state:**
+- Add Dexie tables in `frontend/src/lib/db.ts` and behavior in `frontend/src/pos/hooks/`.
 
 ## Special Directories
 
 **`db/sqlc/`:**
-- Purpose: Generated database code
-- Generated: Yes (via sqlc)
-- Committed: Yes (part of codebase)
+- Purpose: generated PostgreSQL access layer.
+- Generated: yes.
+- Committed: yes.
 
-**`frontend/src/components/`:**
-- Purpose: shadcn/ui components
-- Generated: Yes (via shadcn/ui CLI)
-- Committed: Yes (part of codebase)
+**`frontend/src/routeTree.gen.ts`:**
+- Purpose: generated route registration for TanStack Router.
+- Generated: yes.
+- Committed: yes.
 
-**`.agents/`:**
-- Purpose: Agent skill definitions
-- Generated: No (project conventions)
-- Committed: Yes
+**`frontend/public/sw.js`:**
+- Purpose: offline shell caching and navigation fallback.
+- Generated: no.
+- Committed: yes.
+
+**`frontend/src/components/ui/`:**
+- Purpose: shared shadcn-style primitives.
+- Generated: partially, then customized.
+- Committed: yes.
 
 ---
 
-*Structure analysis: 2026-04-25*
+*Structure analysis: 2026-05-02*

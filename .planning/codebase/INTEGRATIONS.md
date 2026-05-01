@@ -1,117 +1,95 @@
 # External Integrations
 
-**Analysis Date:** 2026-04-25
+**Analysis Date:** 2026-05-02
 
 ## APIs & External Services
 
-**None planned** - This is a self-contained POS/ERP system with no external API dependencies.
+**Application API (internal REST):**
+- OpenPOS backend API - used by the SPA for auth, catalog, sales, reporting, and offline sync
+  - SDK/Client: `fetch` wrappers in `frontend/src/lib/api.ts`, `frontend/src/lib/erp-api.ts`, `frontend/src/lib/reporting-api.ts`
+  - Server entry: `cmd/server/main.go`
+  - Auth: JWT bearer token in `Authorization: Bearer <token>` from `frontend/src/lib/auth.ts`
+
+**Payment rail / QR workflow:**
+- PromptPay QR payload generation - creates payment QR data for cashier checkout flows
+  - SDK/Client: `qrcode` in `frontend/src/lib/promptpay.ts`
+  - Auth: Not applicable
+  - Network call: none; payload is generated locally
+
+**Browser platform integrations:**
+- Service Worker + Cache Storage - offline shell caching and network-first fetch fallback
+  - Files: `frontend/public/sw.js`, `frontend/src/main.tsx`
+- IndexedDB - offline catalog/order queue storage
+  - Files: `frontend/src/lib/db.ts`, `frontend/src/pos/hooks/useOfflineOrders.ts`, `frontend/src/pos/hooks/useSync.ts`
+- Local Storage - session, cart, favorites, checkout state
+  - Files: `frontend/src/lib/auth.ts`, `frontend/src/pos/hooks/useCart.ts`, `frontend/src/pos/hooks/useFavorites.ts`, `frontend/src/pos/hooks/usePosCheckoutSession.ts`
+- BarcodeDetector / camera-based scanning - POS barcode intake
+  - Files: `frontend/src/pos/hooks/useBarcodeDetector.ts`, `frontend/src/pos/components/BarcodeScanner.tsx`
 
 ## Data Storage
 
-**PostgreSQL:**
-- Type: Relational database
-- Version: 15+
-- Connection: `DATABASE_URL` environment variable
-- Client: `pgx/v5` (pure Go PostgreSQL driver)
-- Purpose: All business data (users, products, inventory, orders, payments)
-- Configuration: Connection pooling via `pgxpool`
-
-**IndexedDB (Browser Local Storage):**
-- Type: Browser local database
-- Client: Dexie.js
-- Purpose: Offline product catalog, pending orders sync queue
-- Tables:
-  - `products` - Cached product catalog
-  - `variants` - Cached product variants with barcodes
-  - `orders` - Offline-created orders with client-generated UUIDs
-  - `syncQueue` - Pending operations waiting to sync
+**Databases:**
+- PostgreSQL 16 in local compose, PostgreSQL-compatible in production
+  - Connection: `DATABASE_URL` in `cmd/server/main.go`, `internal/database/db.go`, `docker-compose.yml`
+  - Client: `pgx/v5` pool in `internal/database/db.go`; `sqlc` generated queries in `db/sqlc/*`
+  - Schema/migrations: `db/migrations/*.sql`
 
 **File Storage:**
-- Local filesystem only (no cloud storage service)
-- Product images stored as file paths or base64 in database
-- Future: Could add S3-compatible storage for product images
+- Local filesystem only for application assets and build artifacts
+  - Frontend static assets and service worker assets: `frontend/public/*`
+  - Docker image/runtime files: `Dockerfile`
 
 **Caching:**
-- None (PostgreSQL handles all data)
-- TanStack Query provides frontend request caching
-- Redis not used (single-instance deployment)
+- Browser Cache Storage for service-worker-managed assets in `frontend/public/sw.js`
+- TanStack Query client cache in `frontend/src/main.tsx`
+- No Redis/Memcached detected
 
 ## Authentication & Identity
 
-**Custom JWT Implementation:**
-- Provider: Self-hosted (no third-party)
-- Implementation: `golang-jwt/jwt/v5` for token creation/validation
-- Storage: User credentials (hashed passwords) in PostgreSQL
-- Auth method: Email/password or PIN
-- Token: Bearer token in `Authorization` header
-- Roles: Owner, Manager, Cashier (stored in database)
+**Auth Provider:**
+- Custom JWT authentication
+  - Implementation: email/password owner login, cashier PIN login, and role checks in `internal/auth/service.go`, `internal/auth/handler.go`, `internal/middleware/auth.go`
+  - Token storage: `localStorage` in `frontend/src/lib/auth.ts`
+  - Signing secret: `JWT_SECRET` in `cmd/server/main.go`
 
 ## Monitoring & Observability
 
-**None configured** - Greenfield project without observability stack.
+**Error Tracking:**
+- None detected
 
-**Future considerations:**
-- Error tracking: Sentry or similar
-- Logging: Structured logging with `slog` (Go 1.21+)
-- Metrics: Prometheus endpoint for monitoring
+**Logs:**
+- Standard Go logging and chi request logging in `cmd/server/main.go`
+- Health endpoint at `/health` for container checks in `cmd/server/main.go` and `Dockerfile`
 
 ## CI/CD & Deployment
 
 **Hosting:**
-- Self-hosted (Docker)
-- Multi-stage Docker build for minimal image size
+- Docker / Docker Compose on a self-hosted VM or container platform
+  - Files: `Dockerfile`, `docker-compose.yml`, `DEPLOYMENT.md`
 
 **CI Pipeline:**
-- Not configured yet
-- Future: GitHub Actions or similar for automated tests
-
-**Development:**
-- Docker Compose for local development
-- Services: Go application, PostgreSQL
+- None detected in repository
 
 ## Environment Configuration
 
-**Required environment variables:**
-
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@localhost:5432/openpos` |
-| `JWT_SECRET` | Key for signing JWT tokens | (secure random string) |
-| `PORT` | Server listen port | `8080` (default) |
+**Required env vars:**
+- `DATABASE_URL` - PostgreSQL connection string (`cmd/server/main.go`, `internal/database/db.go`, `docker-compose.yml`)
+- `JWT_SECRET` - JWT signing secret (`cmd/server/main.go`)
+- `PORT` - HTTP port (`cmd/server/main.go`, `docker-compose.yml`)
+- `FRONTEND_ORIGIN` - allowed browser origin for CORS (`cmd/server/main.go`, `internal/middleware/cors.go`)
+- `VITE_API_URL` - frontend API base URL (`frontend/src/lib/api.ts`, `frontend/src/lib/erp-api.ts`, `frontend/src/lib/reporting-api.ts`)
 
 **Secrets location:**
-- Environment variables (not committed to version control)
-- `.env` file for local development (gitignored)
+- Environment variables at runtime; no secret manager integration detected
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- None planned
+- None detected
 
 **Outgoing:**
-- None planned
-- Future: Webhook notifications for low stock, daily sales summary
-
-## Offline Architecture
-
-The POS client operates offline-first:
-
-1. **Product Catalog Sync:**
-   - On connect: Fetch latest products/variants from API
-   - Store in IndexedDB via Dexie.js
-   - Display cached products when offline
-
-2. **Order Creation (Offline):**
-   - Client generates UUID for order
-   - Order stored in IndexedDB with "pending" status
-   - Delta operation stored: `{ variantID, quantity, operation: "decrement" }`
-
-3. **Sync on Reconnect:**
-   - Process sync queue in order
-   - Send each operation to backend
-   - Backend processes sequentially (transaction per operation)
-   - Remove from queue on success
+- None detected
 
 ---
 
-*Integration audit: 2026-04-25*
+*Integration audit: 2026-05-02*

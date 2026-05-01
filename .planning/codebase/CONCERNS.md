@@ -1,260 +1,139 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-04-25
+**Analysis Date:** 2026-05-02
 
-## Project State Summary
+## Tech Debt
 
-**Status:** Pre-development - no source code exists
-**Stack:** Go (chi + sqlc + pgx) + Vite + React
-**Phase:** All phases "Not started" - full reset from Encore TypeScript
+**Backend role enforcement lives in the UI only:**
+- Issue: owner/cashier separation is enforced in `frontend/src/routes/erp.tsx`, but `cmd/server/main.go` never applies `internal/middleware/auth.go:RequireRole` to any API route.
+- Files: `cmd/server/main.go`, `internal/middleware/auth.go`, `frontend/src/routes/erp.tsx`
+- Impact: any authenticated cashier can call ERP/catalog/inventory/reporting endpoints directly.
+- Fix approach: mount role-guarded routers on the backend and treat frontend route guards as convenience only.
 
----
+**Startup continues after critical initialization failures:**
+- Issue: `cmd/server/main.go` logs migration and database connection errors, then keeps booting.
+- Files: `cmd/server/main.go`, `internal/database/db.go`
+- Impact: the server can start with unapplied migrations or a nil DB pool, which turns outages into runtime panics or partial behavior.
+- Fix approach: fail fast on migration/connect errors and exit non-zero.
 
-## Critical Concerns
+**Sales transactions are wired but not actually activated:**
+- Issue: `internal/sales/service.go` has a transaction path, but `cmd/server/main.go` never calls `(*sales.Service).SetPool`.
+- Files: `cmd/server/main.go`, `internal/sales/service.go`
+- Impact: order creation falls back to non-transactional writes, so partial order/item/stock writes can leak through on failure.
+- Fix approach: wire the pool in `main.go` and add a startup test that proves the transactional path is used.
 
-### No Source Code Exists
+## Known Bugs
 
-**Issue:** The entire codebase needs to be created from scratch.
-**Impact:** No working system, no tests, no deployment.
-**Mitigation:** Follow the roadmap phases sequentially. Start with Phase 1 (Foundation & Backend Core).
+**Offline sync can strand orders in `syncing`:**
+- Symptoms: a sync failure marks orders as `syncing`, then the catch path re-reads `pending` orders instead of `syncing` ones.
+- Files: `frontend/src/pos/hooks/useSync.ts`, `frontend/src/pos/hooks/useOfflineOrders.ts`
+- Trigger: any network/server failure during `/api/orders/sync`.
+- Workaround: none in code; the queued orders stay stuck until storage is manually cleared.
 
----
+**Cashier management endpoints are public or unreachable:**
+- Symptoms: `GET /api/auth/cashiers` returns all cashiers without auth, and `POST /api/auth/cashiers` expects `user_id` in context even though the auth router is mounted without middleware.
+- Files: `internal/auth/handler.go`, `cmd/server/main.go`, `internal/auth/service.go`
+- Trigger: direct request to `/api/auth/cashiers`.
+- Workaround: none.
 
-## Architectural Concerns
-
-### Offline-First Complexity
-
-**Issue:** The core value proposition requires robust offline capability.
-**Files to create:** `frontend/src/service-worker.ts`, `frontend/src/lib/offline-sync.ts`, `frontend/src/lib/indexeddb.ts`
-**Risk:** Offline sync is notoriously difficult to get right.
-**Specific concerns:**
-- Race conditions when multiple devices sell the same item offline
-- Conflict resolution when server rejects offline operations
-- Data loss if local IndexedDB is cleared
-**Mitigation path:** Use delta sync (operations, not state), implement queue pattern on server, client-generated UUIDs for offline orders.
-
-### Inventory Ledger Implementation
-
-**Issue:** Must implement inventory as ledger + derived snapshot, not quantity column.
-**Files to create:** `db/migrations/`, `internal/inventory/ledger.go`, `internal/inventory/service.go`
-**Risk:** Forgetting this leads to race conditions and no audit trail.
-**Mitigation path:** Document in ARCHITECTURE.md. Create migration with `inventory_ledger` table first, `product_variant` table with `quantity` as computed/cache column.
-
-### Product → Variant Hierarchy
-
-**Issue:** Must never create flat product schema with size/color columns.
-**Files to create:** `db/queries/catalog.sql`, `internal/catalog/product.go`, `internal/catalog/variant.go`
-**Risk:** Flat schema causes data duplication and reporting issues.
-**Mitigation path:** Always create `products` (parent) and `product_variants` (child) tables. SKU, barcode, price, cost belong to variant.
-
----
-
-## Domain-Specific Concerns (From Research)
-
-### WebUSB Browser Support
-
-**Issue:** Thermal printer via WebUSB doesn't work on iOS.
-**Files to create:** `frontend/src/lib/print.ts`
-**Risk:** iPads are common in retail; entire printing flow fails.
-**Mitigation path:** Implement hybrid printing - detect OS, fallback to AirPrint on iOS.
-
-### Last Write Wins in Offline Sync
-
-**Issue:** Simple object sync overwrites inventory incorrectly.
-**Risk:** Two devices selling same item results in wrong stock count.
-**Mitigation path:** Delta sync only - send "decrement 1", not "set to 9". Process sync queue sequentially on server.
-
-### Tax Calculation on Total
-
-**Issue:** Calculating tax on final cart total causes rounding errors.
-**Mitigation path:** Calculate tax per line item, round, then sum.
-
-### Hardcoded Currencies
-
-**Issue:** Assuming `$` or `.` for decimals breaks THB display.
-**Mitigation path:** Use `Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' })`. Store amounts as integers (satang).
-
----
-
-## Infrastructure Concerns
-
-### No Database Schema
-
-**Issue:** No PostgreSQL migrations exist.
-**Files to create:** `db/migrations/*.sql`, `db/queries/*.sql`
-**Risk:** Cannot test, cannot deploy.
-**Mitigation path:** Start with golang-migrate migrations. Create auth, catalog, inventory, sales tables.
-
-### No Docker Setup
-
-**Issue:** No Docker Compose for local development.
-**Files to create:** `docker-compose.yml`, `Dockerfile`
-**Risk:** Inconsistent development environments.
-**Mitigation path:** Create docker-compose.yml with Go app + PostgreSQL services.
-
-### No API Endpoints
-
-**Issue:** No chi router handlers exist.
-**Files to create:** `cmd/server/main.go`, `internal/*/handler.go`
-**Risk:** No way to test frontend.
-**Mitigation path:** Build backend first per Phase 1 success criteria.
-
-### No Frontend Code
-
-**Issue:** No Vite + React application exists.
-**Files to create:** `frontend/src/`, `frontend/index.html`, `frontend/vite.config.ts`
-**Risk:** Cannot demonstrate POS/ERP interfaces.
-**Mitigation path:** Create Vite React app with TanStack Router, TanStack Query, Tailwind CSS, shadcn/ui.
-
----
+**Inventory and catalog errors are collapsed into the wrong domain errors:**
+- Symptoms: several DB failures are returned as `ErrVariantNotFound` or `ErrProductNotFound`.
+- Files: `internal/inventory/service.go`, `internal/catalog/service.go`
+- Trigger: transient DB errors, permission errors, or other non-404 failures.
+- Workaround: none; callers see misleading 404s instead of actionable errors.
 
 ## Security Considerations
 
-### Authentication Implementation
+**JWT and session material are stored in browser storage:**
+- Risk: tokens are persisted in `localStorage`/`sessionStorage`, so any XSS or malicious extension can steal them.
+- Files: `frontend/src/lib/auth.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/reporting-api.ts`, `frontend/src/lib/erp-api.ts`
+- Current mitigation: token expiry is checked client-side before reuse.
+- Recommendations: move auth to HttpOnly cookies or another server-managed session mechanism.
 
-**Issue:** JWT-based auth needs careful implementation.
-**Files to create:** `internal/auth/handler.go`, `internal/auth/service.go`, `internal/auth/middleware.go`
-**Risk:** Token leakage, weak PIN implementation, role-based access bypass.
-**Current mitigation:** Plan uses JWT in Authorization header, role-based middleware.
-**Recommendations:**
-- Use secure random for JWT secrets
-- Implement token expiration
-- Hash PINs (not store plaintext)
-- Enforce role checks on all endpoints
+**Production-safe secrets are not enforced:**
+- Risk: `cmd/server/main.go` falls back to a hardcoded `JWT_SECRET`, and `internal/database/db.go` falls back to a local PostgreSQL URL with `sslmode=disable`.
+- Files: `cmd/server/main.go`, `internal/database/db.go`
+- Current mitigation: none beyond environment variables when present.
+- Recommendations: require secrets/config at startup and refuse defaults outside local dev.
 
-### No HTTPS in Development
-
-**Issue:** Service worker requires secure context.
-**Risk:** PWA features won't work on HTTP.
-**Mitigation path:** Use localhost (treated as secure) or set up self-signed cert for development.
-
----
+**Login endpoints have no brute-force protection:**
+- Risk: `internal/auth/handler.go` exposes password and PIN login with no throttling, lockout, or audit trail.
+- Files: `internal/auth/handler.go`, `internal/auth/service.go`, `cmd/server/main.go`
+- Current mitigation: bcrypt hides password/PIN hashes at rest.
+- Recommendations: add rate limiting and login attempt telemetry.
 
 ## Performance Bottlenecks
 
-### Inventory Queries at Scale
+**N+1 reads in catalog and receipt loading:**
+- Problem: `internal/catalog/service.go` loads variants and category data per product, and `internal/sales/service.go` loads variants per receipt item.
+- Files: `internal/catalog/service.go`, `internal/sales/service.go`
+- Cause: repeated round-trips instead of batched reads.
+- Improvement path: fetch products/variants/categories in bulk and assemble in memory.
 
-**Issue:** Aggregating ledger for current stock is slow with high transaction volume.
-**Files to create:** `db/queries/inventory.sql`
-**Risk:** Slow product loading in ERP.
-**Mitigation path:** Consider periodic snapshot table (INV-V2-02 in v2) or materialized views.
+**Inventory checks duplicate reads before writes:**
+- Problem: `internal/inventory/service.go` checks variant existence, then stock, then writes a ledger entry.
+- Files: `internal/inventory/service.go`
+- Cause: read-then-write flow without a single atomic statement.
+- Improvement path: push stock validation into one transactional write or conditional update.
 
-### Large Catalog Loading
+## Fragile Areas
 
-**Issue:** Loading all products at once in POS is slow.
-**Files to create:** `frontend/src/api/catalog.ts`
-**Risk:** Slow catalog grid, poor offline cache.
-**Mitigation path:** Implement pagination, category-based loading, offline IndexedDB cache.
+**Context values use raw string keys:**
+- Files: `internal/middleware/auth.go`
+- Why fragile: string keys are collision-prone and easy to misuse across packages.
+- Safe modification: replace them with unexported typed keys and accessor helpers.
+- Test coverage: no tests exercise context-key collisions or middleware composition.
 
----
+**POS sync state machine is split across hooks and storage:**
+- Files: `frontend/src/pos/hooks/useSync.ts`, `frontend/src/pos/hooks/useOfflineOrders.ts`, `frontend/src/lib/db.ts`
+- Why fragile: status transitions depend on multiple asynchronous reads/writes and one incorrect query breaks recovery.
+- Safe modification: centralize queue transitions in one store/API layer.
+- Test coverage: no direct tests for the failure path or retry scheduling.
 
-## Dependencies at Risk
+**Catalog mutation methods swallow DB failures:**
+- Files: `internal/catalog/service.go`
+- Why fragile: `UpdateProduct`, `CreateVariant`, and related paths map broad errors to not-found/duplicate states.
+- Safe modification: distinguish `pgx.ErrNoRows` from transport/database failures.
+- Test coverage: service tests cover happy paths only.
 
-### Go Stack Dependencies
+## Scaling Limits
 
-**Issue:** New Go stack choices - chi, sqlc, pgx.
-**Packages:**
-- `github.com/go-chi/chi/v5` - Router
-- `github.com/sqlc-dev/sqlc` - Code generation
-- `github.com/jackc/pgx/v5` - PostgreSQL driver
-- `github.com/golang-migrate/migrate` - Migrations
-- `github.com/golang-jwt/jwt/v5` - JWT handling
-- `github.com/google/uuid` - UUID generation
-**Risk:** Less battle-tested in this specific combination for POS.
-**Mitigation path:** Follow AGENTS.md conventions strictly. Use standard library where possible.
+**Single-process, synchronous order synchronization:**
+- Current capacity: batch sync is processed sequentially in `internal/sales/service.go`.
+- Limit: large offline queues will block on one slow or failing item.
+- Scaling path: parallelize at the batch boundary after transactional correctness is fixed.
 
-### Frontend Dependencies
-
-**Issue:** Multiple frontend libraries need integration.
-**Packages:**
-- `vite` - Build tool
-- `react` + `react-dom` - UI framework
-- `@tanstack/react-query` - Server state
-- `@tanstack/react-router` - Routing
-- `tailwindcss` - Styling
-- `dexie` - IndexedDB
-- `shadcn/ui` - Components
-**Risk:** Version conflicts, complex setup.
-**Mitigation path:** Follow AGENTS.md frontend conventions exactly.
-
----
-
-## Missing Critical Features (v1 Requirements)
-
-All v1 requirements are pending. Key gaps that block core value:
-
-| Requirement | Description | Priority |
-|-------------|-------------|----------|
-| AUTH-01 | Owner account creation | Critical |
-| AUTH-04 | Cashier PIN login | Critical |
-| INV-01 | Inventory ledger | Critical |
-| INV-02 | Stock auto-deduct on sale | Critical |
-| OFF-01 | Offline sales capability | Critical |
-| OFF-04 | Delta sync for stock | Critical |
-| POS-01 | Barcode scanning | High |
-| PAY-01 | Cash payment with change | High |
-| REC-01 | Receipt printing | High |
-
----
-
-## Fragile Areas (Expected)
-
-### Offline Sync Queue
-
-**Files to create:** `frontend/src/lib/sync-queue.ts`
-**Why fragile:** Network conditions, conflicts, data integrity.
-**Safe modification:** Add thorough logging, implement retry with exponential backoff, test edge cases.
-
-### Inventory Ledger Queries
-
-**Files to create:** `db/queries/inventory.sql`
-**Why fragile:** Incorrect calculations break stock accuracy.
-**Safe modification:** Test with concurrent transactions, verify derived quantity matches ledger sum.
-
-### JWT Middleware
-
-**Files to create:** `internal/auth/middleware.go`
-**Why fragile:** Security bypasses affect entire system.
-**Safe modification:** Thorough security review, test role-based access violations.
-
----
+**Browser-held offline cache has no eviction policy:**
+- Current capacity: Dexie/localStorage/sessionStorage caches grow until browser storage limits are hit.
+- Limit: large catalogs or long-lived sessions can exhaust client storage.
+- Scaling path: add pruning, pagination, and explicit cache versioning.
 
 ## Test Coverage Gaps
 
-**What's not tested:** Nothing exists yet.
-**Risk:** Every new feature starts with zero coverage.
-**Priority:** All new code needs tests.
+**Auth and startup paths are untested:**
+- What's not tested: bootstrap failure handling, role enforcement, login throttling, and cashier endpoints.
+- Files: `cmd/server/main.go`, `internal/auth/handler.go`, `internal/auth/service.go`, `internal/middleware/auth.go`
+- Risk: security and startup regressions can ship unnoticed.
+- Priority: High.
 
-**Recommended test strategy:**
-- Go: `go test ./...` with table-driven tests
-- Frontend: Vitest for unit tests
-- API: `httptest` package for handler tests in Go
+**Inventory concurrency is untested:**
+- What's not tested: simultaneous deductions, negative-stock races, and DB error mapping.
+- Files: `internal/inventory/service.go`
+- Risk: overselling and misleading 404 responses.
+- Priority: High.
 
----
+**POS sync failure recovery is untested:**
+- What's not tested: network/server failures, retry backoff, and stuck-sync cleanup.
+- Files: `frontend/src/pos/hooks/useSync.ts`, `frontend/src/pos/hooks/useOfflineOrders.ts`
+- Risk: offline orders can disappear from the retry queue.
+- Priority: High.
 
-## Research Flags (From ROADMAP.md)
-
-| Flag | Area | Action |
-|------|------|--------|
-| sqlc + pgx patterns for POS domain | Phase 1 | Research during planning |
-| BarcodeDetector API performance | Phase 2 | Validate scanning speed |
-| Thai QR PromptPay gateway API | Phase 3 | Research payment provider |
-| Report export formats | Phase 4 | Research PDF/Excel libs |
-
----
-
-## Summary
-
-This is a greenfield project with significant complexity in the offline-first POS requirements. The main concerns are:
-
-1. **No existing code** - everything needs to be built
-2. **Offline sync complexity** - race conditions, conflict resolution
-3. **Domain pitfalls** - must avoid quantity column, flat products, WebUSB-only printing
-4. **Security** - JWT auth, PIN storage, role enforcement
-5. **Performance** - inventory queries at scale, catalog loading
-
-The planning documents are thorough. The key is following the roadmap sequentially and implementing the identified pitfalls correctly from the start.
+**Backend route authorization is under-tested:**
+- What's not tested: cashier access to ERP/catalog/reporting routes.
+- Files: `cmd/server/main.go`, `internal/middleware/auth.go`, `internal/catalog/handler.go`, `internal/reporting/handler.go`
+- Risk: authorization regressions remain invisible because only frontend route guards are exercised.
+- Priority: High.
 
 ---
 
-*Concerns audit: 2026-04-25*
+*Concerns audit: 2026-05-02*

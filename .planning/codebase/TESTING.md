@@ -1,619 +1,138 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-04-25
+**Analysis Date:** 2026-05-02
 
 ## Test Framework
 
-### Go (Backend)
+**Runner:**
+- Vitest `4.1.5` in `frontend/package.json`.
+- Config: `frontend/vitest.config.ts`.
 
-**Runner:** Go's built-in test package
+**Assertion Library:**
+- Vitest `expect` plus `@testing-library/jest-dom/vitest` matchers from `frontend/src/test/setup.ts`.
+
+**Run Commands:**
 ```bash
-go test ./...              # Run all tests
-go test -v ./...           # Verbose output
-go test -cover ./...      # With coverage
-go test -race ./...       # Race detector
-```
-
-**Assertion:** Built-in `testing` package with custom helpers
-
-**Table-driven tests:** Primary pattern for Go tests
-
-```go
-func TestCalculateTotal(t *testing.T) {
-    tests := []struct {
-        name     string
-        items    []OrderItem
-        expected int64
-    }{
-        {
-            name:     "empty order",
-            items:    []OrderItem{},
-            expected: 0,
-        },
-        {
-            name: "single item",
-            items: []OrderItem{
-                {Price: 1000, Quantity: 2},
-            },
-            expected: 2000,
-        },
-        {
-            name: "multiple items",
-            items: []OrderItem{
-                {Price: 500, Quantity: 3},
-                {Price: 1500, Quantity: 1},
-            },
-            expected: 3000,
-        },
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            result := CalculateTotal(tt.items)
-            if result != tt.expected {
-                t.Errorf("CalculateTotal() = %d, want %d", result, tt.expected)
-            }
-        })
-    }
-}
-```
-
-### TypeScript/React (Frontend)
-
-**Runner:** Vitest
-```bash
-npm test                  # Run all tests
-npm test -- --watch       # Watch mode
-npm test -- --coverage   # Coverage report
-```
-
-**Assertion:** Vitest's expect (Jest-compatible)
-
-**Component Testing:** React Testing Library
-
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { ProductCard } from './ProductCard';
-
-describe('ProductCard', () => {
-  it('renders product name and price', () => {
-    const product = { id: '1', name: 'Coffee', price: 3500 }; // in satang
-
-    render(<ProductCard product={product} />);
-
-    expect(screen.getByText('Coffee')).toBeInTheDocument();
-    expect(screen.getByText('฿35.00')).toBeInTheDocument();
-  });
-
-  it('calls onAddToCart when button clicked', () => {
-    const onAddToCart = vi.fn();
-    const product = { id: '1', name: 'Coffee', price: 3500 };
-
-    render(<ProductCard product={product} onAddToCart={onAddToCart} />);
-    fireEvent.click(screen.getByRole('button', { name: /add to cart/i }));
-
-    expect(onAddToCart).toHaveBeenCalledWith('1');
-  });
-});
+npm test                # Run Vitest
+npm test -- --watch     # Watch mode
+npm test -- --coverage  # Coverage if enabled locally
 ```
 
 ## Test File Organization
 
-### Go
+**Location:**
+- Tests live in a dedicated `__tests__` folder under feature code: `frontend/src/erp/__tests__/`.
+- This repo currently keeps the test suite close to the ERP feature area instead of scattering tests across all modules.
 
-**Location:** Same package, same directory
-```
-internal/user/
-├── service.go
-├── service_test.go       # Co-located tests
-├── handler.go
-└── handler_test.go       # Co-located tests
-```
+**Naming:**
+- Use `.test.ts` or `.test.tsx` suffixes, as configured in `frontend/vitest.config.ts`.
 
-**Naming:** `{file}_test.go`
-
-**Handler tests:** Use `httptest` package
-```go
-import (
-    "net/http"
-    "net/http/httptest"
-    "testing"
-)
-
-func TestGetUserHandler(t *testing.T) {
-    // Setup
-    service := &mockUserService{
-        getUserFn: func(ctx context.Context, id int64) (*User, error) {
-            return &User{ID: id, Name: "John"}, nil
-        },
-    }
-    handler := NewHandler(service)
-
-    // Create request
-    req := httptest.NewRequest(http.MethodGet, "/users/1", nil)
-    rr := httptest.NewRecorder()
-
-    // Execute
-    handler.ServeHTTP(rr, req)
-
-    // Assert
-    if rr.Code != http.StatusOK {
-        t.Errorf("expected status 200, got %d", rr.Code)
-    }
-}
-```
-
-### TypeScript/React
-
-**Location:** Co-located with component
-```
-components/
-├── ProductCard.tsx
-├── ProductCard.test.tsx
-└── ProductCard.stories.tsx  # Storybook (if used)
-```
-
-**Naming:** `{Component}.test.tsx` or `{Component}.spec.tsx`
-
-**Utilities:**
-```
-lib/
-├── formatCurrency.ts
-├── formatCurrency.test.ts
-└── utils.ts
+**Structure:**
+```text
+frontend/src/<feature>/__tests__/*.test.tsx
 ```
 
 ## Test Structure
 
-### Go Suite Pattern
-
-```go
-func TestOrderService(t *testing.T) {
-    // Setup once per test file
-    db := testdb(t)
-    queries := db.New()
-    service := NewSalesService(queries, nil)
-
-    t.Run("create order", func(t *testing.T) {
-        // Test-specific setup
-        order, err := service.CreateOrder(context.Background(), []OrderItem{
-            {ProductID: 1, Price: 1000, Quantity: 2},
-        })
-        
-        require.NoError(t, err)
-        assert.Equal(t, int64(2000), order.Total)
-    })
-
-    t.Run("insufficient inventory", func(t *testing.T) {
-        // Different setup for this test
-        // ...
-    })
-}
-```
-
-### React Component Pattern
-
-```typescript
-describe('OrderSummary', () => {
-  // Shared setup
-  const defaultProps = {
-    items: [{ productId: '1', price: 3500, quantity: 2 }],
-    onRemoveItem: vi.fn(),
-  };
-
+**Suite Organization:**
+```ts
+describe('reporting dashboard', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.mocked(reportingApi.getMonthlySales).mockResolvedValue({ data: monthlySales })
+  })
 
-  it('renders total correctly', () => {
-    render(<OrderSummary {...defaultProps} />);
-    expect(screen.getByText('฿70.00')).toBeInTheDocument();
-  });
-
-  it('shows empty state when no items', () => {
-    render(<OrderSummary {...defaultProps} items={[]} />);
-    expect(screen.getByText(/no items/i)).toBeInTheDocument();
-  });
-});
+  it('renders the latest monthly sales and gross profit figures in THB', async () => {
+    renderDashboard()
+    expect(await screen.findByText('Monthly sales and gross profit')).toBeInTheDocument()
+  })
+})
 ```
+
+**Patterns:**
+- Use `describe()` blocks with behavior-focused titles (`frontend/src/erp/__tests__/erp-shell.test.tsx`, `frontend/src/erp/__tests__/erp-import.test.tsx`).
+- Prefer helper render functions when a component needs providers (`renderDashboard()` in `frontend/src/erp/__tests__/reporting.test.tsx`, `renderWithQueryClient()` in `frontend/src/erp/__tests__/erp-import.test.tsx`).
+- Use `beforeEach()` for mock resets and default mock responses.
+- Use `afterEach()` for cleanup or global un-stubbing (`frontend/src/erp/__tests__/erp-import.test.tsx`).
 
 ## Mocking
 
-### Go
+**Framework:**
+- `vitest` mocking APIs (`vi.mock`, `vi.hoisted`, `vi.stubGlobal`, `vi.mocked`).
 
-**Interface-based mocking:**
-```go
-type UserStore interface {
-    GetUser(ctx context.Context, id int64) (*User, error)
-    CreateUser(ctx context.Context, user *User) error
-}
+**Patterns:**
+```ts
+const getStoredSession = vi.hoisted(() => vi.fn())
 
-type mockUserStore struct {
-    users map[int64]*User
-    err   error
-}
+vi.mock('@/lib/auth', () => ({ getStoredSession }))
 
-func (m *mockUserStore) GetUser(ctx context.Context, id int64) (*User, error) {
-    if m.err != nil {
-        return nil, m.err
-    }
-    return m.users[id], nil
-}
+vi.stubGlobal('fetch', fetchMock)
 ```
 
-**Use mocks in tests:**
-```go
-func TestUserService(t *testing.T) {
-    mockStore := &mockUserStore{
-        users: map[int64]*User{
-            1: {ID: 1, Name: "John"},
-        },
-    }
-    service := NewUserService(mockStore)
+**What to Mock:**
+- External network boundaries (`fetch`, API clients in `frontend/src/lib/api.ts` and `frontend/src/lib/reporting-api.ts`).
+- Session helpers in `frontend/src/lib/auth.ts` when testing route guards.
+- Export side effects in `frontend/src/erp/reports/exportReport.ts`.
 
-    user, err := service.GetUser(context.Background(), 1)
-    require.NoError(t, err)
-    assert.Equal(t, "John", user.Name)
-}
-```
-
-### TypeScript/React
-
-**Vitest mocks:**
-```typescript
-// Mock API module
-vi.mock('@/lib/api', () => ({
-  api: {
-    getProducts: vi.fn().mockResolvedValue([{ id: '1', name: 'Coffee' }]),
-    createOrder: vi.fn().mockResolvedValue({ id: 'order-1' },
-  },
-}));
-
-// Mock React Query
-const mockQueryClient = vi.fn(() => ({
-  invalidateQueries: vi.fn(),
-  setQueryData: vi.fn(),
-}));
-
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }) => {
-    if (queryKey[0] === 'products') {
-      return { data: [{ id: '1', name: 'Coffee' }], isLoading: false };
-    }
-    return { data: null, isLoading: false };
-  },
-  useMutation: () => ({
-    mutate: vi.fn(),
-    isPending: false,
-  }),
-}));
-```
-
-**Mocking React Query properly:**
-```typescript
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
-
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  return ({ children }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
-
-it('fetches products', async () => {
-  const { result } = renderHook(() => useProducts(), { wrapper: createWrapper() });
-
-  await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  expect(result.current.data).toHaveLength(1);
-});
-```
+**What NOT to Mock:**
+- React Testing Library rendering and DOM queries.
+- Pure formatting helpers like `formatTHB` and `buildReportExportFilename` unless the test is specifically about integration with another layer.
 
 ## Fixtures and Factories
 
-### Go
+**Test Data:**
+```ts
+const monthlySales = [{ month: '2026-04', order_count: 42, total_revenue: 125000, average_order_value: 2976 }]
 
-**Test fixtures as functions:**
-```go
-func newTestUser(t *testing.T) *User {
-    return &User{
-        ID:        1,
-        Name:      "Test User",
-        Email:     "test@example.com",
-        CreatedAt: time.Now(),
-    }
-}
-
-func newTestProduct(t *testing.T) *Product {
-    return &Product{
-        ID:   1,
-        Name: "Test Product",
-    }
-}
-
-func newTestVariant(t *testing.T, productID int64) *ProductVariant {
-    return &ProductVariant{
-        ID:        1,
-        ProductID: productID,
-        SKU:       "TEST-SKU",
-        Price:     1000, // 10 THB in satang
-        Stock:     100,
-    }
+function makeCategory(id: string, name: string) {
+  return { id, name, description: '', parent_id: null, sort_order: 1 }
 }
 ```
 
-**Database fixtures:**
-```go
-func seedTestData(t *testing.T, db *sql.DB) {
-    _, err := db.Exec(`
-        INSERT INTO users (id, name, email) VALUES (1, 'John', 'john@test.com');
-        INSERT INTO products (id, name) VALUES (1, 'Coffee');
-        INSERT INTO product_variants (id, product_id, sku, price, stock)
-        VALUES (1, 1, 'COFFEE-LARGE', 3500, 50);
-    `)
-    require.NoError(t, err)
-}
-```
-
-### TypeScript/React
-
-**Fixture files:**
-```typescript
-// fixtures/products.ts
-export const testProducts = [
-  {
-    id: '1',
-    name: 'Coffee',
-    price: 3500,
-    variants: [
-      { id: 'v1', sku: 'COFFEE-S', price: 2500, stock: 100 },
-      { id: 'v2', sku: 'COFFEE-L', price: 3500, stock: 50 },
-    ],
-  },
-] as const;
-
-export const testOrder = {
-  id: 'order-1',
-  items: [
-    { variantId: 'v1', quantity: 2, price: 2500 },
-  ],
-  total: 5000,
-  status: 'pending' as const,
-};
-```
-
-**Factory functions:**
-```typescript
-const createOrder = (overrides = {}): Order => ({
-  id: crypto.randomUUID(),
-  items: [],
-  total: 0,
-  status: 'pending',
-  createdAt: new Date().toISOString(),
-  ...overrides,
-});
-```
+**Location:**
+- Fixtures are inlined inside each test file (`frontend/src/erp/__tests__/reporting.test.tsx`, `frontend/src/erp/__tests__/erp-management.test.tsx`).
+- There is no shared fixture directory.
 
 ## Coverage
 
-### Go
+**Requirements:**
+- No repo-enforced coverage threshold detected.
 
-**Target:** 70%+ coverage on business logic
-
-**View coverage:**
-```bash
-go test -coverprofile=coverage.out ./...
-go tool cover -html=coverage.out -o coverage.html
-```
-
-**Cover specific packages:**
-```bash
-go test -cover ./internal/user/...
-go test -cover ./internal/sales/...
-```
-
-### TypeScript/React
-
-**Target:** Key business logic, utilities, critical components
-
-**View coverage:**
+**View Coverage:**
 ```bash
 npm test -- --coverage
 ```
 
-**Coverage thresholds (optional in vitest.config.ts):**
-```typescript
-export default defineConfig({
-  test: {
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      thresholds: {
-        lines: 70,
-        functions: 70,
-        branches: 60,
-      },
-    },
-  },
-});
-```
-
 ## Test Types
 
-### Unit Tests
+**Unit Tests:**
+- Pure functions and helpers: `frontend/src/erp/__tests__/vitest-setup.test.ts`, `frontend/src/erp/__tests__/erp-import.test.tsx` (`generateVariantBarcode`).
 
-**Go:** Test individual functions, methods
-```go
-func TestCalculateDiscount(t *testing.T) {
-    // Pure function tests
-    assert.Equal(t, int64(100), CalculateDiscount(1000, 10))
-    assert.Equal(t, int64(0), CalculateDiscount(1000, 0))
-}
-```
+**Integration Tests:**
+- Component tests that wire providers, queries, and mocked APIs: `frontend/src/erp/__tests__/reporting.test.tsx` and `frontend/src/erp/__tests__/erp-shell.test.tsx`.
 
-**React:** Test components in isolation
-```typescript
-it('formats price correctly', () => {
-  expect(formatCurrency(3500)).toBe('฿35.00');
-});
-```
-
-### Integration Tests
-
-**Go:** Test handler + service + database
-```go
-func TestOrderIntegration(t *testing.T) {
-    if testing.Short() {
-        t.Skip("skipping integration test")
-    }
-
-    // Use real database or test container
-    db := testdb.Start(t, "integration_test")
-    service := NewSalesService(db.Queries(), nil)
-
-    order, err := service.CreateOrder(context.Background(), items)
-    require.NoError(t, err)
-
-    // Verify in database
-    saved, err := service.GetOrder(context.Background(), order.ID)
-    require.NoError(t, err)
-    assert.Equal(t, order.Total, saved.Total)
-}
-```
-
-**React:** Test component + React Query
-```typescript
-it('loads products via API', async () => {
-  server.use(...mockApiHandlers);
-
-  render(<ProductList />, { wrapper });
-
-  await waitFor(() => {
-    expect(screen.getByText('Coffee')).toBeInTheDocument();
-  });
-});
-```
-
-### E2E Tests
-
-**Not implemented yet.** Consider Playwright for future:
-- Full user flows (browse → add to cart → checkout)
-- Offline behavior verification
-- PWA functionality
+**E2E Tests:**
+- Not used.
 
 ## Common Patterns
 
-### Async Testing (Go)
-
-```go
-func TestAsyncOperation(t *testing.T) {
-    done := make(chan error, 1)
-
-    go func() {
-        // Async work
-        result, err := service.ProcessAsync(ctx)
-        if err != nil {
-            done <- err
-            return
-        }
-        done <- nil
-    }()
-
-    select {
-    case err := <-done:
-        require.NoError(t, err)
-    case <-time.After(5 * time.Second):
-        t.Fatal("timeout waiting for async operation")
-    }
-}
+**Async Testing:**
+```ts
+expect(await screen.findByText('Monthly sales and gross profit')).toBeInTheDocument()
+await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
 ```
 
-### Async Testing (React)
-
-```typescript
-it('loads data asynchronously', async () => {
-  render(<ProductList />);
-
-  // Initially loading
-  expect(screen.getByText(/loading/i)).toBeInTheDocument();
-
-  // Wait for data
-  await waitFor(() => {
-    expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
-  });
-
-  expect(screen.getByText('Coffee')).toBeInTheDocument();
-});
+**Error Testing:**
+```ts
+expect(() => beforeLoad?.()).toThrow()
+expect(screen.getByRole('button', { name: 'Import validated rows' })).toBeDisabled()
 ```
 
-### Error Testing (Go)
+**Accessibility Queries:**
+- Prefer `getByRole`, `getByLabelText`, `findByRole`, and `findByText` over DOM traversal.
 
-```go
-func TestServiceErrors(t *testing.T) {
-    tests := []struct {
-        name          string
-        mockErr       error
-        expectedError string
-    }{
-        {
-            name:          "not found",
-            mockErr:        sql.ErrNoRows,
-            expectedError: "user not found",
-        },
-        {
-            name:          "database error",
-            mockErr:        context.DeadlineExceeded,
-            expectedError: "database timeout",
-        },
-    }
-
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            store := &mockStore{err: tt.mockErr}
-            service := NewUserService(store)
-
-            _, err := service.GetUser(context.Background(), 1)
-            assert.Error(t, err)
-            assert.Contains(t, err.Error(), tt.expectedError)
-        })
-    }
-}
-```
-
-### Error Testing (React)
-
-```typescript
-it('shows error state on failure', async () => {
-  server.use(
-    rest.get('/api/products', (req, res, ctx) => {
-      return res(ctx.status(500), ctx.json({ error: 'Server error' }));
-    })
-  );
-
-  render(<ProductList />);
-
-  await waitFor(() => {
-    expect(screen.getByText(/error/i)).toBeInTheDocument();
-  });
-});
-```
-
-### Testing with Context (React)
-
-```typescript
-it('shows different UI when offline', () => {
-  // Mock offline state
-  Object.defineProperty(navigator, 'onLine', { value: false, writable: true });
-
-  render(<SyncStatus />);
-
-  expect(screen.getByText(/offline/i)).toBeInTheDocument();
-  expect(screen.getByText(/pending sync/i)).toBeInTheDocument();
-});
-```
+**State Reset:**
+- Reset or clear mocks before each test and call `vi.unstubAllGlobals()` when global stubs are used.
 
 ---
 
-*Testing analysis: 2026-04-25*
+*Testing analysis: 2026-05-02*
