@@ -158,10 +158,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REC-01 | Phase 6 | Pending |
 | REC-02 | Phase 6 | Pending |
 | REC-03 | Phase 6 | Pending |
-| OFF-01 | Phase 5 | Pending |
-| OFF-02 | Phase 5 | Pending |
-| OFF-03 | Phase 5 | Pending |
-| OFF-04 | Phase 5 | Pending |
+| OFF-01 | Phase 5 | Complete |
+| OFF-02 | Phase 5 | Complete |
+| OFF-03 | Phase 5 | Complete |
+| OFF-04 | Phase 5 | Complete |
 | PROD-01 | Phase 7 | Pending |
 | PROD-02 | Phase 7 | Pending |
 | PROD-03 | Phase 7 | Pending |

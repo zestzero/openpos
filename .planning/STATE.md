@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: complete
-stopped_at: Reconciled planning docs with current codebase
-last_updated: "2026-05-02T00:00:00.000Z"
+status: unknown
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-05-02T03:25:12.851Z"
 progress:
-  total_phases: 4
+  total_phases: 7
   completed_phases: 4
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 21
+  completed_plans: 20
 ---
 
 # STATE.md
@@ -23,8 +23,8 @@ progress:
 
 ## Current Position
 
-Phase: 04
-Plan: Complete
+Phase: 05 (pos-frontend-offline-gap-closure) — EXECUTING
+Plan: 2 of 2
 
 ## Phase Overview
 
@@ -84,6 +84,9 @@ Plan: Complete
 - [Phase 04-erp-management-reporting]: Add import API compatibility helpers so the existing spreadsheet drawer still compiles against the new catalog hook file.
 - [Phase 02]: Sales API with client UUID idempotency, inventory.DeductStock integration, and batch sync endpoint
 - [Phase ?]: Cart persists via localStorage, favorites via sessionStorage
+- [Phase 05-pos-frontend-offline-gap-closure]: Use a shared sync-contract helper so payload shape, error indexing, and retry delay logic stay aligned across hooks
+- [Phase 05-pos-frontend-offline-gap-closure]: Treat failed queue entries as retryable sync work instead of losing them behind a client_uuid/order_id mismatch
+- [Phase 05-pos-frontend-offline-gap-closure]: Derive sync counters from actual Dexie rows after each queue mutation
 
 ## Research Flags
 
@@ -102,9 +105,15 @@ Plan: Complete
 
 ## Session Continuity
 
-Last session: 2026-05-02T00:00:00.000Z
-Stopped at: Reconciled planning docs with current codebase
+Last session: 2026-05-02T03:25:12.849Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
+
+---
+
+## Blockers
+
+- `frontend/src/routes/pos.tsx` has an unrelated `QuickKeysBar` unused import (`TS6133`) that blocks a full frontend build. Logged in `.planning/phases/05-pos-frontend-offline-gap-closure/deferred-items.md` and left out of scope for this plan.
 
 ---
 
@@ -120,3 +129,4 @@ Resume file: None
 | Phase 04-erp-management-reporting P06 | 1h 15m | 2 tasks | 8 files |
 | Phase 04-erp-management-reporting P09 | 12 min | 2 tasks | 6 files |
 | Phase 02-pos-frontend-offline P04 | 9min | 2 tasks | 8 files |
+| Phase 05-pos-frontend-offline-gap-closure P01 | 25 min | 2 tasks | 5 files |
