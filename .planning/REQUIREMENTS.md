@@ -28,15 +28,15 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Payments
 
-- [ ] **PAY-01**: Cashier can accept cash payment with automatic change calculation displayed
-- [ ] **PAY-02**: Cashier can generate Thai QR PromptPay code for customer to scan and pay
-- [ ] **PAY-03**: Sale completes only when tendered amount ≥ order total
+- [x] **PAY-01**: Cashier can accept cash payment with automatic change calculation displayed
+- [x] **PAY-02**: Cashier can generate Thai QR PromptPay code for customer to scan and pay
+- [x] **PAY-03**: Sale completes only when tendered amount ≥ order total
 
 ### POS — Receipts
 
-- [ ] **REC-01**: System prints receipt to thermal printer via WebUSB (ESC/POS commands)
-- [ ] **REC-02**: System falls back to AirPrint (system print dialog) on iOS devices
-- [ ] **REC-03**: Receipt includes: store name, date/time, items with quantities and prices, total, payment method, change due
+- [x] **REC-01**: System prints receipt to thermal printer via WebUSB (ESC/POS commands)
+- [x] **REC-02**: System falls back to AirPrint (system print dialog) on iOS devices
+- [x] **REC-03**: Receipt includes: store name, date/time, items with quantities and prices, total, payment method, change due
 
 ### POS — Offline
 
@@ -145,47 +145,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
-| POS-01 | Phase 2 | Complete |
-| POS-02 | Phase 2 | Complete |
-| POS-03 | Phase 2 | Complete |
-| POS-04 | Phase 2 | Complete |
-| POS-05 | Phase 2 | Complete |
-| POS-06 | Phase 2 | Complete |
-| POS-07 | Phase 2 | Complete |
-| PAY-01 | Phase 3 | Pending |
-| PAY-02 | Phase 3 | Pending |
-| PAY-03 | Phase 3 | Pending |
-| REC-01 | Phase 3 | Pending |
-| REC-02 | Phase 3 | Pending |
-| REC-03 | Phase 3 | Pending |
-| OFF-01 | Phase 2 | Complete |
-| OFF-02 | Phase 2 | Complete |
-| OFF-03 | Phase 2 | Complete |
-| OFF-04 | Phase 2 | Complete |
-| PROD-01 | Phase 4 | Complete |
-| PROD-02 | Phase 4 | Complete |
-| PROD-03 | Phase 4 | Complete |
-| PROD-04 | Phase 4 | Complete |
-| PROD-05 | Phase 4 | Complete |
-| PROD-06 | Phase 4 | Complete |
-| INV-01 | Phase 1 | Complete |
-| INV-02 | Phase 1 | Complete |
-| INV-03 | Phase 1 | Complete |
-| INV-04 | Phase 1 | Complete |
-| RPT-01 | Phase 4 | Complete |
-| RPT-02 | Phase 4 | Complete |
-| RPT-03 | Phase 4 | Complete |
-| PLAT-01 | Phase 2 | Complete |
+| POS-01 | Phase 5 | Pending |
+| POS-02 | Phase 5 | Pending |
+| POS-03 | Phase 5 | Pending |
+| POS-04 | Phase 5 | Pending |
+| POS-05 | Phase 5 | Pending |
+| POS-06 | Phase 5 | Pending |
+| POS-07 | Phase 5 | Pending |
+| PAY-01 | Phase 6 | Pending |
+| PAY-02 | Phase 6 | Pending |
+| PAY-03 | Phase 6 | Pending |
+| REC-01 | Phase 6 | Pending |
+| REC-02 | Phase 6 | Pending |
+| REC-03 | Phase 6 | Pending |
+| OFF-01 | Phase 5 | Pending |
+| OFF-02 | Phase 5 | Pending |
+| OFF-03 | Phase 5 | Pending |
+| OFF-04 | Phase 5 | Pending |
+| PROD-01 | Phase 7 | Pending |
+| PROD-02 | Phase 7 | Pending |
+| PROD-03 | Phase 7 | Pending |
+| PROD-04 | Phase 7 | Pending |
+| PROD-05 | Phase 7 | Pending |
+| PROD-06 | Phase 7 | Pending |
+| INV-01 | Phase 6 | Pending |
+| INV-02 | Phase 6 | Pending |
+| INV-03 | Phase 6 | Pending |
+| INV-04 | Phase 6 | Pending |
+| RPT-01 | Phase 7 | Pending |
+| RPT-02 | Phase 7 | Pending |
+| RPT-03 | Phase 7 | Pending |
+| PLAT-01 | Phase 5 | Pending |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 2 | Complete |
-| PLAT-05 | Phase 4 | Complete |
+| PLAT-04 | Phase 5 | Pending |
+| PLAT-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 32 total
-- Mapped to phases: 32
+- v1 requirements: 40 total
+- Mapped to phases: 40
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-04-18 — full reset for Go stack migration*
+*Last updated: 2026-05-02 — synchronized with the implemented checkout and receipt flow*

@@ -7,7 +7,7 @@
 
 ---
 
-## Phase 1: Foundation & Backend Core
+## Phase 01: Foundation & Backend Core
 
 **Goal:** Go backend is operational with authentication, product catalog, and inventory data models — ready for frontend consumption.
 
@@ -27,22 +27,22 @@
 
 ---
 
-## Phase 2: POS Frontend & Offline
+## Phase 02: POS Frontend & Offline
 
 **Goal:** Cashiers can ring up sales using the mobile-first POS interface, including while offline.
 
-**Depends on:** Phase 1
+**Depends on:** Phase 01
 
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
 
-**Status:** In Progress
+**Status:** Complete
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed
 - [x] 02-01-PLAN.md — Frontend Foundation (Vite+React, routing, auth session)
 - [x] 02-02-PLAN.md — Sales & Sync Backend Contract
 - [x] 02-03-PLAN.md — POS Catalog, Cart & Totals
 - [x] 02-04-PLAN.md — Barcode Scanning
-- [ ] 02-05-PLAN.md — Offline Storage, Queue & Sync
+- [x] 02-05-PLAN.md — Offline Storage, Queue & Sync
 
 **Wave Structure:**
 - Wave 1: 02-01 + 02-02 (frontend foundation and backend contract in parallel)
@@ -65,11 +65,11 @@
 
 ---
 
-## Phase 3: Payments & Receipts
+## Phase 03: Payments & Receipts
 
 **Goal:** Cashiers can collect payment (cash or QR) and print a receipt to complete the sale.
 
-**Depends on:** Phase 2
+**Depends on:** Phase 02
 
 **Requirements:** PAY-01, PAY-02, PAY-03, REC-01, REC-02, REC-03
 
@@ -90,15 +90,15 @@
 
 ---
 
-## Phase 4: ERP Management & Reporting
+## Phase 04: ERP Management & Reporting
 
 **Goal:** Owners can manage products/inventory and view business performance through the desktop ERP interface.
 
-**Depends on:** Phase 1 (backend APIs), Phase 3 (sales data exists for reports)
+**Depends on:** Phase 01 (backend APIs), Phase 03 (sales data exists for reports)
 
 **Requirements:** PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, PROD-06, RPT-01, RPT-02, RPT-03, PLAT-05
 
-**Status:** Not started
+**Status:** Complete
 
 **Plans:** 9/9 plans complete
 - [x] 04-01-PLAN.md — Order-item cost snapshots for stable gross profit
@@ -125,9 +125,51 @@
 
 ---
 
+## Phase 05: POS Frontend & Offline Gap Closure
+
+**Goal:** Close the offline POS wiring gaps so queued sales, sync retries, and sync contracts are verified end-to-end.
+
+**Depends on:** Phase 02
+
+**Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
+
+**Status:** Planned
+
+**Gap Closure:** Closes audit blockers for the offline queue/sync loop and frontend/backend sync contract mismatch.
+
+---
+
+## Phase 06: Payments, Receipts & Sale Finalization
+
+**Goal:** Close the sale-finalization gaps so payment capture, inventory deduction, and receipt flows complete in a safe order.
+
+**Depends on:** Phase 03, Phase 01
+
+**Requirements:** PAY-01, PAY-02, PAY-03, REC-01, REC-02, REC-03, INV-01, INV-02, INV-03, INV-04
+
+**Status:** Planned
+
+**Gap Closure:** Closes audit blockers for atomic ordering across payment, stock deduction, reporting, and receipt re-fetch.
+
+---
+
+## Phase 07: ERP Management & Reporting Gap Closure
+
+**Goal:** Close the ERP and reporting verification gaps so product management and reporting requirements are explicitly re-verified.
+
+**Depends on:** Phase 04, Phase 01, Phase 03
+
+**Requirements:** PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, PROD-06, RPT-01, RPT-02, RPT-03, PLAT-05
+
+**Status:** Planned
+
+**Gap Closure:** Closes the remaining orphaned ERP/reporting requirements from the audit.
+
+---
+
 ## Coverage
 
-**v1 Requirements: 32 total**
+**v1 Requirements: 40 total**
 
 | Phase | Count | Requirements |
 |-------|-------|-------------|
@@ -137,10 +179,10 @@
 | 4 — ERP Management & Reporting | 10 | PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, PROD-06, RPT-01, RPT-02, RPT-03, PLAT-05 |
 
 - Mapped: 40 (some requirements span backend+frontend phases)
-- All 32 v1 requirements covered
+- All 40 v1 requirements covered
 - No orphaned requirements
 
-**Note:** Phase 1 creates backend APIs for product/inventory management. Phase 4 creates the ERP *UI* that consumes those APIs. The PROD-* requirements are user-facing ("Owner can...") so they're assigned to Phase 4 where the user actually performs the action. Phase 1's success criteria cover the underlying data model and API layer.
+**Note:** Phase 01 creates backend APIs for product/inventory management. Phase 04 creates the ERP *UI* that consumes those APIs. The PROD-* requirements are user-facing ("Owner can...") so they're assigned to Phase 04 where the user actually performs the action. Phase 01's success criteria cover the underlying data model and API layer.
 
 ---
 
@@ -148,11 +190,11 @@
 
 | Phase | Needs Research | Skip Research |
 |-------|----------------|---------------|
-| 1 | sqlc + pgx patterns for POS domain | chi router (well-documented) |
-| 2 | BarcodeDetector API performance | Dexie.js patterns |
-| 3 | Thai QR PromptPay gateway API | ESC/POS standard |
-| 4 | Report export formats (PDF/Excel libs) | PostgreSQL aggregation |
+| 01 | sqlc + pgx patterns for POS domain | chi router (well-documented) |
+| 02 | BarcodeDetector API performance | Dexie.js patterns |
+| 03 | Thai QR PromptPay gateway API | ESC/POS standard |
+| 04 | Report export formats (PDF/Excel libs) | PostgreSQL aggregation |
 
 ---
 *Roadmap created: 2026-03-22*
-*Last updated: 2026-04-25 — Phase 3 complete, ready for Phase 4*
+*Last updated: 2026-05-02 — roadmap reconciled with the implemented v1 codebase*
