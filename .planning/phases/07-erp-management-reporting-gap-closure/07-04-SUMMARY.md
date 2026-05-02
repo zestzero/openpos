@@ -53,8 +53,8 @@ completed: 2026-05-02
 
 ## Task Commits
 
-1. **Task 1: Add focused export helper coverage** - `n/a` (verification-only additions)
-2. **Task 2: Re-assert THB formatting and export button wiring** - `n/a` (coverage already present in the reporting suite)
+1. **Task 1: Add focused export helper coverage** - `f6710ab` (test)
+2. **Task 2: Re-assert THB formatting and export button wiring** - `f6710ab` (existing reporting coverage)
 
 **Plan metadata:** `n/a`
 
@@ -74,7 +74,7 @@ completed: 2026-05-02
 - **Fix:** Added a dedicated Vitest suite covering filename derivation, PDF/XLSX payload formatting, and download behavior
 - **Files modified:** `frontend/src/erp/__tests__/report-export.test.tsx`
 - **Verification:** `pnpm --dir ./frontend exec vitest run src/erp/__tests__/report-export.test.tsx`
-- **Committed in:** pending
+- **Committed in:** `f6710ab` (part of the task commit)
 
 ## Issues Encountered
 - Initial export test execution failed because the referenced suite was missing; resolved by adding the dedicated regression file

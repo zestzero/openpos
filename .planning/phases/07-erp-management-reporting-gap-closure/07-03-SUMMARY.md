@@ -53,8 +53,8 @@ completed: 2026-05-02
 
 ## Task Commits
 
-1. **Task 1: Re-assert the reporting dashboard contract** - `n/a` (verification-only)
-2. **Task 2: Confirm reporting rows stay readable in the UI** - `n/a` (verification-only)
+1. **Task 1: Re-assert the reporting dashboard contract** - `f68e0f2` (docs)
+2. **Task 2: Confirm reporting rows stay readable in the UI** - `f68e0f2` (docs)
 
 **Plan metadata:** `n/a`
 

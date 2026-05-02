@@ -176,6 +176,12 @@
 
 **Gap Closure:** Closes the remaining orphaned ERP/reporting requirements from the audit.
 
+**Plans:** 4/4 plans complete
+- [ ] 07-01-PLAN.md — Re-verify product and variant management contracts
+- [ ] 07-02-PLAN.md — Re-verify category management and catalog import
+- [ ] 07-03-PLAN.md — Re-verify reporting dashboard and monthly rollups
+- [ ] 07-04-PLAN.md — Re-verify report exports and THB formatting
+
 **Execution Note:** Do not start this phase until Phase 06 verification passes. ERP verification stays in v1 scope, but follows POS sale-loop closure.
 
 ---

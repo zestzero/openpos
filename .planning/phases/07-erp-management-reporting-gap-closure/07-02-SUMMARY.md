@@ -53,9 +53,9 @@ completed: 2026-05-02
 
 ## Task Commits
 
-1. **Task 1: Re-assert category drawer and table wiring** - `n/a` (verification-only)
-2. **Task 2: Re-assert spreadsheet import parsing and validation** - `n/a` (verification-only)
-3. **Task 3: Confirm the import suite passes end-to-end** - `n/a` (verification-only)
+1. **Task 1: Re-assert category drawer and table wiring** - `d1b6c56` (docs)
+2. **Task 2: Re-assert spreadsheet import parsing and validation** - `d1b6c56` (docs)
+3. **Task 3: Confirm the import suite passes end-to-end** - `d1b6c56` (docs)
 
 **Plan metadata:** `n/a`
 

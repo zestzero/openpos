@@ -162,24 +162,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | OFF-02 | Phase 5 | Complete |
 | OFF-03 | Phase 5 | Complete |
 | OFF-04 | Phase 5 | Complete |
-| PROD-01 | Phase 7 | Pending |
-| PROD-02 | Phase 7 | Pending |
-| PROD-03 | Phase 7 | Pending |
-| PROD-04 | Phase 7 | Pending |
-| PROD-05 | Phase 7 | Pending |
-| PROD-06 | Phase 7 | Pending |
+| PROD-01 | Phase 7 | Complete |
+| PROD-02 | Phase 7 | Complete |
+| PROD-03 | Phase 7 | Complete |
+| PROD-04 | Phase 7 | Complete |
+| PROD-05 | Phase 7 | Complete |
+| PROD-06 | Phase 7 | Complete |
 | INV-01 | Phase 6 | Complete |
 | INV-02 | Phase 6 | Complete |
 | INV-03 | Phase 6 | Pending |
 | INV-04 | Phase 6 | Pending |
-| RPT-01 | Phase 7 | Pending |
-| RPT-02 | Phase 7 | Pending |
-| RPT-03 | Phase 7 | Pending |
+| RPT-01 | Phase 7 | Complete |
+| RPT-02 | Phase 7 | Complete |
+| RPT-03 | Phase 7 | Complete |
 | PLAT-01 | Phase 5 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
 | PLAT-04 | Phase 5 | Complete |
-| PLAT-05 | Phase 7 | Pending |
+| PLAT-05 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 40 total
