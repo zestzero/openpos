@@ -3,6 +3,7 @@
 **Created:** 2026-03-22
 **Core Value:** A salesperson can complete a sale end-to-end — scan items, take payment, print receipt — even without internet.
 **Milestone:** v1 — Complete sale loop: ring up → pay → stock deducts → owner sees reports
+**Execution Order Note:** v1 scope is unchanged, but execution priority is POS-first: finish Phases 05 and 06, re-audit, then resume Phase 07.
 **Stack Reset:** 2026-04-18 — migrated from Encore TypeScript to Go (chi + sqlc + pgx). All phases reset.
 
 ---
@@ -151,13 +152,15 @@
 
 **Requirements:** PAY-01, PAY-02, PAY-03, REC-01, REC-02, REC-03, INV-01, INV-02, INV-03, INV-04
 
-**Status:** Planned
+**Status:** Complete
 
 **Gap Closure:** Closes audit blockers for atomic ordering across payment, stock deduction, reporting, and receipt re-fetch.
 
-**Plans:** 1/2 plans executed
+**Execution Priority:** This phase must be completed and verified before Phase 07 begins, because cashier-facing sale finalization is the current milestone gate.
+
+**Plans:** 2/2 plans executed
 - [x] 06-01-PLAN.md — Fail-fast bootstrap and transactional sales wiring
-- [ ] 06-02-PLAN.md — Payment, receipt, and inventory regressions
+- [x] 06-02-PLAN.md — Payment, receipt, and inventory regressions
 
 ---
 
@@ -172,6 +175,8 @@
 **Status:** Planned
 
 **Gap Closure:** Closes the remaining orphaned ERP/reporting requirements from the audit.
+
+**Execution Note:** Do not start this phase until Phase 06 verification passes. ERP verification stays in v1 scope, but follows POS sale-loop closure.
 
 ---
 

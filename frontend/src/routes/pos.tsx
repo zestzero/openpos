@@ -63,33 +63,10 @@ export function PosRoute() {
             <CatalogGrid categoryId={selectedCategory} />
           </div>
 
-          <aside
-            id="cart-panel"
-            className="scroll-mt-24 xl:sticky xl:top-24 xl:self-start"
-          >
+          <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
             <CartPanel />
           </aside>
         </section>
-      </div>
-
-      <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 xl:hidden">
-        <a
-          href="#cart-panel"
-          className="flex w-full items-center justify-between rounded-full border border-border bg-foreground px-5 py-4 text-background shadow-[0_14px_30px_rgba(0,0,0,0.14)] transition-transform active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-background/10 text-xs font-semibold text-background">
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-foreground">
-                {itemCount}
-              </span>
-              <span className="text-xs font-semibold">Cart</span>
-            </span>
-            <span className="text-sm font-semibold">View cart</span>
-          </div>
-          <span className="text-lg font-semibold tracking-tight">
-            {formatCurrency(total)}
-          </span>
-        </a>
       </div>
     </PosLayout>
   );

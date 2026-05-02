@@ -26,6 +26,8 @@ milestone_name: milestone
 Phase: 07 (erp-management-reporting-gap-closure) — READY TO PLAN
 Plan: 0 of 0
 
+Execution priority: POS sale-loop closure is complete; resume ERP gap-closure planning in Phase 07.
+
 ## Phase Overview
 
 | Phase | Goal | Status |

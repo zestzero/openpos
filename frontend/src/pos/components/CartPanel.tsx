@@ -18,9 +18,13 @@ import { toast } from 'sonner'
 
 type CheckoutStep = 'cart' | 'review' | 'payment'
 
-function toSatang(value: string) {
+function parseCurrencyInputToSatang(value: string) {
   const parsed = Number(value)
-  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 100)) : 0
+}
+
+function satangToCurrencyInput(value: number) {
+  return String(value / 100)
 }
 
 export function CartPanel() {
@@ -29,16 +33,16 @@ export function CartPanel() {
   const { session, startReview, updateSession, clearSession } = usePosCheckoutSession()
 
   const [step, setStep] = useState<CheckoutStep>(() => (session?.stage === 'building' ? 'cart' : session?.stage ?? 'cart'))
-  const [discountInput, setDiscountInput] = useState(String(session?.discountAmount ?? 0))
+  const [discountInput, setDiscountInput] = useState(satangToCurrencyInput(session?.discountAmount ?? 0))
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(session?.paymentMethod ?? 'cash')
-  const [tenderedInput, setTenderedInput] = useState(String(session?.tenderedAmount || total))
+  const [tenderedInput, setTenderedInput] = useState(satangToCurrencyInput(session?.tenderedAmount || total))
   const [promptPayQr, setPromptPayQr] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const discountAmount = useMemo(() => Math.min(toSatang(discountInput), total), [discountInput, total])
+  const discountAmount = useMemo(() => Math.min(parseCurrencyInputToSatang(discountInput), total), [discountInput, total])
   const grandTotal = useMemo(() => Math.max(total - discountAmount, 0), [total, discountAmount])
-  const tenderedAmount = useMemo(() => toSatang(tenderedInput), [tenderedInput])
+  const tenderedAmount = useMemo(() => parseCurrencyInputToSatang(tenderedInput), [tenderedInput])
   const paymentAmount = paymentMethod === 'promptpay' ? grandTotal : tenderedAmount
   const canCompletePayment = paymentMethod === 'promptpay' ? paymentAmount === grandTotal : paymentAmount >= grandTotal
   const hasDraft = session !== null
@@ -78,9 +82,9 @@ export function CartPanel() {
   const resumeCheckout = () => {
     if (!session) return
     setStep(session.stage === 'building' ? 'cart' : session.stage)
-    setDiscountInput(String(session.discountAmount))
+    setDiscountInput(satangToCurrencyInput(session.discountAmount))
     setPaymentMethod(session.paymentMethod)
-    setTenderedInput(String(session.tenderedAmount || grandTotal))
+    setTenderedInput(satangToCurrencyInput(session.tenderedAmount || grandTotal))
     setSubmitError(null)
   }
 
@@ -89,7 +93,7 @@ export function CartPanel() {
     setStep('cart')
     setDiscountInput('0')
     setPaymentMethod('cash')
-    setTenderedInput(String(total))
+    setTenderedInput(satangToCurrencyInput(total))
     setPromptPayQr(null)
     setSubmitError(null)
   }
@@ -99,13 +103,13 @@ export function CartPanel() {
     const nextMethod: PaymentMethod = 'cash'
     updateSession({ stage: 'payment', discountAmount, paymentMethod: nextMethod, tenderedAmount: grandTotal })
     setPaymentMethod(nextMethod)
-    setTenderedInput(String(grandTotal))
+    setTenderedInput(satangToCurrencyInput(grandTotal))
     setStep('payment')
   }
 
   const selectPaymentMethod = (method: PaymentMethod) => {
     setPaymentMethod(method)
-    setTenderedInput(String(grandTotal))
+    setTenderedInput(satangToCurrencyInput(grandTotal))
     updateSession({ paymentMethod: method, tenderedAmount: grandTotal })
   }
 
@@ -242,12 +246,14 @@ export function CartPanel() {
                 <span className="font-medium">{formatCurrency(total)}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-muted-foreground">Discount</span>
+                <span className="text-muted-foreground">Discount (THB)</span>
                 <Input
                   type="number"
                   inputMode="numeric"
+                  aria-label="Discount (THB)"
                   min="0"
-                  max={total}
+                  max={total / 100}
+                  step="0.01"
                   value={discountInput}
                   onChange={(event) => setDiscountInput(event.target.value)}
                   className="h-10 w-32 text-right"
@@ -261,11 +267,11 @@ export function CartPanel() {
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep('cart')} className="gap-2">
+            <Button variant="outline" onClick={() => setStep('cart')} className="h-14 gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button className="flex-1 gap-2" onClick={continueToPayment}>
+            <Button className="h-14 flex-1 rounded-card text-lg font-semibold shadow-card gap-2" onClick={continueToPayment}>
               <Sparkles className="h-4 w-4" />
               Confirm order
             </Button>
@@ -307,7 +313,9 @@ export function CartPanel() {
                   <Input
                     type="number"
                     inputMode="numeric"
-                    min={grandTotal}
+                    aria-label="Tendered amount (THB)"
+                    min={grandTotal / 100}
+                    step="0.01"
                     value={tenderedInput}
                     onChange={(event) => setTenderedInput(event.target.value)}
                   />
@@ -342,7 +350,11 @@ export function CartPanel() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button className="flex-1" onClick={finalizeOrder} disabled={!canCompletePayment || isSubmitting}>
+            <Button
+              className="h-14 flex-1 rounded-card bg-emerald-600 text-lg font-semibold text-white shadow-card hover:bg-emerald-700"
+              onClick={finalizeOrder}
+              disabled={!canCompletePayment || isSubmitting}
+            >
               {isSubmitting ? 'Completing...' : isOnline ? 'Confirm payment' : 'Save locally'}
             </Button>
           </div>

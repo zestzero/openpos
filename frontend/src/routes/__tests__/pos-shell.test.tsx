@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -145,11 +145,13 @@ describe('POS shell routes', () => {
     expect(screen.getByRole('textbox', { name: 'Search products' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Product categories' })).toBeInTheDocument()
     expect(screen.getByText('Quick keys bar')).toBeInTheDocument()
-    expect(screen.getByText('Cart panel')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /view cart/i })).toHaveAttribute('href', '#cart-panel')
+    expect(screen.getByRole('button', { name: /view cart/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Selling' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('button', { name: 'Catalog' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Scan' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /view cart/i }))
+    expect(screen.getByText('Cart and checkout')).toBeInTheDocument()
   })
 
   it('shows the dedicated catalog browsing shell', () => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import { STORAGE_KEY_CART } from '@/lib/constants'
 
 export interface CartItem {
@@ -44,6 +44,38 @@ function saveCartToStorage(items: CartItem[]): void {
   }
 }
 
+function getInitialCart(): CartItem[] {
+  return loadCartFromStorage()
+}
+
+let cartItems = getInitialCart()
+const cartListeners = new Set<() => void>()
+
+function emitCartChange() {
+  for (const listener of cartListeners) {
+    listener()
+  }
+}
+
+function setCartItems(updater: (items: CartItem[]) => CartItem[]) {
+  cartItems = updater(cartItems)
+  saveCartToStorage(cartItems)
+  emitCartChange()
+}
+
+function subscribe(listener: () => void) {
+  cartListeners.add(listener)
+
+  return () => {
+    cartListeners.delete(listener)
+  }
+}
+
+export function __resetCartStoreForTests() {
+  cartItems = loadCartFromStorage()
+  emitCartChange()
+}
+
 export interface UseCartReturn {
   items: CartItem[]
   itemCount: number
@@ -56,23 +88,10 @@ export interface UseCartReturn {
 }
 
 export function useCart(): UseCartReturn {
-  const [items, setItems] = useState<CartItem[]>([])
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = loadCartFromStorage()
-    if (stored.length > 0) {
-      setItems(stored)
-    }
-  }, [])
-
-  // Save to localStorage whenever items change
-  useEffect(() => {
-    saveCartToStorage(items)
-  }, [items])
+  const items = useSyncExternalStore(subscribe, () => cartItems, () => cartItems)
 
   const addItem = useCallback((variant: VariantWithProductName) => {
-    setItems((prev) => {
+    setCartItems((prev) => {
       const existing = prev.find((item) => item.variantId === variant.id)
       if (existing) {
         return prev.map((item) =>
@@ -101,7 +120,7 @@ export function useCart(): UseCartReturn {
   }, [])
 
   const removeItem = useCallback((variantId: string) => {
-    setItems((prev) => {
+    setCartItems((prev) => {
       const filtered = prev.filter((item) => item.variantId !== variantId)
       return filtered
     })
@@ -112,7 +131,7 @@ export function useCart(): UseCartReturn {
       removeItem(variantId)
       return
     }
-    setItems((prev) =>
+    setCartItems((prev) =>
       prev.map((item) =>
         item.variantId === variantId
           ? { ...item, quantity, subtotal: quantity * item.price }
@@ -122,7 +141,7 @@ export function useCart(): UseCartReturn {
   }, [removeItem])
 
   const clearCart = useCallback(() => {
-    setItems([])
+    setCartItems(() => [])
   }, [])
 
   const itemCount = useMemo(
