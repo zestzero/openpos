@@ -43,6 +43,16 @@ export interface Variant {
   is_active: boolean
 }
 
+export interface SearchVariantRow extends Variant {
+  product_name: string
+}
+
+export interface ProductWithVariants {
+  product: Product
+  category?: Category
+  variants: Variant[]
+}
+
 export type PaymentMethod = 'cash' | 'promptpay'
 
 export interface CompletePaymentRequest {
@@ -62,10 +72,28 @@ export interface ReceiptSnapshot {
   paid_at: string
   order_id: string
   items: ReceiptItem[]
+  discount_amount: number
   total_amount: number
   payment_method: PaymentMethod
   tendered_amount: number
   change_due: number
+}
+
+export interface CreateOrderRequest {
+  client_uuid: string
+  discount_amount: number
+  items: Array<{
+    variant_id: string
+    quantity: number
+    unit_price: number
+  }>
+}
+
+export interface OrderResponse {
+  id: string
+  client_uuid: string
+  status: string
+  total_amount: number
 }
 
 export class ApiError extends Error {
@@ -81,7 +109,7 @@ export class ApiError extends Error {
   }
 }
 
-async function requestJSON<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function requestJSON<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken()
   const headers = new Headers(init.headers)
 
@@ -135,11 +163,15 @@ export const api = {
   getCategories() {
     return requestJSON<ApiSuccess<Category[]>>('/api/catalog/categories')
   },
-  getProducts() {
-    return requestJSON<ApiSuccess<Product[]>>('/api/catalog/products')
+  getProducts(categoryId?: string) {
+    const params = new URLSearchParams()
+    if (categoryId) params.set('category_id', categoryId)
+    params.set('is_active', 'true')
+    const query = params.toString()
+    return requestJSON<ApiSuccess<ProductWithVariants[]>>(`/api/catalog/products${query ? `?${query}` : ''}`)
   },
   searchVariant(query: string) {
-    return requestJSON<ApiSuccess<Variant[]>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
+    return requestJSON<ApiSuccess<SearchVariantRow>>(`/api/catalog/variants/search?q=${encodeURIComponent(query)}`)
   },
   completePayment(orderId: string, body: CompletePaymentRequest) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/payments`, {
@@ -149,5 +181,11 @@ export const api = {
   },
   getReceipt(orderId: string) {
     return requestJSON<ApiSuccess<ReceiptSnapshot>>(`/api/orders/${orderId}/receipt`)
+  },
+  createOrder(orderData: CreateOrderRequest) {
+    return requestJSON<ApiSuccess<OrderResponse>>('/api/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    })
   },
 }

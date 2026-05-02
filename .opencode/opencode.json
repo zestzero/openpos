@@ -1,11 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "permission": {
-    "read": {
-      "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/*": "allow"
-    },
-    "external_directory": {
-      "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/*": "allow"
+  "mcp": {
+    "code-review-graph": {
+      "type": "local",
+      "command": ["code-review-graph", "serve"]
     }
   }
 }

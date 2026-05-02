@@ -1,155 +1,74 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from 'react'
-import { LayoutGrid, ScanLine, Sparkles, ShoppingCart } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/hooks/useAuth'
-import { formatTHB } from '@/lib/formatCurrency'
+import { formatCurrency } from '@/lib/formatCurrency'
+import { OfflineBanner } from '@/pos/components/OfflineBanner'
+import { CartPanel } from '@/pos/components/CartPanel'
 import { PosHeader } from '@/pos/components/PosHeader'
-import { PosNav, type PosTab } from '@/pos/components/PosNav'
+import { PosNav } from '@/pos/components/PosNav'
+import { useCart } from '@/pos/hooks/useCart'
+import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
 
 interface PosLayoutProps {
   children?: ReactNode
 }
 
-function useOnlineStatus() {
-  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
-
-  useEffect(() => {
-    const handleOnline = () => setOnline(true)
-    const handleOffline = () => setOnline(false)
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
-
-  return online
-}
-
-function tabSummary(tab: PosTab) {
-  switch (tab) {
-    case 'catalog':
-      return {
-        icon: LayoutGrid,
-        title: 'Touch catalog ready',
-        description: 'Category grid, quick-add cards, and search stay within thumb reach.',
-      }
-    case 'scan':
-      return {
-        icon: ScanLine,
-        title: 'Scan workflow ready',
-        description: 'Camera and scanner flows can live here without leaving the POS shell.',
-      }
-    default:
-      return {
-        icon: ShoppingCart,
-        title: 'Cart workspace ready',
-        description: 'Running total, line items, and payment actions stay visible at a glance.',
-      }
-  }
-}
-
 export function PosLayout({ children }: PosLayoutProps) {
-  const { user, logout } = useAuth()
-  const online = useOnlineStatus()
-  const [activeTab, setActiveTab] = useState<PosTab>('catalog')
-
-  const summary = useMemo(() => tabSummary(activeTab), [activeTab])
-  const SummaryIcon = summary.icon
+  const { user } = useAuth()
+  const { isOnline: online } = useNetworkStatus()
+  const { itemCount, total } = useCart()
+  const [cartOpen, setCartOpen] = useState(false)
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      <PosHeader user={user} online={online} onLogout={logout} />
+    <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
+      <div className="pointer-events-none fixed right-[-12%] top-[-14%] -z-10 h-[52%] w-[52%] rounded-full bg-brand/8 blur-[140px]" />
+      <div className="pointer-events-none fixed bottom-[-10%] left-[-10%] -z-10 h-[42%] w-[42%] rounded-full bg-brand/5 blur-[120px]" />
+      <PosHeader user={user} online={online} />
+      <OfflineBanner />
 
-      <main className="flex-1 overflow-y-auto px-4 pb-28 pt-4 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4">
+      <main className="flex-1 overflow-y-auto px-4 pb-32 pt-4 sm:px-6 sm:pt-6">
+        <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6">
           {children}
-
-          <Card className="border-border bg-background">
-            <CardHeader className="flex-row items-center gap-3 space-y-0">
-              <div className="flex h-11 w-11 items-center justify-center rounded-card bg-accent text-accent-foreground">
-                <SummaryIcon className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle>{summary.title}</CardTitle>
-                <CardDescription>{summary.description}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <Metric label="Catalog total" value={formatTHB(129900)} />
-              <Metric label="Active items" value="24" />
-              <Metric label="Quick keys" value="8" />
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <FeatureCard
-              title="Catalog"
-              description="Big, touch-friendly product cards for fast tap-to-add selling."
-              icon={LayoutGrid}
-            />
-            <FeatureCard
-              title="Scan"
-              description="Barcode capture stays one tap away for keyboard wedge and camera input."
-              icon={ScanLine}
-            />
-            <FeatureCard
-              title="Cart"
-              description="Checkout actions and running totals remain easy to reach on small screens."
-              icon={ShoppingCart}
-            />
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-brand" />
-                Workspace notes
-              </CardTitle>
-              <CardDescription>
-                POS and ERP stay route-separated; this shell is optimized for cashier speed.
-              </CardDescription>
-            </CardHeader>
-          </Card>
         </div>
       </main>
 
-      <PosNav activeTab={activeTab} onChangeTab={setActiveTab} />
-    </div>
-  )
-}
+      <PosNav />
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-card border border-border bg-muted p-4">
-      <p className="font-mono text-xs font-medium uppercase tracking-label text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
-    </div>
-  )
-}
+      <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 xl:hidden">
+        <Button
+          type="button"
+          className="flex h-auto w-full items-center justify-between rounded-full px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.14)]"
+          onClick={() => setCartOpen(true)}
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-background/10 text-xs font-semibold text-background">
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-foreground">
+                {itemCount}
+              </span>
+              <span className="text-xs font-semibold">Cart</span>
+            </span>
+            <span className="text-sm font-semibold">View cart</span>
+          </div>
+          <span className="text-lg font-semibold tracking-tight">
+            {formatCurrency(total)}
+          </span>
+        </Button>
+      </div>
 
-function FeatureCard({
-  title,
-  description,
-  icon: Icon,
-}: {
-  title: string
-  description: string
-  icon: ComponentType<{ className?: string }>
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex h-10 w-10 items-center justify-center rounded-card bg-muted text-foreground">
-          <Icon className="h-4 w-4" />
-        </div>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
-      </CardHeader>
-    </Card>
+      <Dialog open={cartOpen} onOpenChange={setCartOpen}>
+        <DialogContent className="left-1/2 top-auto bottom-0 h-[80dvh] w-[min(100vw-1rem,56rem)] max-w-none translate-x-[-50%] translate-y-0 rounded-b-none rounded-t-[1.75rem] border-b-0 p-0 sm:w-[min(100vw-2rem,56rem)]">
+          <div className="flex h-full flex-col overflow-hidden">
+            <DialogHeader className="border-b border-border/70 px-4 pb-4 pt-5 text-left sm:px-6">
+              <DialogTitle>Cart</DialogTitle>
+            </DialogHeader>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3 sm:px-6">
+              <CartPanel compact />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

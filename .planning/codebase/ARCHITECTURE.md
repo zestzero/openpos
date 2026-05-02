@@ -1,250 +1,168 @@
 # Architecture
 
-**Analysis Date:** 2026-04-25
+**Analysis Date:** 2026-05-02
 
 ## Pattern Overview
 
-**Overall:** Monolithic Go binary with clean package boundaries per domain
+**Overall:** Monolithic Go API with a separate Vite + React SPA
 
 **Key Characteristics:**
-- Single Go binary deployment with domain-based package separation
-- In-process communication between domains via direct function calls (no HTTP, no message queues)
-- REST JSON API consumed by separate Vite + React SPA frontend
-- JWT-based authentication with chi router middleware
-- Local-first offline architecture for POS client with delta sync
+- Single backend binary in `cmd/server/main.go` wires all HTTP routes, middleware, and database access.
+- Domain logic lives in `internal/{domain}/` packages with handler/service split per domain.
+- Database access is SQL-first: `db/queries/*.sql` feeds generated code in `db/sqlc/`.
+- Frontend state is split between TanStack Query server state and local/offline state in Dexie.js.
+- POS and ERP are separate route trees in `frontend/src/routes/` and share the same backend API.
 
 ## Layers
 
-### Domain Packages (Backend)
-Located in `internal/{domain}/`
+### Bootstrap / Composition
+- Purpose: Start the app, connect infrastructure, and mount routes.
+- Location: `cmd/server/main.go`
+- Contains: DB migration startup, `chi` router setup, middleware wiring, domain service construction.
+- Depends on: `internal/database/db.go`, `internal/middleware/auth.go`, `internal/middleware/cors.go`, `internal/{auth,catalog,inventory,sales,reporting}/`.
+- Used by: Docker runtime from `Dockerfile`, local `go run cmd/server/main.go`.
 
-**auth:**
-- Purpose: User identity, role verification, JWT issuance
-- Location: `internal/auth/`
-- Contains: Handler, service, middleware for authentication
-- Depends on: None (foundational)
-- Used by: All other domains
+### HTTP Handlers
+- Purpose: Translate HTTP requests into domain calls and status codes.
+- Location: `internal/*/handler.go`
+- Contains: JSON decode/encode, path/query validation, route registration.
+- Depends on: Domain services and `github.com/go-chi/chi/v5`.
+- Used by: `cmd/server/main.go` when mounting `/api`.
 
-**catalog:**
-- Purpose: Product templates, variants, categories, prices
-- Location: `internal/catalog/`
-- Contains: Product and variant CRUD, barcode lookup
-- Depends on: None
-- Used by: Sales, Inventory
+### Domain Services
+- Purpose: Hold business rules and cross-package orchestration.
+- Location: `internal/*/service.go`
+- Contains: auth, catalog CRUD, inventory ledger, order completion, reporting read models.
+- Depends on: `db/sqlc/`, `pgx`, and sibling services when needed.
+- Used by: HTTP handlers and in-process service calls, especially `internal/sales/service.go` → `internal/inventory/service.go`.
 
-**inventory:**
-- Purpose: Stock levels, transactional stock movements
-- Location: `internal/inventory/`
-- Contains: Stock ledger operations, current stock queries
-- Depends on: Catalog (for SKU validation)
-- Used by: Sales
+### Middleware
+- Purpose: Shared request concerns.
+- Location: `internal/middleware/auth.go`, `internal/middleware/cors.go`
+- Contains: Bearer-token validation, role checks, CORS headers, context helpers.
+- Depends on: `internal/auth` for JWT claims.
+- Used by: `cmd/server/main.go` and protected API routes.
 
-**sales:**
-- Purpose: Orders, carts, payments
-- Location: `internal/sales/`
-- Contains: Order creation, payment processing
-- Depends on: Catalog, Inventory, Auth
-- Used by: Reporting, Frontend
+### Persistence
+- Purpose: Schema, migrations, and type-safe SQL access.
+- Location: `db/migrations/`, `db/queries/`, `db/sqlc/`
+- Contains: PostgreSQL schema evolution, query definitions, generated query structs.
+- Depends on: PostgreSQL 16 in `docker-compose.yml`.
+- Used by: All backend services through `sqlc.New(pool)`.
 
-**reporting:**
-- Purpose: Analytics, dashboard aggregation (read-heavy)
-- Location: `internal/reporting/`
-- Contains: Sales reports, profit calculations
-- Depends on: Sales, Inventory (read-only)
-- Used by: Frontend (ERP dashboard)
-
-### Middleware Layer
-- Purpose: Cross-cutting concerns (auth, CORS, logging)
-- Location: `internal/middleware/`
-- Contains: Auth middleware, CORS configuration, request logging
-- Used by: All handlers
-
-### Database Layer
-- Purpose: Data persistence via sqlc-generated Go code
-- Location: `db/sqlc/` (generated), `db/queries/` (source SQL)
-- Contains: Type-safe query functions, PostgreSQL interactions
-- Used by: All services
-
-### Frontend Layer
-- Purpose: POS (mobile) and ERP (desktop) interfaces
+### Frontend Application
+- Purpose: POS and ERP UX, offline cache, and API clients.
 - Location: `frontend/src/`
-- Contains: React components, TanStack Query hooks, TanStack Router routes
-- Depends on: Backend REST API
-- Provides: Offline capability via Dexie.js and service workers
+- Contains: TanStack Router routes, React components, hooks, fetch clients, Dexie DB, PWA shell.
+- Depends on: REST API at `VITE_API_URL` or `http://localhost:8080`.
+- Used by: Browser runtime after `frontend/src/main.tsx` mounts the app.
 
 ## Data Flow
 
-**POS Sale Flow:**
-1. User authenticates via PIN or email/password → `auth` service issues JWT
-2. POS loads catalog (categories, products, variants) → stored in IndexedDB via Dexie.js
-3. User scans barcode or searches product → `catalog` returns variant info
-4. User completes sale → `sales` creates order with client-generated UUID
-5. If online: Order sent immediately to backend → `sales` deducts inventory via `inventory` service
-6. If offline: Order queued in IndexedDB sync queue → delta operation stored
-7. When online: Sync queue processor sends operations to backend → server processes sequentially
-8. Inventory deduction uses ledger pattern: `StockLedger` records `-1` movement, `CurrentStock` is derived
+### Authentication Flow
+1. Login form in `frontend/src/routes/login.tsx` posts to `frontend/src/lib/api.ts`.
+2. `internal/auth/handler.go` decodes credentials and calls `internal/auth/service.go`.
+3. JWT is signed in `internal/auth/service.go` and returned to the client.
+4. `frontend/src/lib/auth.ts` persists the token, and `frontend/src/routes/__root.tsx` redirects by role.
 
-**Order Completion + Inventory Deduction:**
-```
-Frontend → POST /api/orders → sales.Handler
-  → sales.Service.CreateOrder() (stores order, returns ID)
-  → For each line item:
-    → inventory.Service.DeductStock(ctx, {variantID, quantity, reason: "sale"})
-      → inventory queries deduct stock, create ledger entry
-  → Return order confirmation to frontend
-```
+### POS Sale Flow
+1. POS UI in `frontend/src/routes/pos.tsx` and `frontend/src/pos/components/` reads catalog and cart state.
+2. Order submission uses `frontend/src/lib/api.ts#createOrder`.
+3. `internal/sales/handler.go` validates the request and calls `internal/sales/service.go`.
+4. `internal/sales/service.go` creates the order, loads variant cost snapshots, and calls `internal/inventory/service.go#DeductStock` in-process.
+5. Inventory changes are appended to `inventory_ledger` via `db/queries/inventory.sql`.
 
-**ERP Reporting Flow:**
-1. User loads dashboard → authenticated request to `reporting` endpoints
-2. `reporting` aggregates data from `sales` and `inventory` (read-only queries)
-3. Returns JSON with sales totals, top items, profit calculations
+### Offline Sync Flow
+1. POS cart and queued orders live in `frontend/src/lib/db.ts` via Dexie.js.
+2. `frontend/src/pos/hooks/useOfflineOrders.ts` stores outbox rows with client UUIDs.
+3. `frontend/src/pos/hooks/useSync.ts` posts batched orders to `POST /api/orders/sync`.
+4. `internal/sales/handler.go#SyncOrders` replays each order through `internal/sales/service.go#CreateOrder`.
+5. Failed rows stay in IndexedDB for retry with exponential backoff in `frontend/src/pos/hooks/useSync.ts`.
+
+### ERP Reporting Flow
+1. ERP routes in `frontend/src/routes/erp.reports.tsx` and `frontend/src/erp/reports/ReportDashboard.tsx` call `frontend/src/lib/reporting-api.ts`.
+2. `internal/reporting/handler.go` exposes `/api/reports/monthly-sales` and `/api/reports/gross-profit`.
+3. `internal/reporting/service.go` reads precomputed views backed by `db/migrations/009_add_reporting_read_models.up.sql`.
+4. UI summaries and exports are built in `frontend/src/erp/reports/ReportDashboard.tsx` and `frontend/src/erp/reports/exportReport.ts`.
+
+### Startup Flow
+1. `cmd/server/main.go` reads `DATABASE_URL`, `JWT_SECRET`, and `PORT`.
+2. `golang-migrate` applies `db/migrations/*.sql` on boot.
+3. `internal/database/db.go` opens the `pgxpool` connection.
+4. `chi` mounts `/health`, `/api/auth`, and `/api/*` subrouters.
+5. `frontend/src/main.tsx` registers `frontend/public/sw.js` after browser load.
 
 ## Key Abstractions
 
-**Product-Variant Pattern:**
-- Purpose: Handle products with multiple sellable options (size, color)
-- Examples: `internal/catalog/product.go`, `internal/catalog/variant.go`
-- Pattern: Product (template) → Variant (sellable SKU with barcode)
+### Domain service + handler pairs
+- Purpose: Keep transport code thin and business rules isolated.
+- Examples: `internal/auth/handler.go` + `internal/auth/service.go`, `internal/catalog/handler.go` + `internal/catalog/service.go`.
+- Pattern: Handlers validate and map HTTP shapes; services enforce business rules.
 
-**Transactional Ledger for Inventory:**
-- Purpose: Accurate stock tracking without lost updates
-- Examples: `internal/inventory/ledger.go`, `internal/inventory/stock.go`
-- Pattern: `StockLedger` table records all movements (+/-), `CurrentStock` is materialized view/cache
+### Product → Variant model
+- Purpose: Support one product template with many sellable SKUs.
+- Examples: `db/migrations/000001_init.up.sql`, `internal/catalog/service.go`, `db/queries/catalog.sql`.
+- Pattern: `products` own metadata; `variants` own SKU, barcode, price, and cost.
 
-**JWT Authentication:**
-- Purpose: Stateless auth with role-based access
-- Examples: `internal/auth/middleware.go`, `internal/middleware/auth.go`
-- Pattern: Bearer token in Authorization header, middleware validates and injects user context
+### Inventory ledger
+- Purpose: Track stock as movements rather than mutable quantity.
+- Examples: `db/migrations/000001_init.up.sql`, `db/queries/inventory.sql`, `internal/inventory/service.go`.
+- Pattern: `inventory_ledger` stores deltas; current stock is derived with `SUM(quantity_change)`.
 
-**Offline Sync Queue:**
-- Purpose: Enable POS operation without internet
-- Examples: `frontend/src/lib/sync.ts`, Dexie.js models
-- Pattern: Client-generated UUIDs, delta operations (decrement 1, not set to 9)
+### Read models
+- Purpose: Make reporting cheap and predictable.
+- Examples: `db/migrations/009_add_reporting_read_models.up.sql`, `db/queries/reporting.sql`, `internal/reporting/service.go`.
+- Pattern: Views expose monthly rollups instead of recomputing on every request.
+
+### Client-side session + offline state
+- Purpose: Keep the POS usable without network access.
+- Examples: `frontend/src/lib/auth.ts`, `frontend/src/lib/db.ts`, `frontend/src/pos/hooks/useSync.ts`.
+- Pattern: Token/session state stays in `localStorage`; queued orders stay in IndexedDB.
 
 ## Entry Points
 
-**Backend:**
+### Backend HTTP server
 - Location: `cmd/server/main.go`
-- Triggers: `go run cmd/server/main.go` or Docker container start
-- Responsibilities: Initialize router, database connection, register all domain routes, start HTTP server
+- Triggers: `go run cmd/server/main.go`, `docker compose up`, or `Dockerfile` runtime.
+- Responsibilities: apply migrations, build services, mount routes, start/shutdown HTTP server.
 
-**Frontend:**
-- Location: `frontend/src/main.tsx` (or `index.tsx`)
-- Triggers: `npm run dev` (Vite dev server) or browser load in production
-- Responsibilities: Mount React app, register service worker, initialize TanStack Query
+### Frontend app bootstrap
+- Location: `frontend/src/main.tsx`
+- Triggers: Vite dev server or built SPA load.
+- Responsibilities: create `QueryClient`, create TanStack router, register the service worker, render `<RouterProvider />`.
 
-**Database Migrations:**
-- Location: `db/migrations/*.sql`
-- Trigger: Manual run via `migrate` CLI or Docker entrypoint
-- Responsibilities: Apply schema changes, create tables, indexes
+### Router tree generation
+- Location: `frontend/src/routeTree.gen.ts`
+- Triggers: TanStack Router codegen.
+- Responsibilities: bind `frontend/src/routes/*` into the route tree used by `frontend/src/main.tsx`.
+
+### Service worker shell
+- Location: `frontend/public/sw.js`
+- Triggers: Browser registration in `frontend/src/main.tsx`.
+- Responsibilities: cache the app shell and provide offline navigation fallback.
 
 ## Error Handling
 
-**Strategy:** Go error returns with wrapped context
+**Strategy:** Return errors from services; translate them at the handler boundary.
 
 **Patterns:**
-- Return errors, don't panic: `return fmt.Errorf("creating order: %w", err)`
-- HTTP handlers convert to appropriate status codes: 400 for bad input, 401 for unauthorized, 404 for not found, 500 for server errors
-- Frontend uses TanStack Query error boundaries for graceful failure
+- `internal/catalog/handler.go` maps conflict/not-found cases to `409` and `404`.
+- `internal/inventory/handler.go` maps stock and validation failures to `400`/`404`.
+- `frontend/src/lib/api.ts` and `frontend/src/lib/reporting-api.ts` normalize API failures into typed errors.
+- Domain services wrap lower-level failures with context using `fmt.Errorf("...: %w", err)`.
 
 ## Cross-Cutting Concerns
 
-**Logging:** Standard library `log` package or `slog` in Go; console logging in frontend dev
+**Logging:** `log` in `cmd/server/main.go`; no central structured logger is present.
 
-**Validation:** Manual validation in handlers (check required fields, types); frontend uses React Hook Form + Zod for form validation
+**Validation:** Handlers validate required fields before service calls; service layers re-check IDs and invariants.
 
-**Authentication:** JWT via chi middleware; role checking middleware (`RequireRole("owner")`, `RequireRole("cashier")`)
+**Authentication:** JWT Bearer tokens are validated in `internal/middleware/auth.go`; role checks use `RequireRole`.
 
-## Deployment Architecture
+**CORS:** `internal/middleware/cors.go` allows the Vite dev origin and preflight requests.
 
-### Production Stack (Option A - Selected)
-
-**Infrastructure:**
-- **Hosting**: DigitalOcean Droplet ($6-12/month)
-- **Containerization**: Docker Compose (single host)
-- **Reverse Proxy**: Caddy (automatic HTTPS via Let's Encrypt)
-- **Database**: PostgreSQL 15+ (same host, Docker container)
-- **Backups**: Daily pg_dump to S3-compatible storage
-
-### Deployment Diagram
-
-```
-Internet
-    │
-    ▼
-┌─────────────────────┐
-│   Caddy (443/80)    │  ← Automatic HTTPS, reverse proxy
-│   Let's Encrypt     │
-└──────────┬──────────┘
-           │
-    ┌──────▼──────┐
-    │  OpenPOS    │  ← Go binary + built SPA (port 8080)
-    │  Container  │
-    └──────┬──────┘
-           │
-    ┌──────▼──────┐
-    │ PostgreSQL  │  ← Database (port 5432, internal)
-    │  Container  │
-    └─────────────┘
-```
-
-### Container Architecture
-
-**Single Container Design:**
-- Multi-stage Dockerfile builds Go binary + embeds frontend
-- Alpine Linux base (~20-30MB total image size)
-- Non-root user execution
-- Health check endpoint at `/health`
-- Serves both API and static frontend files
-
-**Docker Compose Services:**
-```yaml
-services:
-  app:     # Go + React SPA
-  db:      # PostgreSQL with named volume
-```
-
-### Configuration
-
-**Environment Variables:**
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret
-- `PORT` - HTTP port (default: 8080)
-- `ENV` - Environment name (production)
-
-**Data Persistence:**
-- PostgreSQL data: Named Docker volume
-- Backups: Daily automated dumps to external storage
-- No local file uploads in v1 (future: S3-compatible object storage)
-
-### Security Model
-
-**Network:**
-- External: Only HTTPS (443) and SSH (22) exposed
-- Internal: App container → DB container only
-- Firewall (ufw) blocks all other ports
-
-**Application:**
-- TLS 1.3 via Caddy
-- JWT authentication with role-based access
-- Database: Dedicated user with minimal privileges
-
-### Update Strategy
-
-**Rolling Updates:**
-1. Build new image locally or in CI
-2. `docker-compose pull && docker-compose up -d`
-3. Brief downtime (~5-10 seconds) acceptable for v1
-4. Database migrations run automatically on startup
-
-### Cost Estimate
-
-| Component | Monthly Cost |
-|-----------|--------------|
-| DigitalOcean Droplet (1GB RAM) | $6 |
-| Backups (S3/Wasabi) | ~$1 |
-| **Total** | **~$7-10** |
+**Currency and stock units:** Backend and frontend store money as integer satang; inventory quantities stay numeric and ledger-based.
 
 ---
 
-*Architecture analysis: 2026-04-25*
+*Architecture analysis: 2026-05-02*

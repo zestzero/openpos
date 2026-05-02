@@ -1,23 +1,32 @@
 -- name: CreateCategory :one
-INSERT INTO categories (name, description, parent_id)
-VALUES ($1, $2, $3)
-RETURNING id, name, description, parent_id, created_at, updated_at;
+INSERT INTO categories (name, description, parent_id, sort_order)
+VALUES ($1, $2, $3, $4)
+RETURNING id, name, description, parent_id, sort_order, created_at, updated_at;
 
 -- name: GetCategory :one
-SELECT id, name, description, parent_id, created_at, updated_at
+SELECT id, name, description, parent_id, sort_order, created_at, updated_at
 FROM categories
 WHERE id = $1;
 
 -- name: ListCategories :many
-SELECT id, name, description, parent_id, created_at, updated_at
+SELECT id, name, description, parent_id, sort_order, created_at, updated_at
 FROM categories
-ORDER BY name;
+ORDER BY sort_order, name;
 
 -- name: UpdateCategory :one
 UPDATE categories
 SET name = $2, description = $3, parent_id = $4, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING id, name, description, parent_id, created_at, updated_at;
+RETURNING id, name, description, parent_id, sort_order, created_at, updated_at;
+
+-- name: GetNextCategorySortOrder :one
+SELECT COALESCE(MAX(sort_order), -1)::BIGINT + 1 AS sort_order
+FROM categories;
+
+-- name: UpdateCategorySortOrder :exec
+UPDATE categories
+SET sort_order = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1;
 
 -- name: CreateProduct :one
 INSERT INTO products (name, description, category_id, image_url, is_active)

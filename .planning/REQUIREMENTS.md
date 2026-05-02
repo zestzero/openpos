@@ -28,15 +28,15 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### POS — Payments
 
-- [ ] **PAY-01**: Cashier can accept cash payment with automatic change calculation displayed
-- [ ] **PAY-02**: Cashier can generate Thai QR PromptPay code for customer to scan and pay
-- [ ] **PAY-03**: Sale completes only when tendered amount ≥ order total
+- [x] **PAY-01**: Cashier can accept cash payment with automatic change calculation displayed
+- [x] **PAY-02**: Cashier can generate Thai QR PromptPay code for customer to scan and pay
+- [x] **PAY-03**: Sale completes only when tendered amount ≥ order total
 
 ### POS — Receipts
 
-- [ ] **REC-01**: System prints receipt to thermal printer via WebUSB (ESC/POS commands)
-- [ ] **REC-02**: System falls back to AirPrint (system print dialog) on iOS devices
-- [ ] **REC-03**: Receipt includes: store name, date/time, items with quantities and prices, total, payment method, change due
+- [x] **REC-01**: System prints receipt to thermal printer via WebUSB (ESC/POS commands)
+- [x] **REC-02**: System falls back to AirPrint (system print dialog) on iOS devices
+- [x] **REC-03**: Receipt includes: store name, date/time, items with quantities and prices, total, payment method, change due
 
 ### POS — Offline
 
@@ -47,12 +47,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Product Management
 
-- [ ] **PROD-01**: Owner can create products with name, description, category, and images
-- [ ] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
-- [ ] **PROD-03**: Owner can edit and archive products and variants
-- [ ] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
-- [ ] **PROD-05**: Owner can assign or generate barcodes for each variant
-- [ ] **PROD-06**: Owner can bulk import products and variants via CSV or Excel file
+- [x] **PROD-01**: Owner can create products with name, description, category, and images
+- [x] **PROD-02**: Owner can define variants per product (e.g., Size: S/M/L, Color: Red/Blue) each with own SKU, barcode, price, and cost
+- [x] **PROD-03**: Owner can edit and archive products and variants
+- [x] **PROD-04**: Owner can organize products into categories (create, edit, reorder categories)
+- [x] **PROD-05**: Owner can assign or generate barcodes for each variant
+- [x] **PROD-06**: Owner can bulk import products and variants via CSV or Excel file
 
 ### Inventory
 
@@ -63,9 +63,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Reporting
 
-- [ ] **RPT-01**: Owner can view monthly sales summary (total revenue, total orders, average order value)
-- [ ] **RPT-02**: Owner can view gross profit report (revenue minus cost of goods sold)
-- [ ] **RPT-03**: Owner can export reports to PDF or Excel
+- [x] **RPT-01**: Owner can view monthly sales summary (total revenue, total orders, average order value)
+- [x] **RPT-02**: Owner can view gross profit report (revenue minus cost of goods sold)
+- [x] **RPT-03**: Owner can export reports to PDF or Excel
 
 ### Platform
 
@@ -73,7 +73,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PLAT-02**: Go backend with chi router, sqlc for type-safe SQL, pgx for PostgreSQL driver
 - [x] **PLAT-03**: PostgreSQL database with golang-migrate for schema migrations
 - [x] **PLAT-04**: PWA with service worker for offline POS capability
-- [ ] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
+- [x] **PLAT-05**: All monetary values displayed in Thai Baht (THB) using Intl.NumberFormat
 
 ## v2 Requirements
 
@@ -145,47 +145,47 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
-| POS-01 | Phase 2 | Complete |
-| POS-02 | Phase 2 | Complete |
-| POS-03 | Phase 2 | Complete |
-| POS-04 | Phase 2 | Complete |
-| POS-05 | Phase 2 | Complete |
-| POS-06 | Phase 2 | Complete |
-| POS-07 | Phase 2 | Complete |
-| PAY-01 | Phase 3 | Pending |
-| PAY-02 | Phase 3 | Pending |
-| PAY-03 | Phase 3 | Pending |
-| REC-01 | Phase 3 | Pending |
-| REC-02 | Phase 3 | Pending |
-| REC-03 | Phase 3 | Pending |
-| OFF-01 | Phase 2 | Complete |
-| OFF-02 | Phase 2 | Complete |
-| OFF-03 | Phase 2 | Complete |
-| OFF-04 | Phase 2 | Complete |
-| PROD-01 | Phase 4 | Pending |
-| PROD-02 | Phase 4 | Pending |
-| PROD-03 | Phase 4 | Pending |
-| PROD-04 | Phase 4 | Pending |
-| PROD-05 | Phase 4 | Pending |
-| PROD-06 | Phase 4 | Pending |
-| INV-01 | Phase 1 | Complete |
-| INV-02 | Phase 1 | Complete |
-| INV-03 | Phase 1 | Complete |
-| INV-04 | Phase 1 | Complete |
-| RPT-01 | Phase 4 | Pending |
-| RPT-02 | Phase 4 | Pending |
-| RPT-03 | Phase 4 | Pending |
-| PLAT-01 | Phase 2 | Complete |
+| POS-01 | Phase 5 | Complete |
+| POS-02 | Phase 5 | Complete |
+| POS-03 | Phase 5 | Complete |
+| POS-04 | Phase 5 | Complete |
+| POS-05 | Phase 5 | Complete |
+| POS-06 | Phase 5 | Complete |
+| POS-07 | Phase 5 | Complete |
+| PAY-01 | Phase 6 | Pending |
+| PAY-02 | Phase 6 | Pending |
+| PAY-03 | Phase 6 | Complete |
+| REC-01 | Phase 6 | Pending |
+| REC-02 | Phase 6 | Pending |
+| REC-03 | Phase 6 | Pending |
+| OFF-01 | Phase 5 | Complete |
+| OFF-02 | Phase 5 | Complete |
+| OFF-03 | Phase 5 | Complete |
+| OFF-04 | Phase 5 | Complete |
+| PROD-01 | Phase 7 | Pending |
+| PROD-02 | Phase 7 | Pending |
+| PROD-03 | Phase 7 | Pending |
+| PROD-04 | Phase 7 | Pending |
+| PROD-05 | Phase 7 | Pending |
+| PROD-06 | Phase 7 | Pending |
+| INV-01 | Phase 6 | Complete |
+| INV-02 | Phase 6 | Complete |
+| INV-03 | Phase 6 | Pending |
+| INV-04 | Phase 6 | Pending |
+| RPT-01 | Phase 7 | Pending |
+| RPT-02 | Phase 7 | Pending |
+| RPT-03 | Phase 7 | Pending |
+| PLAT-01 | Phase 5 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 2 | Complete |
-| PLAT-05 | Phase 4 | Pending |
+| PLAT-04 | Phase 5 | Complete |
+| PLAT-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 32 total
-- Mapped to phases: 32
+- v1 requirements: 40 total
+- Mapped to phases: 40
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-22*
-*Last updated: 2026-04-18 — full reset for Go stack migration*
+*Last updated: 2026-05-02 — synchronized with the implemented checkout and receipt flow*

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { api, type PaymentMethod, type ReceiptSnapshot } from '@/lib/api'
 import { formatTHB } from '@/lib/formatCurrency'
 import { buildPromptPayQrDataUrl } from '@/lib/promptpay'
-import { buildReceiptText, printReceiptViaDialog, printReceiptViaWebUSB } from '@/lib/receipt'
+import { buildReceiptText, printReceipt } from '@/lib/receipt'
 
 type CheckoutPanelProps = {
   order: ReceiptSnapshot
@@ -32,7 +32,7 @@ export function CheckoutPanel({ order }: CheckoutPanelProps) {
       tendered_amount: tenderedAmount,
     })
     if (result.data) {
-      printReceiptViaDialog(result.data)
+      await printReceipt(result.data)
     }
   }
 
@@ -59,7 +59,7 @@ export function CheckoutPanel({ order }: CheckoutPanelProps) {
         <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">{receiptPreview}</pre>
         <div className="flex gap-2">
           <Button disabled={!canComplete} onClick={handleComplete}>Complete sale</Button>
-          <Button variant="outline" onClick={() => printReceiptViaWebUSB(order).catch(() => printReceiptViaDialog(order))}>Print receipt</Button>
+          <Button variant="outline" onClick={() => printReceipt(order)}>Print receipt</Button>
         </div>
       </CardContent>
     </Card>

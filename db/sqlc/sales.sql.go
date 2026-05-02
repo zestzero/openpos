@@ -12,17 +12,18 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (client_uuid, user_id, status, total_amount)
-VALUES ($1, $2, $3, $4)
+INSERT INTO orders (client_uuid, user_id, status, total_amount, discount_amount)
+VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (client_uuid) DO NOTHING
-RETURNING id, client_uuid, user_id, status, total_amount, created_at, updated_at
+RETURNING id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 `
 
 type CreateOrderParams struct {
-	ClientUuid  string      `json:"client_uuid"`
-	UserID      pgtype.UUID `json:"user_id"`
-	Status      string      `json:"status"`
-	TotalAmount int64       `json:"total_amount"`
+	ClientUuid     string      `json:"client_uuid"`
+	UserID         pgtype.UUID `json:"user_id"`
+	Status         string      `json:"status"`
+	TotalAmount    int64       `json:"total_amount"`
+	DiscountAmount int64       `json:"discount_amount"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.UserID,
 		arg.Status,
 		arg.TotalAmount,
+		arg.DiscountAmount,
 	)
 	var i Order
 	err := row.Scan(
@@ -39,6 +41,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.UserID,
 		&i.Status,
 		&i.TotalAmount,
+		&i.DiscountAmount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -46,28 +49,41 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 }
 
 const createOrderItem = `-- name: CreateOrderItem :one
-INSERT INTO order_items (order_id, variant_id, quantity, unit_price, subtotal)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, order_id, variant_id, quantity, unit_price, subtotal, created_at
+INSERT INTO order_items (order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at
 `
 
 type CreateOrderItemParams struct {
-	OrderID   pgtype.UUID `json:"order_id"`
-	VariantID pgtype.UUID `json:"variant_id"`
-	Quantity  int32       `json:"quantity"`
-	UnitPrice int64       `json:"unit_price"`
-	Subtotal  int64       `json:"subtotal"`
+	OrderID    pgtype.UUID `json:"order_id"`
+	VariantID  pgtype.UUID `json:"variant_id"`
+	Quantity   int32       `json:"quantity"`
+	UnitPrice  int64       `json:"unit_price"`
+	Subtotal   int64       `json:"subtotal"`
+	CostAtSale pgtype.Int8 `json:"cost_at_sale"`
 }
 
-func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
+type CreateOrderItemRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	OrderID    pgtype.UUID        `json:"order_id"`
+	VariantID  pgtype.UUID        `json:"variant_id"`
+	Quantity   int32              `json:"quantity"`
+	UnitPrice  int64              `json:"unit_price"`
+	Subtotal   int64              `json:"subtotal"`
+	CostAtSale pgtype.Int8        `json:"cost_at_sale"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (CreateOrderItemRow, error) {
 	row := q.db.QueryRow(ctx, createOrderItem,
 		arg.OrderID,
 		arg.VariantID,
 		arg.Quantity,
 		arg.UnitPrice,
 		arg.Subtotal,
+		arg.CostAtSale,
 	)
-	var i OrderItem
+	var i CreateOrderItemRow
 	err := row.Scan(
 		&i.ID,
 		&i.OrderID,
@@ -75,86 +91,10 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.Quantity,
 		&i.UnitPrice,
 		&i.Subtotal,
+		&i.CostAtSale,
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-const getOrderByClientUUID = `-- name: GetOrderByClientUUID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
-FROM orders
-WHERE client_uuid = $1
-`
-
-func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrderByClientUUID, clientUuid)
-	var i Order
-	err := row.Scan(
-		&i.ID,
-		&i.ClientUuid,
-		&i.UserID,
-		&i.Status,
-		&i.TotalAmount,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
-FROM orders
-WHERE id = $1
-`
-
-func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrderByID, id)
-	var i Order
-	err := row.Scan(
-		&i.ID,
-		&i.ClientUuid,
-		&i.UserID,
-		&i.Status,
-		&i.TotalAmount,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const listOrderItemsByOrderID = `-- name: ListOrderItemsByOrderID :many
-SELECT id, order_id, variant_id, quantity, unit_price, subtotal, created_at
-FROM order_items
-WHERE order_id = $1
-ORDER BY created_at ASC
-`
-
-func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID pgtype.UUID) ([]OrderItem, error) {
-	rows, err := q.db.Query(ctx, listOrderItemsByOrderID, orderID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []OrderItem
-	for rows.Next() {
-		var i OrderItem
-		if err := rows.Scan(
-			&i.ID,
-			&i.OrderID,
-			&i.VariantID,
-			&i.Quantity,
-			&i.UnitPrice,
-			&i.Subtotal,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const createPayment = `-- name: CreatePayment :one
@@ -190,6 +130,50 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 	return i, err
 }
 
+const getOrderByClientUUID = `-- name: GetOrderByClientUUID :one
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
+FROM orders
+WHERE client_uuid = $1
+`
+
+func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByClientUUID, clientUuid)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.ClientUuid,
+		&i.UserID,
+		&i.Status,
+		&i.TotalAmount,
+		&i.DiscountAmount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getOrderByID = `-- name: GetOrderByID :one
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
+FROM orders
+WHERE id = $1
+`
+
+func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error) {
+	row := q.db.QueryRow(ctx, getOrderByID, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.ClientUuid,
+		&i.UserID,
+		&i.Status,
+		&i.TotalAmount,
+		&i.DiscountAmount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getPaymentByOrderID = `-- name: GetPaymentByOrderID :one
 SELECT id, order_id, method, tendered_amount, change_due, paid_at, created_at
 FROM payments
@@ -211,8 +195,55 @@ func (q *Queries) GetPaymentByOrderID(ctx context.Context, orderID pgtype.UUID) 
 	return i, err
 }
 
+const listOrderItemsByOrderID = `-- name: ListOrderItemsByOrderID :many
+SELECT id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at
+FROM order_items
+WHERE order_id = $1
+ORDER BY created_at ASC
+`
+
+type ListOrderItemsByOrderIDRow struct {
+	ID         pgtype.UUID        `json:"id"`
+	OrderID    pgtype.UUID        `json:"order_id"`
+	VariantID  pgtype.UUID        `json:"variant_id"`
+	Quantity   int32              `json:"quantity"`
+	UnitPrice  int64              `json:"unit_price"`
+	Subtotal   int64              `json:"subtotal"`
+	CostAtSale pgtype.Int8        `json:"cost_at_sale"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ListOrderItemsByOrderID(ctx context.Context, orderID pgtype.UUID) ([]ListOrderItemsByOrderIDRow, error) {
+	rows, err := q.db.Query(ctx, listOrderItemsByOrderID, orderID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOrderItemsByOrderIDRow
+	for rows.Next() {
+		var i ListOrderItemsByOrderIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OrderID,
+			&i.VariantID,
+			&i.Quantity,
+			&i.UnitPrice,
+			&i.Subtotal,
+			&i.CostAtSale,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOrders = `-- name: ListOrders :many
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at
+SELECT id, client_uuid, user_id, status, total_amount, discount_amount, created_at, updated_at
 FROM orders
 ORDER BY created_at DESC
 LIMIT $1 OFFSET $2
@@ -238,6 +269,7 @@ func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order
 			&i.UserID,
 			&i.Status,
 			&i.TotalAmount,
+			&i.DiscountAmount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

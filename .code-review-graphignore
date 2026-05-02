@@ -1,0 +1,7 @@
+generated/**
+*.generated.ts
+vendor/**
+node_modules/**
+.logs
+.opencode
+.planning

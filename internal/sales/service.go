@@ -21,14 +21,19 @@ var (
 
 type orderStore interface {
 	CreateOrder(context.Context, sqlc.CreateOrderParams) (sqlc.Order, error)
-	CreateOrderItem(context.Context, sqlc.CreateOrderItemParams) (sqlc.OrderItem, error)
+	CreateOrderItem(context.Context, sqlc.CreateOrderItemParams) (sqlc.CreateOrderItemRow, error)
 	CreatePayment(context.Context, sqlc.CreatePaymentParams) (sqlc.Payment, error)
 	GetOrderByClientUUID(context.Context, string) (sqlc.Order, error)
 	GetOrderByID(context.Context, pgtype.UUID) (sqlc.Order, error)
 	GetPaymentByOrderID(context.Context, pgtype.UUID) (sqlc.Payment, error)
 	GetVariant(context.Context, pgtype.UUID) (sqlc.Variant, error)
 	ListOrders(context.Context, sqlc.ListOrdersParams) ([]sqlc.Order, error)
-	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.OrderItem, error)
+	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.ListOrderItemsByOrderIDRow, error)
+}
+
+type txOrderStore interface {
+	orderStore
+	WithTx(pgx.Tx) orderStore
 }
 
 type inventoryGateway interface {
@@ -36,10 +41,43 @@ type inventoryGateway interface {
 	DeductStock(context.Context, string, int64, string) (inventory.LedgerEntry, error)
 }
 
+type txInventoryGateway interface {
+	inventoryGateway
+	WithTx(pgx.Tx) inventoryGateway
+}
+
+type txStarter interface {
+	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
+}
+
 type Service struct {
 	queries   orderStore
 	inventory inventoryGateway
-	pool      *pgxpool.Pool
+	pool      txStarter
+}
+
+type sqlcOrderStore struct {
+	*sqlc.Queries
+}
+
+func NewOrderStore(queries *sqlc.Queries) orderStore {
+	return sqlcOrderStore{Queries: queries}
+}
+
+func (s sqlcOrderStore) WithTx(tx pgx.Tx) orderStore {
+	return sqlcOrderStore{Queries: s.Queries.WithTx(tx)}
+}
+
+type sqlcInventoryGateway struct {
+	*inventory.Service
+}
+
+func NewInventoryGateway(service *inventory.Service) inventoryGateway {
+	return sqlcInventoryGateway{Service: service}
+}
+
+func (s sqlcInventoryGateway) WithTx(tx pgx.Tx) inventoryGateway {
+	return sqlcInventoryGateway{Service: s.Service.WithTx(tx)}
 }
 
 func NewService(queries orderStore, inventoryService inventoryGateway) *Service {
@@ -51,9 +89,10 @@ func (s *Service) SetPool(pool *pgxpool.Pool) {
 }
 
 type CreateOrderInput struct {
-	ClientUUID string
-	UserID     string
-	Items      []OrderItemInput
+	ClientUUID     string
+	UserID         string
+	DiscountAmount int64
+	Items          []OrderItemInput
 }
 
 type OrderItemInput struct {
@@ -63,15 +102,16 @@ type OrderItemInput struct {
 }
 
 type Order struct {
-	ID          string      `json:"id"`
-	ClientUUID  string      `json:"client_uuid"`
-	UserID      string      `json:"user_id"`
-	Status      string      `json:"status"`
-	TotalAmount int64       `json:"total_amount"`
-	Items       []OrderItem `json:"items"`
-	CreatedAt   string      `json:"created_at"`
-	UpdatedAt   string      `json:"updated_at"`
-	Created     bool        `json:"-"`
+	ID             string      `json:"id"`
+	ClientUUID     string      `json:"client_uuid"`
+	UserID         string      `json:"user_id"`
+	Status         string      `json:"status"`
+	DiscountAmount int64       `json:"discount_amount"`
+	TotalAmount    int64       `json:"total_amount"`
+	Items          []OrderItem `json:"items"`
+	CreatedAt      string      `json:"created_at"`
+	UpdatedAt      string      `json:"updated_at"`
+	Created        bool        `json:"-"`
 }
 
 type OrderItem struct {
@@ -99,6 +139,7 @@ type ReceiptSnapshot struct {
 	PaidAt         string        `json:"paid_at"`
 	OrderID        string        `json:"order_id"`
 	Items          []ReceiptItem `json:"items"`
+	DiscountAmount int64         `json:"discount_amount"`
 	TotalAmount    int64         `json:"total_amount"`
 	PaymentMethod  string        `json:"payment_method"`
 	TenderedAmount int64         `json:"tendered_amount"`
@@ -152,7 +193,11 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 		}
 	}
 
-	totalAmount := totalFor(input.Items)
+	itemsTotal := totalFor(input.Items)
+	if input.DiscountAmount < 0 || input.DiscountAmount > itemsTotal {
+		return nil, ErrInvalidOrder
+	}
+	totalAmount := itemsTotal - input.DiscountAmount
 
 	if s.pool == nil {
 		return s.createOrderWithStores(ctx, s.queries, s.inventory, input, totalAmount, true)
@@ -162,15 +207,17 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback(ctx)
+		}
+	}()
 
-	txQueries, ok := s.queries.(interface{ WithTx(pgx.Tx) *sqlc.Queries })
+	txQueries, ok := s.queries.(txOrderStore)
 	if !ok {
 		return nil, fmt.Errorf("order store does not support transactions")
 	}
-	txInventory, ok := s.inventory.(interface {
-		WithTx(pgx.Tx) *inventory.Service
-	})
+	txInventory, ok := s.inventory.(txInventoryGateway)
 	if !ok {
 		return nil, fmt.Errorf("inventory store does not support transactions")
 	}
@@ -179,8 +226,10 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 	if err != nil {
 		return nil, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit transaction: %w", err)
+	if tx != nil {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("commit transaction: %w", err)
+		}
 	}
 	return order, nil
 }
@@ -277,10 +326,11 @@ func (s *Service) GetReceipt(ctx context.Context, id string, storeName string) (
 
 func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, inventoryService inventoryGateway, input CreateOrderInput, totalAmount int64, created bool) (*Order, error) {
 	orderRow, err := store.CreateOrder(ctx, sqlc.CreateOrderParams{
-		ClientUuid:  input.ClientUUID,
-		UserID:      mustParseUUID(input.UserID),
-		Status:      "completed",
-		TotalAmount: totalAmount,
+		ClientUuid:     input.ClientUUID,
+		UserID:         mustParseUUID(input.UserID),
+		Status:         "completed",
+		TotalAmount:    totalAmount,
+		DiscountAmount: input.DiscountAmount,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -299,12 +349,22 @@ func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, i
 		if err != nil {
 			return nil, err
 		}
+		variant, err := store.GetVariant(ctx, variantID)
+		if err != nil {
+			return nil, fmt.Errorf("loading variant cost for %s: %w", item.VariantID, err)
+		}
+		costAtSale := pgtype.Int8{}
+		if variant.Cost.Valid {
+			costAtSale.Int64 = variant.Cost.Int64
+			costAtSale.Valid = true
+		}
 		if _, err := store.CreateOrderItem(ctx, sqlc.CreateOrderItemParams{
-			OrderID:   orderRow.ID,
-			VariantID: variantID,
-			Quantity:  item.Quantity,
-			UnitPrice: item.UnitPrice,
-			Subtotal:  subtotal,
+			OrderID:    orderRow.ID,
+			VariantID:  variantID,
+			Quantity:   item.Quantity,
+			UnitPrice:  item.UnitPrice,
+			Subtotal:   subtotal,
+			CostAtSale: costAtSale,
 		}); err != nil {
 			return nil, fmt.Errorf("creating order item: %w", err)
 		}
@@ -345,6 +405,7 @@ func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, pay
 		PaidAt:         payment.PaidAt.Time.Format("2006-01-02T15:04:05Z07:00"),
 		OrderID:        order.ID.String(),
 		Items:          receiptItems,
+		DiscountAmount: order.DiscountAmount,
 		TotalAmount:    order.TotalAmount,
 		PaymentMethod:  payment.Method,
 		TenderedAmount: payment.TenderedAmount,
@@ -370,6 +431,9 @@ func validateCreateOrderInput(input CreateOrderInput) error {
 		return ErrInvalidOrder
 	}
 	if len(input.Items) == 0 {
+		return ErrInvalidOrder
+	}
+	if input.DiscountAmount < 0 {
 		return ErrInvalidOrder
 	}
 	for _, item := range input.Items {
@@ -404,16 +468,17 @@ func mustParseUUID(value string) pgtype.UUID {
 	return id
 }
 
-func toOrder(row sqlc.Order, items []sqlc.OrderItem) Order {
+func toOrder(row sqlc.Order, items []sqlc.ListOrderItemsByOrderIDRow) Order {
 	order := Order{
-		ID:          row.ID.String(),
-		ClientUUID:  row.ClientUuid,
-		UserID:      row.UserID.String(),
-		Status:      row.Status,
-		TotalAmount: row.TotalAmount,
-		CreatedAt:   row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
-		UpdatedAt:   row.UpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
-		Items:       make([]OrderItem, 0, len(items)),
+		ID:             row.ID.String(),
+		ClientUUID:     row.ClientUuid,
+		UserID:         row.UserID.String(),
+		Status:         row.Status,
+		DiscountAmount: row.DiscountAmount,
+		TotalAmount:    row.TotalAmount,
+		CreatedAt:      row.CreatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:      row.UpdatedAt.Time.Format("2006-01-02T15:04:05Z07:00"),
+		Items:          make([]OrderItem, 0, len(items)),
 	}
 	for _, item := range items {
 		order.Items = append(order.Items, OrderItem{

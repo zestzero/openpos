@@ -1,39 +1,73 @@
-import { createRoute } from '@tanstack/react-router'
+/* eslint-disable react-refresh/only-export-components */
 
-import { getStoredSession, hasRole } from '@/lib/auth'
-import { CheckoutPanel } from '@/pos/components/CheckoutPanel'
-import { PosLayout } from '@/pos/layout/PosLayout'
-import { Route as rootRoute } from './__root'
+import { useState } from "react";
+import { createRoute } from "@tanstack/react-router";
+
+import { getStoredSession, hasRole } from "@/lib/auth";
+import { useCart } from "@/pos/hooks/useCart";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { CatalogCategoryNav } from "@/pos/components/CatalogCategoryNav";
+import { CatalogGrid } from "@/pos/components/CatalogGrid";
+import { CartPanel } from "@/pos/components/CartPanel";
+import { SearchBar } from "@/pos/components/SearchBar";
+import { QuickKeysBar } from "@/pos/components/QuickKeysBar";
+import { PosLayout } from "@/pos/layout/PosLayout";
+import { Route as rootRoute } from "./__root";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: 'pos',
+  path: "pos",
   beforeLoad: () => {
-    const session = getStoredSession()
-    if (!session) return
-    if (!hasRole(session.user.role, ['owner', 'cashier'])) return
+    const session = getStoredSession();
+    if (!session) return;
+    if (!hasRole(session.user.role, ["owner", "cashier"])) return;
   },
   component: PosRoute,
-})
+});
 
-function PosRoute() {
-  const demoOrder = {
-    store_name: 'OpenPOS Demo Store',
-    paid_at: new Date().toISOString(),
-    order_id: '11111111-1111-1111-1111-111111111111',
-    items: [
-      { name: 'Thai Tea', quantity: 1, unit_price: 4500, subtotal: 4500 },
-      { name: 'Snack Pack', quantity: 2, unit_price: 2500, subtotal: 5000 },
-    ],
-    total_amount: 9500,
-    payment_method: 'cash' as const,
-    tendered_amount: 10000,
-    change_due: 500,
-  }
+export function PosRoute() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { itemCount, total } = useCart();
 
   return (
     <PosLayout>
-      <CheckoutPanel order={demoOrder} />
+      <div className="w-full space-y-6 pb-40">
+        <div className="mt-4 space-y-3">
+          <SearchBar />
+
+          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+            <span className="rounded-full border border-border bg-background px-3 py-1.5">
+              {itemCount} items
+            </span>
+            <span className="rounded-full border border-border bg-background px-3 py-1.5">
+              {formatCurrency(total)} in cart
+            </span>
+          </div>
+        </div>
+
+        <QuickKeysBar />
+
+        <section className="space-y-3">
+          <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <div className="shrink-0">
+              <CatalogCategoryNav
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)]">
+          <div className="space-y-3">
+            <CatalogGrid categoryId={selectedCategory} />
+          </div>
+
+          <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
+            <CartPanel />
+          </aside>
+        </section>
+      </div>
     </PosLayout>
-  )
+  );
 }

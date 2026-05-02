@@ -5,28 +5,35 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zestzero/openpos/db/sqlc"
 )
 
 var (
-	ErrSKUExists       = errors.New("SKU already exists")
-	ErrBarcodeExists   = errors.New("barcode already exists")
-	ErrProductNotFound = errors.New("product not found")
-	ErrVariantNotFound = errors.New("variant not found")
+	ErrSKUExists        = errors.New("SKU already exists")
+	ErrBarcodeExists    = errors.New("barcode already exists")
+	ErrProductNotFound  = errors.New("product not found")
+	ErrVariantNotFound  = errors.New("variant not found")
 	ErrCategoryNotFound = errors.New("category not found")
 )
 
 type Service struct {
-	db *sqlc.Queries
+	pool *pgxpool.Pool
+	db   *sqlc.Queries
 }
 
 func NewService(pool *pgxpool.Pool) *Service {
 	return &Service{
-		db: sqlc.New(pool),
+		pool: pool,
+		db:   sqlc.New(pool),
 	}
+}
+
+type categorySortAssignment struct {
+	ID        string
+	SortOrder int64
 }
 
 // Category operations
@@ -51,11 +58,30 @@ func (s *Service) CreateCategory(ctx context.Context, input CreateCategoryInput)
 		desc.Valid = true
 	}
 
-	return s.db.CreateCategory(ctx, sqlc.CreateCategoryParams{
+	sortOrder, err := s.db.GetNextCategorySortOrder(ctx)
+	if err != nil {
+		return sqlc.Category{}, fmt.Errorf("getting next category sort order: %w", err)
+	}
+
+	category, err := s.db.CreateCategory(ctx, sqlc.CreateCategoryParams{
 		Name:        input.Name,
 		Description: desc,
 		ParentID:    parentID,
+		SortOrder:   int64(sortOrder),
 	})
+	if err != nil {
+		return sqlc.Category{}, err
+	}
+
+	return sqlc.Category{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: category.Description,
+		ParentID:    category.ParentID,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+		SortOrder:   category.SortOrder,
+	}, nil
 }
 
 func (s *Service) GetCategory(ctx context.Context, id string) (sqlc.Category, error) {
@@ -63,11 +89,89 @@ func (s *Service) GetCategory(ctx context.Context, id string) (sqlc.Category, er
 	if err := uuid.Scan(id); err != nil {
 		return sqlc.Category{}, fmt.Errorf("invalid category id: %w", err)
 	}
-	return s.db.GetCategory(ctx, uuid)
+	category, err := s.db.GetCategory(ctx, uuid)
+	if err != nil {
+		return sqlc.Category{}, err
+	}
+	return sqlc.Category{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: category.Description,
+		ParentID:    category.ParentID,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+		SortOrder:   category.SortOrder,
+	}, nil
 }
 
 func (s *Service) ListCategories(ctx context.Context) ([]sqlc.Category, error) {
-	return s.db.ListCategories(ctx)
+	categories, err := s.db.ListCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]sqlc.Category, 0, len(categories))
+	for _, category := range categories {
+		result = append(result, sqlc.Category{
+			ID:          category.ID,
+			Name:        category.Name,
+			Description: category.Description,
+			ParentID:    category.ParentID,
+			CreatedAt:   category.CreatedAt,
+			UpdatedAt:   category.UpdatedAt,
+			SortOrder:   category.SortOrder,
+		})
+	}
+	return result, nil
+}
+
+func (s *Service) ReorderCategories(ctx context.Context, orderedIDs []string) error {
+	assignments, err := denseCategorySortOrders(orderedIDs)
+	if err != nil {
+		return err
+	}
+
+	existing, err := s.db.ListCategories(ctx)
+	if err != nil {
+		return fmt.Errorf("listing categories: %w", err)
+	}
+	if len(existing) != len(assignments) {
+		return ErrCategoryNotFound
+	}
+
+	existingByID := make(map[string]struct{}, len(existing))
+	for _, category := range existing {
+		existingByID[category.ID.String()] = struct{}{}
+	}
+	for _, assignment := range assignments {
+		if _, ok := existingByID[assignment.ID]; !ok {
+			return ErrCategoryNotFound
+		}
+	}
+
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("starting reorder transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	queries := s.db.WithTx(tx)
+	for _, assignment := range assignments {
+		var id pgtype.UUID
+		if err := id.Scan(assignment.ID); err != nil {
+			return fmt.Errorf("invalid category id: %w", err)
+		}
+		if err := queries.UpdateCategorySortOrder(ctx, sqlc.UpdateCategorySortOrderParams{ID: id, SortOrder: assignment.SortOrder}); err != nil {
+			return fmt.Errorf("updating category sort order: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("committing reorder transaction: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) UpdateCategory(ctx context.Context, id string, input CreateCategoryInput) (sqlc.Category, error) {
@@ -89,12 +193,53 @@ func (s *Service) UpdateCategory(ctx context.Context, id string, input CreateCat
 		desc.Valid = true
 	}
 
-	return s.db.UpdateCategory(ctx, sqlc.UpdateCategoryParams{
+	category, err := s.db.UpdateCategory(ctx, sqlc.UpdateCategoryParams{
 		ID:          uuid,
 		Name:        input.Name,
 		Description: desc,
 		ParentID:    parentID,
 	})
+	if err != nil {
+		return sqlc.Category{}, err
+	}
+
+	return sqlc.Category{
+		ID:          category.ID,
+		Name:        category.Name,
+		Description: category.Description,
+		ParentID:    category.ParentID,
+		CreatedAt:   category.CreatedAt,
+		UpdatedAt:   category.UpdatedAt,
+		SortOrder:   category.SortOrder,
+	}, nil
+}
+
+// nextCategorySortOrder keeps category sort_order stable for new ERP inserts.
+func nextCategorySortOrder(categories []sqlc.Category) int64 {
+	var maxSortOrder int64 = -1
+	for _, category := range categories {
+		if category.SortOrder > maxSortOrder {
+			maxSortOrder = category.SortOrder
+		}
+	}
+	return maxSortOrder + 1
+}
+
+// denseCategorySortOrders normalizes the requested sort_order sequence.
+func denseCategorySortOrders(orderedIDs []string) ([]categorySortAssignment, error) {
+	seen := make(map[string]struct{}, len(orderedIDs))
+	assignments := make([]categorySortAssignment, 0, len(orderedIDs))
+	for idx, id := range orderedIDs {
+		if id == "" {
+			return nil, fmt.Errorf("category id is required")
+		}
+		if _, ok := seen[id]; ok {
+			return nil, fmt.Errorf("duplicate category id: %s", id)
+		}
+		seen[id] = struct{}{}
+		assignments = append(assignments, categorySortAssignment{ID: id, SortOrder: int64(idx)})
+	}
+	return assignments, nil
 }
 
 // Product with variants
@@ -118,9 +263,9 @@ type CreateVariantInput struct {
 }
 
 type ProductWithVariants struct {
-	Product  sqlc.Product
-	Category *sqlc.Category
-	Variants []sqlc.Variant
+	Product  sqlc.Product   `json:"product"`
+	Category *sqlc.Category `json:"category,omitempty"`
+	Variants []sqlc.Variant `json:"variants"`
 }
 
 func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (ProductWithVariants, error) {
@@ -229,7 +374,15 @@ func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (
 	if product.CategoryID.Valid {
 		cat, err := s.db.GetCategory(ctx, product.CategoryID)
 		if err == nil {
-			category = &cat
+			category = &sqlc.Category{
+				ID:          cat.ID,
+				Name:        cat.Name,
+				Description: cat.Description,
+				ParentID:    cat.ParentID,
+				CreatedAt:   cat.CreatedAt,
+				UpdatedAt:   cat.UpdatedAt,
+				SortOrder:   cat.SortOrder,
+			}
 		}
 	}
 
@@ -238,6 +391,19 @@ func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (
 		Category: category,
 		Variants: variants,
 	}, nil
+}
+
+func (s *Service) ImportProducts(ctx context.Context, inputs []CreateProductInput) ([]ProductWithVariants, error) {
+	results := make([]ProductWithVariants, 0, len(inputs))
+	for idx, input := range inputs {
+		product, err := s.CreateProduct(ctx, input)
+		if err != nil {
+			return nil, fmt.Errorf("importing product row %d: %w", idx+1, err)
+		}
+		results = append(results, product)
+	}
+
+	return results, nil
 }
 
 func (s *Service) GetProduct(ctx context.Context, id string) (ProductWithVariants, error) {
@@ -261,7 +427,15 @@ func (s *Service) GetProduct(ctx context.Context, id string) (ProductWithVariant
 	if product.CategoryID.Valid {
 		cat, err := s.db.GetCategory(ctx, product.CategoryID)
 		if err == nil {
-			category = &cat
+			category = &sqlc.Category{
+				ID:          cat.ID,
+				Name:        cat.Name,
+				Description: cat.Description,
+				ParentID:    cat.ParentID,
+				CreatedAt:   cat.CreatedAt,
+				UpdatedAt:   cat.UpdatedAt,
+				SortOrder:   cat.SortOrder,
+			}
 		}
 	}
 
@@ -309,7 +483,15 @@ func (s *Service) ListProducts(ctx context.Context, input ListProductsInput) ([]
 		if p.CategoryID.Valid {
 			cat, err := s.db.GetCategory(ctx, p.CategoryID)
 			if err == nil {
-				category = &cat
+				category = &sqlc.Category{
+					ID:          cat.ID,
+					Name:        cat.Name,
+					Description: cat.Description,
+					ParentID:    cat.ParentID,
+					CreatedAt:   cat.CreatedAt,
+					UpdatedAt:   cat.UpdatedAt,
+					SortOrder:   cat.SortOrder,
+				}
 			}
 		}
 
@@ -375,7 +557,15 @@ func (s *Service) UpdateProduct(ctx context.Context, id string, input CreateProd
 	if product.CategoryID.Valid {
 		cat, err := s.db.GetCategory(ctx, product.CategoryID)
 		if err == nil {
-			category = &cat
+			category = &sqlc.Category{
+				ID:          cat.ID,
+				Name:        cat.Name,
+				Description: cat.Description,
+				ParentID:    cat.ParentID,
+				CreatedAt:   cat.CreatedAt,
+				UpdatedAt:   cat.UpdatedAt,
+				SortOrder:   cat.SortOrder,
+			}
 		}
 	}
 
@@ -451,6 +641,69 @@ func (s *Service) CreateVariant(ctx context.Context, productID string, input Cre
 		Cost:      cost,
 		IsActive:  variantIsActive,
 	})
+}
+
+func (s *Service) UpdateVariant(ctx context.Context, id string, input CreateVariantInput) (sqlc.Variant, error) {
+	var uuid pgtype.UUID
+	if err := uuid.Scan(id); err != nil {
+		return sqlc.Variant{}, fmt.Errorf("invalid variant id: %w", err)
+	}
+
+	var barcode pgtype.Text
+	if input.Barcode != "" {
+		barcode.String = input.Barcode
+		barcode.Valid = true
+	}
+
+	var cost pgtype.Int8
+	if input.Cost > 0 {
+		cost.Int64 = input.Cost
+		cost.Valid = true
+	}
+
+	variantIsActive := pgtype.Bool{Valid: true, Bool: true}
+	if input.IsActive != nil {
+		variantIsActive.Bool = *input.IsActive
+	}
+
+	skuExists, err := s.db.CheckSKUExists(ctx, sqlc.CheckSKUExistsParams{
+		Sku:     input.Sku,
+		Column2: uuid,
+	})
+	if err != nil {
+		return sqlc.Variant{}, fmt.Errorf("checking SKU: %w", err)
+	}
+	if skuExists {
+		return sqlc.Variant{}, ErrSKUExists
+	}
+
+	if input.Barcode != "" {
+		barcodeExists, err := s.db.CheckBarcodeExists(ctx, sqlc.CheckBarcodeExistsParams{
+			Barcode: pgtype.Text{String: input.Barcode, Valid: true},
+			Column2: uuid,
+		})
+		if err != nil {
+			return sqlc.Variant{}, fmt.Errorf("checking barcode: %w", err)
+		}
+		if barcodeExists {
+			return sqlc.Variant{}, ErrBarcodeExists
+		}
+	}
+
+	variant, err := s.db.UpdateVariant(ctx, sqlc.UpdateVariantParams{
+		ID:       uuid,
+		Sku:      input.Sku,
+		Barcode:  barcode,
+		Name:     input.Name,
+		Price:    input.Price,
+		Cost:     cost,
+		IsActive: variantIsActive,
+	})
+	if err != nil {
+		return sqlc.Variant{}, ErrVariantNotFound
+	}
+
+	return variant, nil
 }
 
 func (s *Service) SearchVariant(ctx context.Context, query string) (sqlc.SearchVariantRow, error) {

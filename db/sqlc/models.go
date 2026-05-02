@@ -15,6 +15,15 @@ type Category struct {
 	ParentID    pgtype.UUID        `json:"parent_id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	SortOrder   int64              `json:"sort_order"`
+}
+
+type GrossProfitReport struct {
+	Month           string `json:"month"`
+	OrderCount      int64  `json:"order_count"`
+	Revenue         int64  `json:"revenue"`
+	CostOfGoodsSold int64  `json:"cost_of_goods_sold"`
+	GrossProfit     int64  `json:"gross_profit"`
 }
 
 type InventoryLedger struct {
@@ -27,24 +36,33 @@ type InventoryLedger struct {
 	CreatedBy      pgtype.UUID        `json:"created_by"`
 }
 
+type MonthlySalesReport struct {
+	Month             string `json:"month"`
+	OrderCount        int64  `json:"order_count"`
+	TotalRevenue      int64  `json:"total_revenue"`
+	AverageOrderValue int64  `json:"average_order_value"`
+}
+
 type Order struct {
-	ID          pgtype.UUID        `json:"id"`
-	ClientUuid  string             `json:"client_uuid"`
-	UserID      pgtype.UUID        `json:"user_id"`
-	Status      string             `json:"status"`
-	TotalAmount int64              `json:"total_amount"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type OrderItem struct {
-	ID        pgtype.UUID        `json:"id"`
-	OrderID   pgtype.UUID        `json:"order_id"`
-	VariantID pgtype.UUID        `json:"variant_id"`
-	Quantity  int32              `json:"quantity"`
-	UnitPrice int64              `json:"unit_price"`
-	Subtotal  int64              `json:"subtotal"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID         pgtype.UUID        `json:"id"`
+	OrderID    pgtype.UUID        `json:"order_id"`
+	VariantID  pgtype.UUID        `json:"variant_id"`
+	Quantity   int32              `json:"quantity"`
+	UnitPrice  int64              `json:"unit_price"`
+	Subtotal   int64              `json:"subtotal"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	CostAtSale pgtype.Int8        `json:"cost_at_sale"`
 }
 
 type Payment struct {
