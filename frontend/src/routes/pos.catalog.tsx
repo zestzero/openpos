@@ -13,7 +13,7 @@ export const Route = createRoute({
   component: PosCatalogRoute,
 })
 
-function PosCatalogRoute() {
+export function PosCatalogRoute() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   return (

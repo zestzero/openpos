@@ -25,7 +25,7 @@ export const Route = createRoute({
   component: PosRoute,
 });
 
-function PosRoute() {
+export function PosRoute() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { itemCount, total } = useCart();
 
@@ -44,6 +44,8 @@ function PosRoute() {
             </span>
           </div>
         </div>
+
+        <QuickKeysBar />
 
         <section className="space-y-3">
           <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">

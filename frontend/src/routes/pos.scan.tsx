@@ -19,7 +19,7 @@ export const Route = createRoute({
   component: ScanPage,
 })
 
-function ScanPage() {
+export function ScanPage() {
   const navigate = useNavigate()
   const [scannedVariants, setScannedVariants] = useState<Variant[]>([])
   const [lastError, setLastError] = useState<string | null>(null)

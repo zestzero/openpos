@@ -1,36 +1,18 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { OfflineBanner } from '@/pos/components/OfflineBanner'
 import { PosHeader } from '@/pos/components/PosHeader'
 import { PosNav } from '@/pos/components/PosNav'
+import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
 
 interface PosLayoutProps {
   children?: ReactNode
 }
 
-function useOnlineStatus() {
-  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
-
-  useEffect(() => {
-    const handleOnline = () => setOnline(true)
-    const handleOffline = () => setOnline(false)
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [])
-
-  return online
-}
-
 export function PosLayout({ children }: PosLayoutProps) {
   const { user } = useAuth()
-  const online = useOnlineStatus()
+  const { isOnline: online } = useNetworkStatus()
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
