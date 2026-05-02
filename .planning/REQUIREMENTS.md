@@ -154,7 +154,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | POS-07 | Phase 5 | Complete |
 | PAY-01 | Phase 6 | Pending |
 | PAY-02 | Phase 6 | Pending |
-| PAY-03 | Phase 6 | Pending |
+| PAY-03 | Phase 6 | Complete |
 | REC-01 | Phase 6 | Pending |
 | REC-02 | Phase 6 | Pending |
 | REC-03 | Phase 6 | Pending |
@@ -168,8 +168,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROD-04 | Phase 7 | Pending |
 | PROD-05 | Phase 7 | Pending |
 | PROD-06 | Phase 7 | Pending |
-| INV-01 | Phase 6 | Pending |
-| INV-02 | Phase 6 | Pending |
+| INV-01 | Phase 6 | Complete |
+| INV-02 | Phase 6 | Complete |
 | INV-03 | Phase 6 | Pending |
 | INV-04 | Phase 6 | Pending |
 | RPT-01 | Phase 7 | Pending |

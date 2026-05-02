@@ -155,8 +155,8 @@
 
 **Gap Closure:** Closes audit blockers for atomic ordering across payment, stock deduction, reporting, and receipt re-fetch.
 
-**Plans:** 2 planned
-- [ ] 06-01-PLAN.md — Fail-fast bootstrap and transactional sales wiring
+**Plans:** 1/2 plans executed
+- [x] 06-01-PLAN.md — Fail-fast bootstrap and transactional sales wiring
 - [ ] 06-02-PLAN.md — Payment, receipt, and inventory regressions
 
 ---
