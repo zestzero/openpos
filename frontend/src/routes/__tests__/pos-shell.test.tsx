@@ -151,7 +151,8 @@ describe('POS shell routes', () => {
     expect(screen.getByRole('button', { name: 'Scan' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /view cart/i }))
-    expect(screen.getByText('Cart and checkout')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cart' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Cart' })).toHaveClass('h-[80dvh]')
   })
 
   it('shows the dedicated catalog browsing shell', () => {

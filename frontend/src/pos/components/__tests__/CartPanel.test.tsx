@@ -87,6 +87,7 @@ describe('CartPanel', () => {
 
     expect(screen.getByText('Total due')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirm order' })).toHaveClass('h-14')
+    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('h-14')
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm order' }))
 
@@ -99,5 +100,6 @@ describe('CartPanel', () => {
 
     expect(screen.getByRole('button', { name: 'Confirm payment' })).toHaveClass('h-14')
     expect(screen.getByRole('button', { name: 'Confirm payment' })).toHaveClass('bg-emerald-600')
+    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('h-14')
   })
 })

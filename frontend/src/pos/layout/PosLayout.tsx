@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { OfflineBanner } from '@/pos/components/OfflineBanner'
@@ -58,16 +58,13 @@ export function PosLayout({ children }: PosLayoutProps) {
       </div>
 
       <Dialog open={cartOpen} onOpenChange={setCartOpen}>
-        <DialogContent className="left-1/2 top-auto bottom-0 w-[min(100vw-1rem,56rem)] max-w-none translate-x-[-50%] translate-y-0 rounded-b-none rounded-t-[1.75rem] border-b-0 p-0 sm:w-[min(100vw-2rem,56rem)]">
-          <div className="max-h-[calc(100dvh-1.5rem)] overflow-hidden">
+        <DialogContent className="left-1/2 top-auto bottom-0 h-[80dvh] w-[min(100vw-1rem,56rem)] max-w-none translate-x-[-50%] translate-y-0 rounded-b-none rounded-t-[1.75rem] border-b-0 p-0 sm:w-[min(100vw-2rem,56rem)]">
+          <div className="flex h-full flex-col overflow-hidden">
             <DialogHeader className="border-b border-border/70 px-4 pb-4 pt-5 text-left sm:px-6">
-              <DialogTitle>Cart and checkout</DialogTitle>
-              <DialogDescription>
-                Review the items in the cart, then proceed to payment when ready.
-              </DialogDescription>
+              <DialogTitle>Cart</DialogTitle>
             </DialogHeader>
-            <div className="max-h-[calc(100dvh-8rem)] overflow-y-auto px-4 pb-4 pt-3 sm:px-6">
-              <CartPanel />
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3 sm:px-6">
+              <CartPanel compact />
             </div>
           </div>
         </DialogContent>

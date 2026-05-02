@@ -9,21 +9,25 @@ interface CartItemRowProps {
   item: CartItem
   onUpdateQuantity: (variantId: string, quantity: number) => void
   onRemove: (variantId: string) => void
+  compact?: boolean
 }
 
 export function CartItemRow({
   item,
   onUpdateQuantity,
   onRemove,
+  compact = false,
 }: CartItemRowProps) {
   return (
-    <div className="flex items-center gap-3 rounded-card border border-border bg-background px-3 py-3 shadow-card last:mb-0">
+    <div className={`flex items-center gap-3 rounded-card border border-border bg-background px-3 py-3 ${compact ? '' : 'shadow-card'} last:mb-0`}>
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-foreground">{item.productName}</div>
-        <div className="truncate text-sm text-muted-foreground">{item.variantName}</div>
-        <div className="text-sm text-muted-foreground">
-          {formatCurrency(item.price)} each
-        </div>
+        {!compact ? <div className="truncate text-sm text-muted-foreground">{item.variantName}</div> : null}
+        {!compact ? (
+          <div className="text-sm text-muted-foreground">
+            {formatCurrency(item.price)} each
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-2">
