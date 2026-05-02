@@ -56,6 +56,49 @@ func TestCreateOrder(t *testing.T) {
 		}
 	})
 
+	t.Run("uses the pool-backed path without breaking client uuid idempotency", func(t *testing.T) {
+		created := sqlc.Order{ID: uuidPtr("11111111-1111-1111-1111-111111111111"), ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 1200}
+		queries := &fakeOrderStore{
+			ordersByClientUUID: map[string]sqlc.Order{},
+			ordersByID:         map[string]sqlc.Order{created.ID.String(): created},
+			variantsByID: map[string]sqlc.Variant{
+				"33333333-3333-3333-3333-333333333333": {ID: uuidPtr("33333333-3333-3333-3333-333333333333"), Cost: int8Ptr(1200)},
+			},
+			createOrderResult: created,
+		}
+		inv := newFakeInventory(map[string]int64{"33333333-3333-3333-3333-333333333333": 10})
+		svc := NewService(queries, inv)
+		svc.pool = &fakeTxPool{}
+
+		input := CreateOrderInput{
+			ClientUUID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			UserID:     "22222222-2222-2222-2222-222222222222",
+			Items:      []OrderItemInput{{VariantID: "33333333-3333-3333-3333-333333333333", Quantity: 1, UnitPrice: 1200}},
+		}
+
+		first, err := svc.CreateOrder(context.Background(), input)
+		if err != nil {
+			t.Fatalf("CreateOrder returned error: %v", err)
+		}
+		second, err := svc.CreateOrder(context.Background(), input)
+		if err != nil {
+			t.Fatalf("CreateOrder returned error on repeat call: %v", err)
+		}
+
+		if !first.Created || second.Created {
+			t.Fatalf("expected first create to be new and repeat call to reuse existing order: first=%v second=%v", first.Created, second.Created)
+		}
+		if svc.pool.(*fakeTxPool).beginCalls != 1 {
+			t.Fatalf("expected one transaction begin for the first create, got %d", svc.pool.(*fakeTxPool).beginCalls)
+		}
+		if queries.createOrderCalls != 1 || queries.createItemCalls != 1 {
+			t.Fatalf("expected one order and one item insert, got %d/%d", queries.createOrderCalls, queries.createItemCalls)
+		}
+		if len(inv.deductCalls) != 1 {
+			t.Fatalf("expected one inventory deduction, got %d", len(inv.deductCalls))
+		}
+	})
+
 	t.Run("returns existing order when client uuid already exists", func(t *testing.T) {
 		existing := sqlc.Order{ID: uuidPtr("11111111-1111-1111-1111-111111111111"), ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 1200}
 		queries := &fakeOrderStore{
@@ -231,6 +274,10 @@ func (f *fakeOrderStore) CreateOrder(_ context.Context, _ sqlc.CreateOrderParams
 	}
 	if f.createOrderResult.ID.Valid {
 		f.ordersByID[f.createOrderResult.ID.String()] = f.createOrderResult
+		if f.ordersByClientUUID == nil {
+			f.ordersByClientUUID = map[string]sqlc.Order{}
+		}
+		f.ordersByClientUUID[f.createOrderResult.ClientUuid] = f.createOrderResult
 	}
 	return f.createOrderResult, nil
 }
@@ -322,6 +369,8 @@ func (f *fakeOrderStore) ListOrders(_ context.Context, _ sqlc.ListOrdersParams) 
 	return nil, nil
 }
 
+func (f *fakeOrderStore) WithTx(pgx.Tx) orderStore { return f }
+
 type fakeInventory struct {
 	stock       map[string]int64
 	deductCalls []string
@@ -345,6 +394,15 @@ func (f *fakeInventory) DeductStock(_ context.Context, variantID string, quantit
 	}
 	f.stock[variantID] -= quantity
 	return inventory.LedgerEntry{}, nil
+}
+
+func (f *fakeInventory) WithTx(pgx.Tx) inventoryGateway { return f }
+
+type fakeTxPool struct{ beginCalls int }
+
+func (f *fakeTxPool) BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error) {
+	f.beginCalls++
+	return nil, nil
 }
 
 func uuidPtr(value string) pgtype.UUID {
