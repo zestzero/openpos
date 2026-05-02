@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   useKeyboardWedge: vi.fn(),
   usePosCheckoutSession: vi.fn(),
   useNavigate: vi.fn(),
+  useRouterState: vi.fn(),
 }))
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -75,6 +76,7 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     useNavigate: mocks.useNavigate,
+    useRouterState: mocks.useRouterState,
   }
 })
 
@@ -133,6 +135,7 @@ describe('POS shell routes', () => {
       clearSession: vi.fn(),
     })
     mocks.useNavigate.mockReturnValue(vi.fn())
+    mocks.useRouterState.mockReturnValue('/pos')
   })
 
   it('shows the cashier selling floor shell', () => {
@@ -144,6 +147,9 @@ describe('POS shell routes', () => {
     expect(screen.getByText('Quick keys bar')).toBeInTheDocument()
     expect(screen.getByText('Cart panel')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /view cart/i })).toHaveAttribute('href', '#cart-panel')
+    expect(screen.getByRole('button', { name: 'Selling' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Catalog' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Scan' })).toBeInTheDocument()
   })
 
   it('shows the dedicated catalog browsing shell', () => {
