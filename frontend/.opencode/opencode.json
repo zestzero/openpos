@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "/Users/zestzero/Documents/work-dir/openpos/frontend/.opencode/get-shit-done/*": "allow"
+    },
+    "external_directory": {
+      "/Users/zestzero/Documents/work-dir/openpos/frontend/.opencode/get-shit-done/*": "allow"
+    }
+  }
+}
