@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-05-02T03:25:12.851Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-05-02T03:31:17.154Z"
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # STATE.md
@@ -87,6 +87,10 @@ Plan: 2 of 2
 - [Phase 05-pos-frontend-offline-gap-closure]: Use a shared sync-contract helper so payload shape, error indexing, and retry delay logic stay aligned across hooks
 - [Phase 05-pos-frontend-offline-gap-closure]: Treat failed queue entries as retryable sync work instead of losing them behind a client_uuid/order_id mismatch
 - [Phase 05-pos-frontend-offline-gap-closure]: Derive sync counters from actual Dexie rows after each queue mutation
+- [Phase 05-pos-frontend-offline-gap-closure]: Exported the cashier route components as named functions so the shell can be rendered directly in tests.
+- [Phase 05-pos-frontend-offline-gap-closure]: Switched the POS layout to the shared useNetworkStatus hook so online/offline state comes from one source.
+- [Phase 05-pos-frontend-offline-gap-closure]: Placed QuickKeysBar on the main cashier floor so the quick-key requirement is visible again.
+- [Phase 05-pos-frontend-offline-gap-closure]: Used deterministic mocks for auth, cart, favorites, network, wedge scanning, and scanner UI in the smoke suite.
 
 ## Research Flags
 
@@ -105,8 +109,8 @@ Plan: 2 of 2
 
 ## Session Continuity
 
-Last session: 2026-05-02T03:25:12.849Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-05-02T03:31:17.153Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 
 ---
@@ -130,3 +134,4 @@ Resume file: None
 | Phase 04-erp-management-reporting P09 | 12 min | 2 tasks | 6 files |
 | Phase 02-pos-frontend-offline P04 | 9min | 2 tasks | 8 files |
 | Phase 05-pos-frontend-offline-gap-closure P01 | 25 min | 2 tasks | 5 files |
+| Phase 05-pos-frontend-offline-gap-closure P02 | 5 min | 2 tasks | 5 files |

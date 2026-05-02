@@ -145,13 +145,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Complete |
 | AUTH-05 | Phase 1 | Complete |
-| POS-01 | Phase 5 | Pending |
-| POS-02 | Phase 5 | Pending |
-| POS-03 | Phase 5 | Pending |
-| POS-04 | Phase 5 | Pending |
-| POS-05 | Phase 5 | Pending |
-| POS-06 | Phase 5 | Pending |
-| POS-07 | Phase 5 | Pending |
+| POS-01 | Phase 5 | Complete |
+| POS-02 | Phase 5 | Complete |
+| POS-03 | Phase 5 | Complete |
+| POS-04 | Phase 5 | Complete |
+| POS-05 | Phase 5 | Complete |
+| POS-06 | Phase 5 | Complete |
+| POS-07 | Phase 5 | Complete |
 | PAY-01 | Phase 6 | Pending |
 | PAY-02 | Phase 6 | Pending |
 | PAY-03 | Phase 6 | Pending |
@@ -175,10 +175,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RPT-01 | Phase 7 | Pending |
 | RPT-02 | Phase 7 | Pending |
 | RPT-03 | Phase 7 | Pending |
-| PLAT-01 | Phase 5 | Pending |
+| PLAT-01 | Phase 5 | Complete |
 | PLAT-02 | Phase 1 | Complete |
 | PLAT-03 | Phase 1 | Complete |
-| PLAT-04 | Phase 5 | Pending |
+| PLAT-04 | Phase 5 | Complete |
 | PLAT-05 | Phase 7 | Pending |
 
 **Coverage:**

@@ -137,9 +137,9 @@
 
 **Gap Closure:** Closes audit blockers for the offline queue/sync loop and frontend/backend sync contract mismatch.
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 - [x] 05-01-PLAN.md — Repair the offline sync contract and queue state bookkeeping
-- [ ] 05-02-PLAN.md — Re-export the cashier route components and add POS shell smoke tests
+- [x] 05-02-PLAN.md — Re-export the cashier route components and add POS shell smoke tests
 
 ---
 
