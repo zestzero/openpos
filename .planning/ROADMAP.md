@@ -134,7 +134,7 @@
 
 **Requirements:** POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04
 
-**Status:** Planned
+**Status:** Complete
 
 **Gap Closure:** Closes audit blockers for the offline queue/sync loop and frontend/backend sync contract mismatch.
 
@@ -177,10 +177,10 @@
 **Gap Closure:** Closes the remaining orphaned ERP/reporting requirements from the audit.
 
 **Plans:** 4/4 plans complete
-- [ ] 07-01-PLAN.md — Re-verify product and variant management contracts
-- [ ] 07-02-PLAN.md — Re-verify category management and catalog import
-- [ ] 07-03-PLAN.md — Re-verify reporting dashboard and monthly rollups
-- [ ] 07-04-PLAN.md — Re-verify report exports and THB formatting
+- [x] 07-01-PLAN.md — Re-verify product and variant management contracts
+- [x] 07-02-PLAN.md — Re-verify category management and catalog import
+- [x] 07-03-PLAN.md — Re-verify reporting dashboard and monthly rollups
+- [x] 07-04-PLAN.md — Re-verify report exports and THB formatting
 
 **Execution Note:** Do not start this phase until Phase 06 verification passes. ERP verification stays in v1 scope, but follows POS sale-loop closure.
 
