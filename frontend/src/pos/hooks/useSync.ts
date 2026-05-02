@@ -2,15 +2,14 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useNetworkStatus } from './useNetworkStatus'
 import { useOfflineOrders } from './useOfflineOrders'
 import { requestJSON } from '@/lib/api'
-
-const BASE_RETRY_MS = 2000
-const MAX_RETRY_MS = 60000
+import { db } from '@/lib/db'
+import { buildSyncOrdersRequest, collectFailedClientUUIDs, getNextRetryDelayMs, type SyncOrdersResponse } from './syncContract'
 const MAX_RETRIES = 10
 
 export function useSync() {
   const { isOnline } = useNetworkStatus()
   const {
-    getPendingOrders,
+    getAllQueuedOrders,
     markAsSyncing,
     markAsSynced,
     markAsFailed,
@@ -23,39 +22,28 @@ export function useSync() {
     isSyncingRef.current = true
 
     try {
-      const pending = await getPendingOrders()
-      if (pending.length === 0) {
+      const queuedOrders = await getAllQueuedOrders()
+      const retryableOrders = queuedOrders.filter(order => order.status !== 'syncing')
+      if (retryableOrders.length === 0) {
         isSyncingRef.current = false
         return
       }
 
       // Mark all as syncing
-      await Promise.all(pending.map(o => markAsSyncing(o.id)))
-
-      // Build sync payload
-      const payload = {
-        orders: pending.map(o => ({
-          client_uuid: o.id,
-          items: o.items.map(item => ({
-            variant_id: item.variantId,
-            quantity: item.quantity,
-            unit_price: item.priceSnapshot,
-          })),
-        })),
-      }
+      await Promise.all(retryableOrders.map(o => markAsSyncing(o.id)))
 
       // Send to server - backend route is /api/orders/sync
-      const result = await requestJSON<{ data: { processed: number; failed: number; errors?: Array<{ order_id: string; error: string }> } }>(
+      const result = await requestJSON<{ data: SyncOrdersResponse }>(
         '/api/orders/sync',
-        { method: 'POST', body: JSON.stringify(payload) }
+        { method: 'POST', body: JSON.stringify(buildSyncOrdersRequest(retryableOrders)) }
       )
 
       // Process results
-      const failedOrderIds = new Set(result.data.errors?.map(e => e.order_id) ?? [])
+      const failedByClientUUID = collectFailedClientUUIDs(result.data.errors)
 
-      for (const order of pending) {
-        if (failedOrderIds.has(order.id)) {
-          const error = result.data.errors?.find(e => e.order_id === order.id)?.error ?? 'Sync failed'
+      for (const order of retryableOrders) {
+        if (failedByClientUUID.has(order.id)) {
+          const error = failedByClientUUID.get(order.id) ?? 'Sync failed'
           if (order.retryCount >= MAX_RETRIES) {
             // Permanently failed - could alert user in v2
             await markAsFailed(order.id, `Max retries exceeded: ${error}`)
@@ -66,23 +54,26 @@ export function useSync() {
           await markAsSynced(order.id)
         }
       }
+
+      await db.syncState.update('default', { lastSyncAt: Date.now() })
     } catch (error) {
       // Network or server error - mark all syncing orders as failed for retry
-      const syncing = await getPendingOrders() // re-fetch (status='syncing' now)
+      const syncing = (await getAllQueuedOrders()).filter(order => order.status === 'syncing')
       for (const order of syncing) {
         await markAsFailed(order.id, error instanceof Error ? error.message : 'Network error')
       }
     } finally {
       isSyncingRef.current = false
     }
-  }, [getPendingOrders, markAsSyncing, markAsSynced, markAsFailed])
+  }, [getAllQueuedOrders, markAsSyncing, markAsSynced, markAsFailed])
 
   const scheduleRetry = useCallback(() => {
     // Exponential backoff based on highest retry count among pending orders
-    getPendingOrders().then(pending => {
-      if (pending.length === 0) return
-      const maxRetries = Math.max(...pending.map(o => o.retryCount))
-      const delay = Math.min(BASE_RETRY_MS * Math.pow(2, maxRetries), MAX_RETRY_MS)
+    getAllQueuedOrders().then(queuedOrders => {
+      const retryable = queuedOrders.filter(order => order.status !== 'syncing')
+      if (retryable.length === 0) return
+      const maxRetries = Math.max(...retryable.map(o => o.retryCount))
+      const delay = getNextRetryDelayMs(maxRetries)
 
       if (syncTimeoutRef.current) {
         clearTimeout(syncTimeoutRef.current)
@@ -93,7 +84,7 @@ export function useSync() {
         }
       }, delay)
     })
-  }, [getPendingOrders, isOnline, syncPendingOrders])
+  }, [getAllQueuedOrders, isOnline, syncPendingOrders])
 
   // Trigger sync when coming back online
   useEffect(() => {

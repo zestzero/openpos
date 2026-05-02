@@ -1,14 +1,11 @@
 import { useCallback } from 'react'
 import { db, type QueuedOrder } from '@/lib/db'
+import { deriveSyncSnapshot } from './syncContract'
 
 async function updateSyncState() {
-  const pendingCount = await db.queuedOrders.where('status').equals('pending').count()
+  const queuedOrders = await db.queuedOrders.toArray()
   const existing = await db.syncState.get('default')
-  if (existing) {
-    await db.syncState.update('default', { pendingCount })
-  } else {
-    await db.syncState.add({ id: 'default' as const, isSyncing: false, pendingCount })
-  }
+  await db.syncState.put(deriveSyncSnapshot(queuedOrders, existing))
 }
 
 export function useOfflineOrders() {
@@ -34,6 +31,7 @@ export function useOfflineOrders() {
 
   const markAsSyncing = useCallback(async (orderId: string) => {
     await db.queuedOrders.update(orderId, { status: 'syncing' })
+    await updateSyncState()
   }, [])
 
   const markAsSynced = useCallback(async (orderId: string) => {
