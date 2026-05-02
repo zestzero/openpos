@@ -5,8 +5,7 @@
       "args": [
         "serve"
       ],
-      "type": "stdio",
-      "env": []
+      "type": "stdio"
     }
   }
 }
