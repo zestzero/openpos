@@ -31,15 +31,53 @@ type orderStore interface {
 	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.ListOrderItemsByOrderIDRow, error)
 }
 
+type txOrderStore interface {
+	orderStore
+	WithTx(pgx.Tx) orderStore
+}
+
 type inventoryGateway interface {
 	GetStockLevel(context.Context, string) (inventory.StockLevel, error)
 	DeductStock(context.Context, string, int64, string) (inventory.LedgerEntry, error)
 }
 
+type txInventoryGateway interface {
+	inventoryGateway
+	WithTx(pgx.Tx) inventoryGateway
+}
+
+type txStarter interface {
+	BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error)
+}
+
 type Service struct {
 	queries   orderStore
 	inventory inventoryGateway
-	pool      *pgxpool.Pool
+	pool      txStarter
+}
+
+type sqlcOrderStore struct {
+	*sqlc.Queries
+}
+
+func NewOrderStore(queries *sqlc.Queries) orderStore {
+	return sqlcOrderStore{Queries: queries}
+}
+
+func (s sqlcOrderStore) WithTx(tx pgx.Tx) orderStore {
+	return sqlcOrderStore{Queries: s.Queries.WithTx(tx)}
+}
+
+type sqlcInventoryGateway struct {
+	*inventory.Service
+}
+
+func NewInventoryGateway(service *inventory.Service) inventoryGateway {
+	return sqlcInventoryGateway{Service: service}
+}
+
+func (s sqlcInventoryGateway) WithTx(tx pgx.Tx) inventoryGateway {
+	return sqlcInventoryGateway{Service: s.Service.WithTx(tx)}
 }
 
 func NewService(queries orderStore, inventoryService inventoryGateway) *Service {
@@ -169,15 +207,17 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback(ctx)
+		}
+	}()
 
-	txQueries, ok := s.queries.(interface{ WithTx(pgx.Tx) *sqlc.Queries })
+	txQueries, ok := s.queries.(txOrderStore)
 	if !ok {
 		return nil, fmt.Errorf("order store does not support transactions")
 	}
-	txInventory, ok := s.inventory.(interface {
-		WithTx(pgx.Tx) *inventory.Service
-	})
+	txInventory, ok := s.inventory.(txInventoryGateway)
 	if !ok {
 		return nil, fmt.Errorf("inventory store does not support transactions")
 	}
@@ -186,8 +226,10 @@ func (s *Service) CreateOrder(ctx context.Context, input CreateOrderInput) (*Ord
 	if err != nil {
 		return nil, err
 	}
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit transaction: %w", err)
+	if tx != nil {
+		if err := tx.Commit(ctx); err != nil {
+			return nil, fmt.Errorf("commit transaction: %w", err)
+		}
 	}
 	return order, nil
 }
