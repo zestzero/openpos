@@ -1,68 +1,57 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { useState } from 'react'
-import { createRoute } from '@tanstack/react-router'
+import { useState } from "react";
+import { createRoute } from "@tanstack/react-router";
 
-import { getStoredSession, hasRole } from '@/lib/auth'
-import { useCart } from '@/pos/hooks/useCart'
-import { formatCurrency } from '@/lib/formatCurrency'
-import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
-import { CatalogGrid } from '@/pos/components/CatalogGrid'
-import { CartPanel } from '@/pos/components/CartPanel'
-import { SearchBar } from '@/pos/components/SearchBar'
-import { QuickKeysBar } from '@/pos/components/QuickKeysBar'
-import { PosLayout } from '@/pos/layout/PosLayout'
-import { Route as rootRoute } from './__root'
+import { getStoredSession, hasRole } from "@/lib/auth";
+import { useCart } from "@/pos/hooks/useCart";
+import { formatCurrency } from "@/lib/formatCurrency";
+import { CatalogCategoryNav } from "@/pos/components/CatalogCategoryNav";
+import { CatalogGrid } from "@/pos/components/CatalogGrid";
+import { CartPanel } from "@/pos/components/CartPanel";
+import { SearchBar } from "@/pos/components/SearchBar";
+import { QuickKeysBar } from "@/pos/components/QuickKeysBar";
+import { PosLayout } from "@/pos/layout/PosLayout";
+import { Route as rootRoute } from "./__root";
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
-  path: 'pos',
+  path: "pos",
   beforeLoad: () => {
-    const session = getStoredSession()
-    if (!session) return
-    if (!hasRole(session.user.role, ['owner', 'cashier'])) return
+    const session = getStoredSession();
+    if (!session) return;
+    if (!hasRole(session.user.role, ["owner", "cashier"])) return;
   },
   component: PosRoute,
-})
+});
 
 function PosRoute() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const { itemCount, total } = useCart()
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { itemCount, total } = useCart();
 
   return (
     <PosLayout>
       <div className="w-full space-y-6 pb-40">
-        <section className="rounded-card border border-border/70 bg-card p-4 shadow-card sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-2xl space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Selling floor</p>
-              <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">Keep the register moving without losing the thread.</h2>
-              <p className="max-w-prose text-sm leading-6 text-muted-foreground sm:text-base">
-                Search fast, pin repeat sellers, and keep the cart visible while the line keeps moving.
-              </p>
-            </div>
+        <div className="mt-4 space-y-3">
+          <SearchBar />
 
-            <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-              <span className="rounded-full border border-border bg-background px-3 py-1.5">{itemCount} items</span>
-              <span className="rounded-full border border-border bg-background px-3 py-1.5">{formatCurrency(total)} in cart</span>
-            </div>
+          <div className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+            <span className="rounded-full border border-border bg-background px-3 py-1.5">
+              {itemCount} items
+            </span>
+            <span className="rounded-full border border-border bg-background px-3 py-1.5">
+              {formatCurrency(total)} in cart
+            </span>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2 rounded-full border border-border bg-background p-1.5">
-            <button className="rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-card">Register</button>
-            <button className="rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">Stock Management</button>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            <SearchBar />
-            <QuickKeysBar />
-          </div>
-        </section>
+        </div>
 
         <section className="space-y-3">
           <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar -mx-4 px-4 sm:-mx-6 sm:px-6">
             <div className="shrink-0">
-              <CatalogCategoryNav selectedCategory={selectedCategory} onSelectCategory={setSelectedCategory} />
+              <CatalogCategoryNav
+                selectedCategory={selectedCategory}
+                onSelectCategory={setSelectedCategory}
+              />
             </div>
           </div>
         </section>
@@ -72,7 +61,10 @@ function PosRoute() {
             <CatalogGrid categoryId={selectedCategory} />
           </div>
 
-          <aside id="cart-panel" className="scroll-mt-24 xl:sticky xl:top-24 xl:self-start">
+          <aside
+            id="cart-panel"
+            className="scroll-mt-24 xl:sticky xl:top-24 xl:self-start"
+          >
             <CartPanel />
           </aside>
         </section>
@@ -92,9 +84,11 @@ function PosRoute() {
             </span>
             <span className="text-sm font-semibold">View cart</span>
           </div>
-          <span className="text-lg font-semibold tracking-tight">{formatCurrency(total)}</span>
+          <span className="text-lg font-semibold tracking-tight">
+            {formatCurrency(total)}
+          </span>
         </a>
       </div>
     </PosLayout>
-  )
+  );
 }
