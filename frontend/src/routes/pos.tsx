@@ -9,6 +9,7 @@ import { formatCurrency } from "@/lib/formatCurrency";
 import { CatalogCategoryNav } from "@/pos/components/CatalogCategoryNav";
 import { CatalogGrid } from "@/pos/components/CatalogGrid";
 import { CartPanel } from "@/pos/components/CartPanel";
+import { LatestReceiptReprint } from "@/pos/components/LatestReceiptReprint";
 import { SearchBar } from "@/pos/components/SearchBar";
 import { QuickKeysBar } from "@/pos/components/QuickKeysBar";
 import { PosLayout } from "@/pos/layout/PosLayout";
@@ -43,6 +44,8 @@ export function PosRoute() {
               {formatCurrency(total)} in cart
             </span>
           </div>
+
+          <LatestReceiptReprint />
         </div>
 
         <QuickKeysBar />
