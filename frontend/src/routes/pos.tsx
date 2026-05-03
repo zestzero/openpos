@@ -1,14 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { useState } from "react";
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, redirect } from "@tanstack/react-router";
 
-import { getStoredSession, hasRole } from "@/lib/auth";
+import { getStoredSession } from "@/lib/auth";
+import { canAccessRoute, getLandingPath } from '@/hooks/useRbac'
 import { useCart } from "@/pos/hooks/useCart";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { CatalogCategoryNav } from "@/pos/components/CatalogCategoryNav";
 import { CatalogGrid } from "@/pos/components/CatalogGrid";
 import { CartPanel } from "@/pos/components/CartPanel";
+import { LatestReceiptReprint } from "@/pos/components/LatestReceiptReprint";
 import { SearchBar } from "@/pos/components/SearchBar";
 import { QuickKeysBar } from "@/pos/components/QuickKeysBar";
 import { PosLayout } from "@/pos/layout/PosLayout";
@@ -19,8 +21,12 @@ export const Route = createRoute({
   path: "pos",
   beforeLoad: () => {
     const session = getStoredSession();
-    if (!session) return;
-    if (!hasRole(session.user.role, ["owner", "cashier"])) return;
+    if (!session?.user?.role) {
+      throw redirect({ to: '/login' } as any)
+    }
+    if (!canAccessRoute(session.user.role, 'pos')) {
+      throw redirect({ to: getLandingPath(session.user.role) as any } as any)
+    }
   },
   component: PosRoute,
 });
@@ -43,6 +49,8 @@ export function PosRoute() {
               {formatCurrency(total)} in cart
             </span>
           </div>
+
+          <LatestReceiptReprint />
         </div>
 
         <QuickKeysBar />

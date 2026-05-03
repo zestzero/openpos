@@ -35,6 +35,22 @@ export interface VariantFormValues {
   isActive: boolean
 }
 
+export interface AdjustStockValues {
+  variantId: string
+  quantity: number
+  reason: 'RESTOCK'
+}
+
+export interface InventoryLedgerEntry {
+  id: string
+  variant_id: string
+  quantity_change: number
+  reason: string
+  reference_id: string | null
+  created_at: string
+  created_by: string | null
+}
+
 export interface ProductFormValues {
   name: string
   description: string
@@ -146,7 +162,7 @@ async function fetchCategories() {
 }
 
 async function fetchProducts() {
-  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/products')
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/products?is_active=true')
   return response.data
 }
 
@@ -225,6 +241,19 @@ async function updateVariant(id: string, variant: VariantFormValues) {
       is_active: variant.isActive,
     }),
   })
+  return response.data
+}
+
+async function adjustStock(values: AdjustStockValues) {
+  const response = await requestJSON<ApiSuccess<InventoryLedgerEntry>>('/api/inventory/adjust', {
+    method: 'POST',
+    body: JSON.stringify({
+      variant_id: values.variantId,
+      quantity: values.quantity,
+      reason: values.reason,
+    }),
+  })
+
   return response.data
 }
 
@@ -319,6 +348,17 @@ export function useUpdateVariantMutation() {
     mutationFn: ({ id, variant }: { id: string; variant: VariantFormValues }) => updateVariant(id, variant),
     onSuccess: async () => {
       await buildQueryClientInvalidation(queryClient)
+    },
+  })
+}
+
+export function useAdjustStockMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: adjustStock,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['erp', 'products'] })
     },
   })
 }

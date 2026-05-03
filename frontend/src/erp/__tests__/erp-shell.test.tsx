@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ErpLayout } from '../layout/ErpLayout'
@@ -6,17 +6,29 @@ import { ErpNav } from '../navigation/ErpNav'
 import { Route as erpRoute } from '@/routes/erp'
 
 const getStoredSession = vi.hoisted(() => vi.fn())
-const getRedirectPath = vi.hoisted(() => vi.fn())
+const getLandingPath = vi.hoisted(() => vi.fn())
+const logout = vi.hoisted(() => vi.fn())
 
 vi.mock('@/lib/auth', () => ({
-  getRedirectPath,
   getStoredSession,
+}))
+
+vi.mock('@/hooks/useRbac', () => ({
+  canAccessRoute: (role: string, route: string) => role === 'owner' && route === 'erp',
+  getLandingPath,
+}))
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    logout,
+  }),
 }))
 
 describe('ERP shell', () => {
   beforeEach(() => {
     getStoredSession.mockReset()
-    getRedirectPath.mockReset()
+    getLandingPath.mockReset()
+    logout.mockReset()
   })
 
   it('renders the desktop navigation, utility bar, and tabs', () => {
@@ -58,8 +70,18 @@ describe('ERP shell', () => {
       token: 'token',
       user: { id: '2', email: 'cashier@example.com', role: 'cashier', name: 'Cashier' },
     })
-    getRedirectPath.mockReturnValue('/pos')
+    getLandingPath.mockReturnValue('/pos')
     expect(() => beforeLoad?.()).toThrow()
-    expect(getRedirectPath).toHaveBeenCalledWith('cashier')
+    expect(getLandingPath).toHaveBeenCalledWith('cashier')
+  })
+
+  it('shows sign out in the ERP header and triggers logout', () => {
+    render(<ErpLayout><div>Outlet content</div></ErpLayout>)
+
+    expect(screen.getByRole('button', { name: 'Log out' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Log out' }))
+
+    expect(logout).toHaveBeenCalledTimes(1)
   })
 })

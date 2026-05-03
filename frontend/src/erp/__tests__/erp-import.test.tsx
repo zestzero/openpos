@@ -3,8 +3,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { CategoryDrawer } from '../categories/CategoryDrawer'
+import { CategoryTable } from '../tables/CategoryTable'
 import { ImportDrawer } from '../import/ImportDrawer'
 import { generateVariantBarcode } from '../products/variantBarcode'
+
+function makeCategory(id: string, name: string) {
+  return {
+    id,
+    name,
+    description: '',
+    parent_id: null,
+    sort_order: 1,
+  }
+}
 
 describe('ERP import workflow', () => {
   afterEach(() => {
@@ -37,6 +49,46 @@ describe('ERP import workflow', () => {
         existingBarcodes: ['ERP-GREEN-TEA-LARGE-CUP'],
       }),
     ).toBe('ERP-GREEN-TEA-LARGE-CUP-2')
+  })
+
+  it('wires the category drawer parent controls', () => {
+    const onSave = vi.fn()
+
+    render(
+      <CategoryDrawer
+        open
+        categories={[makeCategory('cat-1', 'Tea'), makeCategory('cat-2', 'Coffee')]}
+        onOpenChange={() => undefined}
+        onSave={onSave}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Parent category'), { target: { value: 'cat-2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save category' }))
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ parentId: 'cat-2' }))
+  })
+
+  it('wires the category table edit and reorder controls', () => {
+    const onEditCategory = vi.fn()
+    const onReorderCategories = vi.fn()
+
+    render(
+      <CategoryTable
+        categories={[makeCategory('cat-1', 'Tea'), makeCategory('cat-2', 'Coffee')]}
+        onCreateCategory={() => undefined}
+        onEditCategory={onEditCategory}
+        onReorderCategories={onReorderCategories}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0])
+
+    const buttons = screen.getAllByRole('button')
+    fireEvent.click(buttons[2])
+
+    expect(onEditCategory).toHaveBeenCalledWith(expect.objectContaining({ id: 'cat-1' }))
+    expect(onReorderCategories).toHaveBeenCalledWith(['cat-2', 'cat-1'])
   })
 
   it('parses a CSV preview, lets owners generate a barcode, and submits the import', async () => {
@@ -82,6 +134,32 @@ describe('ERP import workflow', () => {
       barcode: 'ERP-GREEN-TEA-LARGE-CUP',
       price: 12900,
     })
+  })
+
+  it('parses import aliases and blocks duplicate SKU and barcode rows', async () => {
+    renderWithQueryClient(<ImportDrawer />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Import CSV' }))
+
+    const file = new File(
+      [
+        'product,variant,variant_sku,variant_barcode,price_satang,cost_satang,active\n' +
+          'Green Tea,Large Cup,GT-LARGE,1234567890123,12900,8500,true\n' +
+          'Green Tea,Medium Cup,GT-LARGE,1234567890123,11900,8000,true',
+      ],
+      'catalog.csv',
+      { type: 'text/csv' },
+    )
+
+    const fileInput = screen.getByLabelText('Upload CSV or XLSX file')
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    await screen.findAllByText('Green Tea')
+    expect(screen.getByText('Large Cup')).toBeInTheDocument()
+    expect(screen.getByText('Medium Cup')).toBeInTheDocument()
+    expect(screen.getAllByText(/SKU must be unique inside the import file/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Barcode must be unique inside the import file/).length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'Import validated rows' })).toBeDisabled()
   })
 
   it('blocks invalid rows and shows preview errors before submit', async () => {

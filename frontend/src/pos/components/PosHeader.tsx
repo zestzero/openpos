@@ -1,4 +1,6 @@
-import { Bell } from 'lucide-react'
+import { Bell, LogOut } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
 import type { AuthUser } from '@/lib/auth'
 
 interface PosHeaderProps {
@@ -7,6 +9,7 @@ interface PosHeaderProps {
 }
 
 export function PosHeader({ user, online }: PosHeaderProps) {
+  const { logout } = useAuth()
   const avatarLabel = (user?.name || user?.email || 'OpenPOS').slice(0, 1).toUpperCase()
 
   return (
@@ -27,15 +30,30 @@ export function PosHeader({ user, online }: PosHeaderProps) {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.98]"
-          aria-label="Notifications"
-          onClick={() => undefined}
-          title="Notifications"
-        >
-          <Bell className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.98]"
+            aria-label="Notifications"
+            onClick={() => undefined}
+            title="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+          </button>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 rounded-full"
+            onClick={logout}
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign out</span>
+          </Button>
+        </div>
       </div>
     </header>
   )

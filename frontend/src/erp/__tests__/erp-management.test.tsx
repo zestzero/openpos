@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import { CategoryDrawer } from '../categories/CategoryDrawer'
 import { CategoryTable } from '../tables/CategoryTable'
@@ -15,6 +15,32 @@ function makeCategory(id: string, name: string) {
   }
 }
 
+function makeProductRecord() {
+  return {
+    product: {
+      id: 'prod-1',
+      name: 'Jasmine Tea',
+      description: 'Hot tea',
+      category_id: 'cat-1',
+      image_url: 'https://example.com/tea.png',
+      is_active: true,
+    },
+    category: makeCategory('cat-1', 'Tea'),
+    variants: [
+      {
+        id: 'var-1',
+        product_id: 'prod-1',
+        sku: 'TEA-001',
+        barcode: '1234567890123',
+        name: 'Large',
+        price: 12900,
+        cost: 8500,
+        is_active: true,
+      },
+    ],
+  }
+}
+
 describe('ERP catalog management', () => {
   it('renders product and category empty states instead of placeholders', () => {
     render(
@@ -26,6 +52,7 @@ describe('ERP catalog management', () => {
           onEditProduct={() => undefined}
           onArchiveProduct={() => undefined}
           onArchiveVariant={() => undefined}
+          onRestockVariant={() => undefined}
           onReorderVariants={() => undefined}
         />
         <CategoryTable
@@ -61,6 +88,42 @@ describe('ERP catalog management', () => {
     expect(screen.getByRole('button', { name: 'Add variant' })).toBeInTheDocument()
   })
 
+  it('saves edited product drawer values with nested variants intact', () => {
+    const onSave = vi.fn()
+
+    render(
+      <ProductDrawer
+        open
+        product={makeProductRecord() as any}
+        categories={[
+          makeCategory('cat-1', 'Tea'),
+          makeCategory('cat-2', 'Coffee'),
+        ]}
+        onOpenChange={() => undefined}
+        onSave={onSave}
+      />,
+    )
+
+    fireEvent.change(screen.getByLabelText('Product name'), { target: { value: 'Jasmine Tea Refill' } })
+    fireEvent.change(screen.getByLabelText('Barcode'), { target: { value: '9876543210987' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save product' }))
+
+    expect(onSave).toHaveBeenCalledTimes(1)
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Jasmine Tea Refill',
+        variants: [
+          expect.objectContaining({
+            sku: 'TEA-001',
+            barcode: '9876543210987',
+            price: 129,
+            cost: 85,
+          }),
+        ],
+      }),
+    )
+  })
+
   it('renders the category drawer with parent category controls', () => {
     render(
         <CategoryDrawer
@@ -81,44 +144,54 @@ describe('ERP catalog management', () => {
 
   it('formats money values in THB inside the product table', () => {
     render(
-        <ProductTable
-          categories={[
+      <ProductTable
+        categories={[
           makeCategory('cat-1', 'Tea'),
-          ]}
-        products={[
-          {
-            product: {
-              id: 'prod-1',
-              name: 'Jasmine Tea',
-              description: 'Hot tea',
-              category_id: 'cat-1',
-              image_url: 'https://example.com/tea.png',
-              is_active: true,
-            },
-            category: makeCategory('cat-1', 'Tea'),
-            variants: [
-              {
-                id: 'var-1',
-                product_id: 'prod-1',
-                sku: 'TEA-001',
-                barcode: '1234567890123',
-                name: 'Large',
-                price: 12900,
-                cost: 8500,
-                is_active: true,
-              },
-            ],
-          },
         ]}
+        products={[makeProductRecord() as any]}
         onCreateProduct={() => undefined}
         onEditProduct={() => undefined}
         onArchiveProduct={() => undefined}
         onArchiveVariant={() => undefined}
+        onRestockVariant={() => undefined}
         onReorderVariants={() => undefined}
       />,
     )
 
     expect(screen.getByText('฿129.00 – ฿129.00')).toBeInTheDocument()
     expect(screen.getByText('Tea')).toBeInTheDocument()
+  })
+
+  it('wires the product table edit, archive, variant archive, and reorder actions', () => {
+    const onEditProduct = vi.fn()
+    const onArchiveProduct = vi.fn()
+    const onArchiveVariant = vi.fn()
+    const onRestockVariant = vi.fn()
+    const onReorderVariants = vi.fn()
+
+    render(
+      <ProductTable
+        categories={[makeCategory('cat-1', 'Tea')]}
+        products={[makeProductRecord() as any]}
+        onCreateProduct={() => undefined}
+        onEditProduct={onEditProduct}
+        onArchiveProduct={onArchiveProduct}
+        onArchiveVariant={onArchiveVariant}
+        onRestockVariant={onRestockVariant}
+        onReorderVariants={onReorderVariants}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restock' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Archive variant' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Reorder variants' }))
+
+    expect(onEditProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
+    expect(onArchiveProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
+    expect(onRestockVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
+    expect(onArchiveVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
+    expect(onReorderVariants).toHaveBeenCalledWith('prod-1', ['var-1'])
   })
 })

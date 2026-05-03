@@ -11,6 +11,7 @@ import { buildPromptPayQrDataUrl } from '@/lib/promptpay'
 import { printReceipt } from '@/lib/receipt'
 import { useCart } from '@/pos/hooks/useCart'
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
+import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
 import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 import { CartItemRow } from './CartItemRow'
 import { SyncStatus } from './SyncStatus'
@@ -35,6 +36,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   const { isOnline } = useNetworkStatus()
   const { items, itemCount, total, updateQuantity, removeItem, clearCart, isEmpty } = useCart()
   const { session, startReview, updateSession, clearSession } = usePosCheckoutSession()
+  const { rememberLatestReceipt } = useLatestReceipt()
 
   const [step, setStep] = useState<CheckoutStep>(() => (session?.stage === 'building' ? 'cart' : session?.stage ?? 'cart'))
   const [discountInput, setDiscountInput] = useState(satangToCurrencyInput(session?.discountAmount ?? 0))
@@ -140,6 +142,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
         tendered_amount: paymentMethod === 'promptpay' ? grandTotal : tenderedAmount,
       })
 
+      rememberLatestReceipt(created.data.id)
       clearCart()
       clearSession()
       setStep('cart')
