@@ -1,7 +1,8 @@
 import { Outlet, createRoute, redirect } from '@tanstack/react-router'
 
 import { ErpLayout } from '@/erp/layout/ErpLayout'
-import { getRedirectPath, getStoredSession } from '@/lib/auth'
+import { getStoredSession } from '@/lib/auth'
+import { canAccessRoute, getLandingPath } from '@/hooks/useRbac'
 import { Route as rootRoute } from './__root'
 
 export const Route = createRoute({
@@ -13,8 +14,8 @@ export const Route = createRoute({
       throw redirect({ to: '/login' } as any)
     }
 
-    if (session.user.role !== 'owner') {
-      throw redirect({ to: getRedirectPath(session.user.role) } as any)
+    if (!canAccessRoute(session.user.role, 'erp')) {
+      throw redirect({ to: getLandingPath(session.user.role) } as any)
     }
   },
   component: ErpRoute,

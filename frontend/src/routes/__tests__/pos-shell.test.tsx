@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  getStoredSession: vi.fn(),
   useAuth: vi.fn(),
   useCart: vi.fn(),
   useFavorites: vi.fn(),
@@ -10,6 +11,10 @@ const mocks = vi.hoisted(() => ({
   usePosCheckoutSession: vi.fn(),
   useNavigate: vi.fn(),
   useRouterState: vi.fn(),
+}))
+
+vi.mock('@/lib/auth', () => ({
+  getStoredSession: mocks.getStoredSession,
 }))
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -80,12 +85,17 @@ vi.mock('@tanstack/react-router', async () => {
   }
 })
 
+import { Route as posRoute } from '../pos'
 import { PosCatalogRoute } from '../pos.catalog'
 import { PosRoute } from '../pos'
 import { ScanPage } from '../pos.scan'
 
 describe('POS shell routes', () => {
   beforeEach(() => {
+    mocks.getStoredSession.mockReturnValue({
+      token: 'cashier-token',
+      user: { name: 'Alex Cashier', email: 'alex@example.com', role: 'cashier' },
+    })
     mocks.useAuth.mockReturnValue({
       user: { name: 'Alex Cashier', email: 'alex@example.com', role: 'cashier' },
     })
@@ -153,6 +163,27 @@ describe('POS shell routes', () => {
     fireEvent.click(screen.getByRole('button', { name: /view cart/i }))
     expect(screen.getByRole('heading', { name: 'Cart' })).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: 'Cart' })).toHaveClass('h-[80dvh]')
+  })
+
+  it('keeps the POS route open for owner and cashier roles', () => {
+    const beforeLoad = (posRoute as any).options.beforeLoad as (() => void) | undefined
+
+    expect(beforeLoad).toBeTypeOf('function')
+
+    mocks.getStoredSession.mockReturnValue(null)
+    expect(() => beforeLoad?.()).toThrow()
+
+    mocks.getStoredSession.mockReturnValue({
+      token: 'owner-token',
+      user: { id: 'owner-1', email: 'owner@example.com', role: 'owner', name: 'Owner' },
+    })
+    expect(() => beforeLoad?.()).not.toThrow()
+
+    mocks.getStoredSession.mockReturnValue({
+      token: 'cashier-token',
+      user: { id: 'cashier-1', email: 'cashier@example.com', role: 'cashier', name: 'Cashier' },
+    })
+    expect(() => beforeLoad?.()).not.toThrow()
   })
 
   it('shows the dedicated catalog browsing shell', () => {

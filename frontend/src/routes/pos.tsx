@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { useState } from "react";
-import { createRoute } from "@tanstack/react-router";
+import { createRoute, redirect } from "@tanstack/react-router";
 
-import { getStoredSession, hasRole } from "@/lib/auth";
+import { getStoredSession } from "@/lib/auth";
+import { canAccessRoute, getLandingPath } from '@/hooks/useRbac'
 import { useCart } from "@/pos/hooks/useCart";
 import { formatCurrency } from "@/lib/formatCurrency";
 import { CatalogCategoryNav } from "@/pos/components/CatalogCategoryNav";
@@ -20,8 +21,12 @@ export const Route = createRoute({
   path: "pos",
   beforeLoad: () => {
     const session = getStoredSession();
-    if (!session) return;
-    if (!hasRole(session.user.role, ["owner", "cashier"])) return;
+    if (!session) {
+      throw redirect({ to: '/login' } as any)
+    }
+    if (!canAccessRoute(session.user.role, 'pos')) {
+      throw redirect({ to: getLandingPath(session.user.role) } as any)
+    }
   },
   component: PosRoute,
 });

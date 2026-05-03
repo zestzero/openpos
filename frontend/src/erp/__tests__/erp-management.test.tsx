@@ -52,6 +52,7 @@ describe('ERP catalog management', () => {
           onEditProduct={() => undefined}
           onArchiveProduct={() => undefined}
           onArchiveVariant={() => undefined}
+          onRestockVariant={() => undefined}
           onReorderVariants={() => undefined}
         />
         <CategoryTable
@@ -152,6 +153,7 @@ describe('ERP catalog management', () => {
         onEditProduct={() => undefined}
         onArchiveProduct={() => undefined}
         onArchiveVariant={() => undefined}
+        onRestockVariant={() => undefined}
         onReorderVariants={() => undefined}
       />,
     )
@@ -164,6 +166,7 @@ describe('ERP catalog management', () => {
     const onEditProduct = vi.fn()
     const onArchiveProduct = vi.fn()
     const onArchiveVariant = vi.fn()
+    const onRestockVariant = vi.fn()
     const onReorderVariants = vi.fn()
 
     render(
@@ -174,17 +177,20 @@ describe('ERP catalog management', () => {
         onEditProduct={onEditProduct}
         onArchiveProduct={onArchiveProduct}
         onArchiveVariant={onArchiveVariant}
+        onRestockVariant={onRestockVariant}
         onReorderVariants={onReorderVariants}
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Restock' }))
     fireEvent.click(screen.getByRole('button', { name: 'Archive variant' }))
     fireEvent.click(screen.getByRole('button', { name: 'Reorder variants' }))
 
     expect(onEditProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
     expect(onArchiveProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
+    expect(onRestockVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
     expect(onArchiveVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
     expect(onReorderVariants).toHaveBeenCalledWith('prod-1', ['var-1'])
   })

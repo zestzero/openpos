@@ -11,7 +11,7 @@ import { getRedirectPath } from '@/lib/auth'
 import { useAuth } from '@/hooks/useAuth'
 import { Route as rootRoute } from './__root'
 
-type LoginMode = 'password' | 'pin'
+type LoginMode = 'password' | 'pin' | 'register'
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
@@ -19,15 +19,21 @@ export const Route = createRoute({
   component: LoginRoute,
 })
 
-function LoginRoute() {
+export function LoginRoute() {
   const router = useRouter()
   const { login } = useAuth()
   const [mode, setMode] = useState<LoginMode>('password')
   const [email, setEmail] = useState('')
   const [secret, setSecret] = useState('')
+  const [name, setName] = useState('')
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (mode === 'register') {
+        await api.registerOwner(email, secret, name)
+        return api.login(email, secret)
+      }
+
       return mode === 'password' ? api.login(email, secret) : api.loginPIN(email, secret)
     },
     onSuccess: (response: AuthResponse) => {
@@ -36,7 +42,10 @@ function LoginRoute() {
     },
   })
 
-  const buttonLabel = useMemo(() => (mode === 'password' ? 'Sign in with password' : 'Sign in with PIN'), [mode])
+  const buttonLabel = useMemo(() => {
+    if (mode === 'register') return 'Create owner account'
+    return mode === 'password' ? 'Sign in with password' : 'Sign in with PIN'
+  }, [mode])
 
   return (
     <div className="hero-wash relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-8">
@@ -49,9 +58,10 @@ function LoginRoute() {
           <CardDescription>Cashiers use PIN login; owners can use email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded-pill border border-border bg-muted p-1">
+          <div className="grid grid-cols-3 gap-2 rounded-pill border border-border bg-muted p-1">
             <TabButton active={mode === 'password'} onClick={() => setMode('password')} label="Password" />
             <TabButton active={mode === 'pin'} onClick={() => setMode('pin')} label="PIN" />
+            <TabButton active={mode === 'register'} onClick={() => setMode('register')} label="Register owner" />
           </div>
 
           <form
@@ -71,14 +81,26 @@ function LoginRoute() {
               autoComplete="email"
             />
 
+            {mode === 'register' ? (
+              <Field
+                label="Name"
+                icon={CheckCircle2}
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Owner name"
+                autoComplete="name"
+              />
+            ) : null}
+
             <Field
-              label={mode === 'password' ? 'Password' : 'PIN'}
+              label={mode === 'pin' ? 'PIN' : 'Password'}
               icon={KeyRound}
-              type={mode === 'password' ? 'password' : 'password'}
+              type="password"
               value={secret}
               onChange={(event) => setSecret(event.target.value)}
-              placeholder={mode === 'password' ? 'Enter password' : 'Enter PIN'}
-              autoComplete={mode === 'password' ? 'current-password' : 'off'}
+              placeholder={mode === 'pin' ? 'Enter PIN' : 'Enter password'}
+              autoComplete={mode === 'register' ? 'new-password' : mode === 'password' ? 'current-password' : 'off'}
               inputMode={mode === 'pin' ? 'numeric' : 'text'}
             />
 
@@ -87,7 +109,11 @@ function LoginRoute() {
             </Button>
 
             {mutation.isError ? (
-              <p className="text-sm text-destructive">Unable to sign in. Check your credentials and try again.</p>
+              <p className="text-sm text-destructive">
+                {mode === 'register'
+                  ? 'Unable to create owner account. Check your details and try again.'
+                  : 'Unable to sign in. Check your credentials and try again.'}
+              </p>
             ) : null}
           </form>
         </CardContent>

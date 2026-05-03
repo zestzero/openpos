@@ -160,6 +160,12 @@ export const api = {
       body: JSON.stringify({ email, pin }),
     })
   },
+  registerOwner(email: string, password: string, name: string) {
+    return requestJSON<{ ID: string; Email: string; Role: 'owner'; Name: string }>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    })
+  },
   getCategories() {
     return requestJSON<ApiSuccess<Category[]>>('/api/catalog/categories')
   },

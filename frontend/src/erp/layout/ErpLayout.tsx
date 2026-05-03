@@ -3,7 +3,7 @@ import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { clearSession } from '@/lib/auth'
+import { useAuth } from '@/hooks/useAuth'
 
 import { ErpNav } from '../navigation/ErpNav'
 
@@ -14,6 +14,7 @@ const tabs = [
 ] as const
 
 export function ErpLayout({ children }: { children: ReactNode }) {
+  const { logout } = useAuth()
   const pathname = typeof window !== 'undefined' && window.location.pathname !== '/' ? window.location.pathname : '/erp'
 
   return (
@@ -49,10 +50,7 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => {
-                    clearSession()
-                    window.location.assign('/login')
-                  }}
+                  onClick={logout}
                   aria-label="Log out"
                   title="Log out"
                 >

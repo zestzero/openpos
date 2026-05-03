@@ -108,7 +108,7 @@ export function hasRole(role: UserRole, expected: UserRole | UserRole[]) {
 }
 
 export function getRedirectPath(_role: UserRole) {
-  return '/pos'
+  return _role === 'owner' ? '/erp' : '/pos'
 }
 
 export function getStoredSession(): StoredSession | null {
