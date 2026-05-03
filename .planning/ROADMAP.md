@@ -186,6 +186,38 @@
 
 ---
 
+## Phase 08: Receipt Replay & Re-open Closure
+
+**Goal:** Wire persisted receipt lookup into the POS flow so receipt replay and re-open behavior use the backend receipt endpoint instead of the payment snapshot alone.
+
+**Depends on:** Phase 03, Phase 06
+
+**Requirements:** REC-03
+
+**Status:** Planned
+
+**Gap Closure:** Closes the audit blocker where `GET /api/orders/{id}/receipt` had no frontend consumer.
+
+**Plans:** 0/1 plans drafted
+
+---
+
+## Phase 09: Offline Shell Verification Cleanup
+
+**Goal:** Turn the remaining offline retry and mobile-shell human verification items into explicit verification coverage so the gap is documented and testable.
+
+**Depends on:** Phase 05
+
+**Requirements:** None (tech debt verification only)
+
+**Status:** Planned
+
+**Gap Closure:** Tracks the remaining non-blocking audit debt for offline retry and mobile shell confirmation.
+
+**Plans:** 0/1 plans drafted
+
+---
+
 ## Coverage
 
 **v1 Requirements: 40 total**
@@ -196,9 +228,12 @@
 | 2 — POS Frontend & Offline | 13 | POS-01, POS-02, POS-03, POS-04, POS-05, POS-06, POS-07, OFF-01, OFF-02, OFF-03, OFF-04, PLAT-01, PLAT-04 |
 | 3 — Payments & Receipts | 6 | PAY-01, PAY-02, PAY-03, REC-01, REC-02, REC-03 |
 | 4 — ERP Management & Reporting | 10 | PROD-01, PROD-02, PROD-03, PROD-04, PROD-05, PROD-06, RPT-01, RPT-02, RPT-03, PLAT-05 |
+| 8 — Receipt Replay & Re-open Closure | 1 | REC-03 |
+| 9 — Offline Shell Verification Cleanup | 0 | Tech debt only |
 
 - Mapped: 40 (some requirements span backend+frontend phases)
-- All 40 v1 requirements covered
+- Complete: 39/40
+- Pending: REC-03
 - No orphaned requirements
 
 **Note:** Phase 01 creates backend APIs for product/inventory management. Phase 04 creates the ERP *UI* that consumes those APIs. The PROD-* requirements are user-facing ("Owner can...") so they're assigned to Phase 04 where the user actually performs the action. Phase 01's success criteria cover the underlying data model and API layer.
