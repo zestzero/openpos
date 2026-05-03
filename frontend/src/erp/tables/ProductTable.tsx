@@ -69,7 +69,8 @@ export function ProductTable({
             </thead>
             <tbody>
               {products.map((record) => {
-                const prices = record.variants.map((variant) => variant.price)
+                const variants = variants ?? []
+                const prices = variants.map((variant) => variant.price)
                 const minPrice = prices.length ? Math.min(...prices) : 0
                 const maxPrice = prices.length ? Math.max(...prices) : 0
 
@@ -92,8 +93,8 @@ export function ProductTable({
                         </div>
                       </td>
                       <td className="px-6 py-4">{record.category?.name ?? categoryNames.get(record.product.category_id ?? '') ?? 'Uncategorized'}</td>
-                      <td className="px-6 py-4">{record.variants.length}</td>
-                      <td className="px-6 py-4">{record.variants.length ? `${formatTHB(minPrice)} – ${formatTHB(maxPrice)}` : '—'}</td>
+                      <td className="px-6 py-4">{variants.length}</td>
+                      <td className="px-6 py-4">{variants.length ? `${formatTHB(minPrice)} – ${formatTHB(maxPrice)}` : '—'}</td>
                       <td className="px-6 py-4">{record.product.is_active ? 'Active' : 'Archived'}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
@@ -114,17 +115,17 @@ export function ProductTable({
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Nested variants</p>
-                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, record.variants.map((variant) => variant.id))} disabled={archiveBusy}>
+                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, variants.map((variant) => variant.id))} disabled={archiveBusy}>
                               Reorder variants
                             </Button>
                           </div>
 
-                          {record.variants.length === 0 ? (
+                          {variants.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No variants yet.</p>
                           ) : (
                             <div className="space-y-2">
-                              {record.variants.map((variant, index) => {
-                                const nextIds = record.variants.map((item) => item.id)
+                              {variants.map((variant, index) => {
+                                const nextIds = variants.map((item) => item.id)
                                 const moveVariant = (from: number, to: number) => {
                                   if (to < 0 || to >= nextIds.length) {
                                     return
@@ -148,7 +149,7 @@ export function ProductTable({
                                       <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index - 1)} disabled={index === 0 || archiveBusy}>
                                         <ChevronUp className="h-4 w-4" />
                                       </Button>
-                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === record.variants.length - 1 || archiveBusy}>
+                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === variants.length - 1 || archiveBusy}>
                                         <ChevronDown className="h-4 w-4" />
                                       </Button>
                                       <Button variant="outline" size="sm" className="gap-2" onClick={() => onRestockVariant(record, variant.id)} disabled={archiveBusy || restockBusy}>
