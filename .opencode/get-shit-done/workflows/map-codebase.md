@@ -26,7 +26,7 @@ Documents are reference material for the agent when planning/executing. Always i
 Load codebase mapping context:
 
 ```bash
-INIT=$(node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" init map-codebase)
+INIT=$(node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" init map-codebase)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -305,7 +305,7 @@ Continue to commit_codebase_map.
 Commit the codebase map:
 
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "docs: map existing codebase" --files .planning/codebase/*.md
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "docs: map existing codebase" --files .planning/codebase/*.md
 ```
 
 Continue to offer_next.

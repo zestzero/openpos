@@ -18,8 +18,8 @@ Output: Milestone archived (roadmap + requirements), PROJECT.md evolved, git tag
 <execution_context>
 **Load these files NOW (before proceeding):**
 
-- @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/complete-milestone.md (main workflow)
-- @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/templates/milestone-archive.md (archive template)
+- @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/complete-milestone.md (main workflow)
+- @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/templates/milestone-archive.md (archive template)
   </execution_context>
 
 <context>

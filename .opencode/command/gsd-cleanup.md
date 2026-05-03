@@ -8,10 +8,10 @@ Use when `.planning/phases/` has accumulated directories from past milestones.
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/cleanup.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/cleanup.md
 </execution_context>
 
 <process>
-Follow the cleanup workflow at @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/cleanup.md.
+Follow the cleanup workflow at @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/cleanup.md.
 Identify completed milestones, show a dry-run summary, and archive on confirmation.
 </process>

@@ -10,9 +10,9 @@ Generate a structured SESSION_REPORT.md document capturing session outcomes, wor
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/session-report.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/session-report.md
 </execution_context>
 
 <process>
-Execute the session-report workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/session-report.md end-to-end.
+Execute the session-report workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/session-report.md end-to-end.
 </process>

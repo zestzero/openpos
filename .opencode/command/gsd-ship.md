@@ -16,7 +16,7 @@ Closes the plan → execute → verify → ship loop.
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ship.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ship.md
 </execution_context>
 
-Execute the ship workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ship.md end-to-end.
+Execute the ship workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ship.md end-to-end.

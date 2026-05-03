@@ -9,9 +9,9 @@ Display comprehensive project statistics including phase progress, plan executio
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/stats.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/stats.md
 </execution_context>
 
 <process>
-Execute the stats workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/stats.md end-to-end.
+Execute the stats workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/stats.md end-to-end.
 </process>

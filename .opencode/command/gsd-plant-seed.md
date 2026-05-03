@@ -19,9 +19,9 @@ Consumed by: /gsd-new-milestone (scans seeds and presents matches)
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plant-seed.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plant-seed.md
 </execution_context>
 
 <process>
-Execute the plant-seed workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plant-seed.md end-to-end.
+Execute the plant-seed workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plant-seed.md end-to-end.
 </process>

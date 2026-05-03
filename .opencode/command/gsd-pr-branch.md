@@ -16,9 +16,9 @@ changes that are irrelevant to code review.
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/pr-branch.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/pr-branch.md
 </execution_context>
 
 <process>
-Execute the pr-branch workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/pr-branch.md end-to-end.
+Execute the pr-branch workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/pr-branch.md end-to-end.
 </process>

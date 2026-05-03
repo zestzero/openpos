@@ -18,8 +18,8 @@ Routes to the profile-user workflow which orchestrates the full flow: consent ga
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/profile-user.md
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/profile-user.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>

@@ -19,8 +19,8 @@ Flow: Validate → Research UI → Verify UI-SPEC → Done
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ui-phase.md
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ui-phase.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -28,6 +28,6 @@ Phase number: $ARGUMENTS — optional, auto-detects next unplanned phase if omit
 </context>
 
 <process>
-Execute @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ui-phase.md end-to-end.
+Execute @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/ui-phase.md end-to-end.
 Preserve all workflow gates.
 </process>

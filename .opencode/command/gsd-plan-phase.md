@@ -21,8 +21,8 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plan-phase.md
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plan-phase.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/ui-brand.md
 </execution_context>
 
 <context>
@@ -39,6 +39,6 @@ Normalize phase input in step 2 before any directory lookups.
 </context>
 
 <process>
-Execute the plan-phase workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plan-phase.md end-to-end.
+Execute the plan-phase workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/plan-phase.md end-to-end.
 Preserve all workflow gates (validation, research, planning, verification loop, routing).
 </process>

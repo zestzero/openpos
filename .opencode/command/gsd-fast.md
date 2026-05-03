@@ -21,9 +21,9 @@ you could describe in one sentence and execute in under 2 minutes.
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/fast.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/fast.md
 </execution_context>
 
 <process>
-Execute the fast workflow from @/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/fast.md end-to-end.
+Execute the fast workflow from @/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/fast.md end-to-end.
 </process>

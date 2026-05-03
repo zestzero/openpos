@@ -6,7 +6,7 @@ Execute a phase prompt (PLAN.md) and create the outcome summary (SUMMARY.md).
 Read STATE.md before any operation to load project context.
 Read config.json for planning behavior settings.
 
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/git-integration.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/git-integration.md
 </required_reading>
 
 <process>
@@ -15,7 +15,7 @@ Read config.json for planning behavior settings.
 Load execution context (paths only to minimize orchestrator context):
 
 ```bash
-INIT=$(node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" init execute-phase "${PHASE}")
+INIT=$(node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" init execute-phase "${PHASE}")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -125,7 +125,7 @@ This IS the execution instructions. Follow exactly. If plan references CONTEXT.m
 
 <step name="previous_phase_check">
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" phases list --type summaries --raw
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" phases list --type summaries --raw
 # Extract the second-to-last summary from the JSON result
 ```
 If previous SUMMARY has unresolved "Issues Encountered" or "Next Phase Readiness" blockers: question(header="Previous Issues", options: "Proceed anyway" | "Address first" | "Review previous").
@@ -226,7 +226,7 @@ For `type: tdd` plans — RED-GREEN-REFACTOR:
 
 Errors: RED doesn't fail → investigate test/existing feature. GREEN doesn't pass → debug, iterate. REFACTOR breaks → undo.
 
-See `/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/tdd.md` for structure.
+See `/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/tdd.md` for structure.
 </tdd_plan_execution>
 
 <precommit_failure_handling>
@@ -280,7 +280,7 @@ git add src/types/user.ts
 **Sub-repos mode:** If `sub_repos` is configured (non-empty array from init context), use `commit-to-subrepo` instead of standard git commit. This routes files to their correct sub-repo based on path prefix.
 
 ```bash
-node /Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs commit-to-subrepo "{type}({phase}-{plan}): {description}" --files file1 file2 ...
+node /Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs commit-to-subrepo "{type}({phase}-{plan}): {description}" --files file1 file2 ...
 ```
 
 The command groups files by sub-repo prefix and commits atomically to each. Returns JSON: `{ committed: true, repos: { "backend": { hash: "abc", files: [...] }, ... } }`.
@@ -320,7 +320,7 @@ Display: `CHECKPOINT: [Type]` box → Progress {X}/{Y} → Task name → type-sp
 
 After response: verify if specified. Pass → continue. Fail → inform, wait. WAIT for user — do NOT hallucinate completion.
 
-See /Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/references/checkpoints.md for details.
+See /Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/references/checkpoints.md for details.
 </step>
 
 <step name="checkpoint_return_for_orchestrator">
@@ -373,11 +373,11 @@ fi
 grep -A 50 "^user_setup:" .planning/phases/XX-name/{phase}-{plan}-PLAN.md | head -50
 ```
 
-If user_setup exists: create `{phase}-USER-SETUP.md` using template `/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/templates/user-setup.md`. Per service: env vars table, account setup checklist, dashboard config, local dev notes, verification commands. Status "Incomplete". Set `USER_SETUP_CREATED=true`. If empty/missing: skip.
+If user_setup exists: create `{phase}-USER-SETUP.md` using template `/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/templates/user-setup.md`. Per service: env vars table, account setup checklist, dashboard config, local dev notes, verification commands. Status "Incomplete". Set `USER_SETUP_CREATED=true`. If empty/missing: skip.
 </step>
 
 <step name="create_summary">
-Create `{phase}-{plan}-SUMMARY.md` at `.planning/phases/XX-name/`. Use `/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/templates/summary.md`.
+Create `{phase}-{plan}-SUMMARY.md` at `.planning/phases/XX-name/`. Use `/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/templates/summary.md`.
 
 **Frontmatter:** phase, plan, subsystem, tags | requires/provides/affects | tech-stack.added/patterns | key-files.created/modified | key-decisions | requirements-completed (**MUST** copy `requirements` array from PLAN.md frontmatter verbatim) | duration ($DURATION), completed ($PLAN_END_TIME date).
 
@@ -395,13 +395,13 @@ Update STATE.md using gsd-tools:
 
 ```bash
 # Advance plan counter (handles last-plan edge case)
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state advance-plan
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state advance-plan
 
 # Recalculate progress bar from disk state
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state update-progress
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state update-progress
 
 # Record execution metrics
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state record-metric \
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state record-metric \
   --phase "${PHASE}" --plan "${PLAN}" --duration "${DURATION}" \
   --tasks "${TASK_COUNT}" --files "${FILE_COUNT}"
 ```
@@ -413,11 +413,11 @@ From SUMMARY: Extract decisions and add to STATE.md:
 ```bash
 # Add each decision from SUMMARY key-decisions
 # Prefer file inputs for shell-safe text (preserves `$`, `*`, etc. exactly)
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state add-decision \
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state add-decision \
   --phase "${PHASE}" --summary-file "${DECISION_TEXT_FILE}" --rationale-file "${RATIONALE_FILE}"
 
 # Add blockers if any found
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state add-blocker --text-file "${BLOCKER_TEXT_FILE}"
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state add-blocker --text-file "${BLOCKER_TEXT_FILE}"
 ```
 </step>
 
@@ -425,7 +425,7 @@ node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-
 Update session info using gsd-tools:
 
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state record-session \
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" state record-session \
   --stopped-at "Completed ${PHASE}-${PLAN}-PLAN.md" \
   --resume-file "None"
 ```
@@ -439,7 +439,7 @@ If SUMMARY "Issues Encountered" ≠ "None": yolo → log and continue. Interacti
 
 <step name="update_roadmap">
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" roadmap update-plan-progress "${PHASE}"
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" roadmap update-plan-progress "${PHASE}"
 ```
 Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct count and status (`In Progress` or `Complete` with date).
 </step>
@@ -448,7 +448,7 @@ Counts PLAN vs SUMMARY files on disk. Updates progress table row with correct co
 Mark completed requirements from the PLAN.md frontmatter `requirements:` field:
 
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" requirements mark-complete ${REQ_IDS}
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" requirements mark-complete ${REQ_IDS}
 ```
 
 Extract requirement IDs from the plan's frontmatter (e.g., `requirements: [AUTH-01, AUTH-02]`). If no requirements field, skip.
@@ -458,7 +458,7 @@ Extract requirement IDs from the plan's frontmatter (e.g., `requirements: [AUTH-
 Task code already committed per-task. Commit plan metadata:
 
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "docs({phase}-{plan}): complete [plan-name] plan" --files .planning/phases/XX-name/{phase}-{plan}-SUMMARY.md .planning/STATE.md .planning/ROADMAP.md .planning/REQUIREMENTS.md
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "docs({phase}-{plan}): complete [plan-name] plan" --files .planning/phases/XX-name/{phase}-{plan}-SUMMARY.md .planning/STATE.md .planning/ROADMAP.md .planning/REQUIREMENTS.md
 ```
 </step>
 
@@ -473,7 +473,7 @@ git diff --name-only ${FIRST_TASK}^..HEAD 2>/dev/null
 Update only structural changes: new src/ dir → STRUCTURE.md | deps → STACK.md | file pattern → CONVENTIONS.md | API client → INTEGRATIONS.md | config → STACK.md | renamed → update paths. Skip code-only/bugfix/content changes.
 
 ```bash
-node "/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "" --files .planning/codebase/*.md --amend
+node "/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/bin/gsd-tools.cjs" commit "" --files .planning/codebase/*.md --amend
 ```
 </step>
 

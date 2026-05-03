@@ -28,8 +28,8 @@ Extract implementation decisions that downstream agents need — researcher and 
 </objective>
 
 <execution_context>
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/discuss-phase.md
-@/Users/kritbannachaisirisuk/Documents/work-dir/openpos/.opencode/get-shit-done/templates/context.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/workflows/discuss-phase.md
+@/Users/zestzero/Documents/work-dir/openpos/.opencode/get-shit-done/templates/context.md
 </execution_context>
 
 <context>
