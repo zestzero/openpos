@@ -198,7 +198,8 @@
 
 **Gap Closure:** Closes the audit blocker where `GET /api/orders/{id}/receipt` had no frontend consumer.
 
-**Plans:** 0/1 plans drafted
+**Plans:** 1/1 plans drafted
+- [ ] 08-01-PLAN.md — Persisted receipt replay and latest Reprint receipt action
 
 ---
 
