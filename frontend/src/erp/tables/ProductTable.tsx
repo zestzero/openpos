@@ -69,7 +69,7 @@ export function ProductTable({
             </thead>
             <tbody>
               {products.map((record) => {
-                const variants = variants ?? []
+                const variants = record.variants ?? []
                 const prices = variants.map((variant) => variant.price)
                 const minPrice = prices.length ? Math.min(...prices) : 0
                 const maxPrice = prices.length ? Math.max(...prices) : 0
