@@ -5,3 +5,4 @@
 
 # GSD workflow (machine-specific paths + state)
 .opencode/
+.planning/
