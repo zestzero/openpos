@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { act, renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +11,14 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('@/lib/api', () => ({
+  ApiError: class ApiError extends Error {
+    status: number
+
+    constructor(message: string, status = 404) {
+      super(message)
+      this.status = status
+    }
+  },
   api: {
     getReceipt: mocks.getReceipt,
   },
@@ -48,7 +57,7 @@ vi.mock('@/pos/components/CartPanel', () => ({
 }))
 
 vi.mock('@/pos/layout/PosLayout', () => ({
-  PosLayout: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  PosLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 
 import { STORAGE_KEY_LATEST_RECEIPT } from '@/lib/constants'
