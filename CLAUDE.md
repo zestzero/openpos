@@ -1,4 +1,18 @@
 <!-- code-review-graph MCP tools -->
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs live as markdown under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical triage roles map directly to the repo's local markdown status vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context repo: one root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+
 ## MCP Tools: code-review-graph
 
 **IMPORTANT: This project has a knowledge graph. ALWAYS use the
