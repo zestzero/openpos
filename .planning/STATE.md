@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Phase 08 context gathered
-last_updated: "2026-05-03T07:09:16.109Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-05-03T07:38:38.150Z"
 progress:
   total_phases: 9
-  completed_phases: 7
-  total_plans: 27
-  completed_plans: 27
+  completed_phases: 8
+  total_plans: 28
+  completed_plans: 28
 ---
 
 # STATE.md
@@ -23,10 +23,8 @@ progress:
 
 ## Current Position
 
-Phase: 07
-Plan: Complete
-
-Execution priority: ERP gap-closure is complete; v1 phase execution is finished.
+Phase: 08 (receipt-replay-reopen-closure) — EXECUTING
+Plan: 1 of 1
 
 ## Phase Overview
 
@@ -96,6 +94,9 @@ Execution priority: ERP gap-closure is complete; v1 phase execution is finished.
 - [Phase 06]: Moved migrations and database initialization into a testable bootstrap helper so the app exits on setup failures instead of half-booting.
 - [Phase 06]: Wrapped the sales store and inventory service so the running app can pass the live pool through the transactional order path.
 - [Phase 06]: Added a fake-pool regression that proves the pool-backed create-order path still dedupes by client UUID and only deducts stock once per item.
+- [Phase 08-receipt-replay-reopen-closure]: Persisted receipt replay now treats GET /api/orders/{id}/receipt as source of truth and never attempts offline replay.
+- [Phase 08-receipt-replay-reopen-closure]: The POS surface uses a lightweight inline Reprint receipt affordance instead of a recent-orders list or reopen-sale flow.
+- [Phase 08-receipt-replay-reopen-closure]: Latest receipt changes broadcast across POS components so the shell updates immediately after successful checkout.
 
 ## Research Flags
 
@@ -114,9 +115,9 @@ Execution priority: ERP gap-closure is complete; v1 phase execution is finished.
 
 ## Session Continuity
 
-Last session: 2026-05-03T07:09:16.107Z
-Stopped at: Phase 08 context gathered
-Resume file: .planning/phases/08-receipt-replay-reopen-closure/08-CONTEXT.md
+Last session: 2026-05-03T07:38:38.148Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 
 ---
 
@@ -141,3 +142,4 @@ Resume file: .planning/phases/08-receipt-replay-reopen-closure/08-CONTEXT.md
 | Phase 05-pos-frontend-offline-gap-closure P01 | 25 min | 2 tasks | 5 files |
 | Phase 05-pos-frontend-offline-gap-closure P02 | 5 min | 2 tasks | 5 files |
 | Phase 06 P01 | 30 min | 3 tasks | 5 files |
+| Phase 08-receipt-replay-reopen-closure P01 | 7 min | 3 tasks | 6 files |

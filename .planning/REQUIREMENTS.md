@@ -157,7 +157,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PAY-03 | Phase 6 | Complete |
 | REC-01 | Phase 6 | Pending |
 | REC-02 | Phase 6 | Pending |
-| REC-03 | Phase 08 | Pending |
+| REC-03 | Phase 08 | Complete |
 | OFF-01 | Phase 5 | Complete |
 | OFF-02 | Phase 5 | Complete |
 | OFF-03 | Phase 5 | Complete |
