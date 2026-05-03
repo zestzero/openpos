@@ -60,7 +60,14 @@ export function getStoredUser() {
   if (!raw) return null
 
   try {
-    return JSON.parse(raw) as AuthUser
+    const parsed = JSON.parse(raw)
+    const normalized: AuthUser = {
+      id: parsed.id ?? parsed.ID ?? '',
+      email: parsed.email ?? parsed.Email ?? '',
+      role: (parsed.role ?? parsed.Role ?? 'cashier') as UserRole,
+      name: parsed.name ?? parsed.Name ?? '',
+    }
+    return normalized
   } catch {
     return null
   }

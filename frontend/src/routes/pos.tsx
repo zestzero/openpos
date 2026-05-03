@@ -21,11 +21,11 @@ export const Route = createRoute({
   path: "pos",
   beforeLoad: () => {
     const session = getStoredSession();
-    if (!session) {
+    if (!session?.user?.role) {
       throw redirect({ to: '/login' } as any)
     }
     if (!canAccessRoute(session.user.role, 'pos')) {
-      throw redirect({ to: getLandingPath(session.user.role) } as any)
+      throw redirect({ to: getLandingPath(session.user.role) as any } as any)
     }
   },
   component: PosRoute,

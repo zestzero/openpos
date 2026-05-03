@@ -10,12 +10,12 @@ export const Route = createRoute({
   path: 'erp',
   beforeLoad: () => {
     const session = getStoredSession()
-    if (!session) {
+    if (!session?.user?.role) {
       throw redirect({ to: '/login' } as any)
     }
 
     if (!canAccessRoute(session.user.role, 'erp')) {
-      throw redirect({ to: getLandingPath(session.user.role) } as any)
+      throw redirect({ to: getLandingPath(session.user.role) as any } as any)
     }
   },
   component: ErpRoute,

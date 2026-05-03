@@ -5,16 +5,20 @@ import type { UserRole } from '@/lib/auth'
 
 export type AppRoute = 'erp' | 'pos'
 
-const routeAccess: Record<UserRole, AppRoute[]> = {
+const routeAccess: Partial<Record<UserRole, AppRoute[]>> = {
   owner: ['erp', 'pos'],
   cashier: ['pos'],
 }
 
-export function canAccessRoute(role: UserRole, route: AppRoute) {
-  return routeAccess[role].includes(route)
+export function canAccessRoute(role: UserRole | null | undefined, route: AppRoute): boolean {
+  if (!role) return false
+  const allowedRoutes = routeAccess[role]
+  if (!allowedRoutes) return false
+  return allowedRoutes.includes(route)
 }
 
-export function getLandingPath(role: UserRole) {
+export function getLandingPath(role: UserRole | null | undefined): string {
+  if (!role) return '/login'
   return role === 'owner' ? '/erp' : '/pos'
 }
 
