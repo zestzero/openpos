@@ -162,7 +162,7 @@ async function fetchCategories() {
 }
 
 async function fetchProducts() {
-  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/products')
+  const response = await requestJSON<ApiSuccess<CatalogProductRecord[]>>('/api/catalog/products?is_active=true')
   return response.data
 }
 
