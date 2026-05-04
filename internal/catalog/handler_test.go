@@ -96,10 +96,12 @@ func TestListProductsReturnsNormalizedJSON(t *testing.T) {
 				ID:   mustParseUUID(t, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
 				Name: "Beverages",
 			},
-			Variants: []sqlc.Variant{{
-				ID:   mustParseUUID(t, "33333333-3333-3333-3333-333333333333"),
-				Name: "Thai Tea",
-				Sku:  "TEA-001",
+			Variants: []VariantWithStock{{
+				Variant: sqlc.Variant{
+					ID:   mustParseUUID(t, "33333333-3333-3333-3333-333333333333"),
+					Name: "Thai Tea",
+					Sku:  "TEA-001",
+				},
 			}},
 		}},
 	}

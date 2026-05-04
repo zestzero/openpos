@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErpLayout } from '../layout/ErpLayout'
 import { ErpNav } from '../navigation/ErpNav'
 import { Route as erpRoute } from '@/routes/erp'
+import { Route as erpInventoryRoute } from '@/routes/erp.inventory'
 import { Route as erpProductsRoute } from '@/routes/erp.products'
 
 type TestRoute = {
@@ -50,6 +51,7 @@ describe('ERP shell', () => {
     expect(screen.getByText('OpenPOS ERP')).toBeInTheDocument()
     expect(screen.getByRole('tablist', { name: 'ERP workspace tabs' })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
+    expect(screen.getByRole('tab', { name: 'Inventory' })).toHaveAttribute('href', '/erp/inventory')
     expect(screen.getByText('Outlet content')).toBeInTheDocument()
   })
 
@@ -59,6 +61,7 @@ describe('ERP shell', () => {
     expect(screen.getByText('Owner access only')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/erp')
     expect(screen.getByRole('link', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
+    expect(screen.getByRole('link', { name: 'Inventory' })).toHaveAttribute('href', '/erp/inventory')
     expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/erp/reports')
   })
 
@@ -67,6 +70,13 @@ describe('ERP shell', () => {
 
     expect(productsRoute.options.path).toBe('products')
     expect(productsRoute.options.getParentRoute?.()).toBe(erpRoute)
+  })
+
+  it('includes the dedicated inventory route in the ERP route tree', () => {
+    const inventoryRoute = erpInventoryRoute as TestRoute
+
+    expect(inventoryRoute.options.path).toBe('inventory')
+    expect(inventoryRoute.options.getParentRoute?.()).toBe(erpRoute)
   })
 
   it('preserves the owner gate and redirects non-owners', () => {
