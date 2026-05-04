@@ -27,6 +27,9 @@ WORKDIR /app
 # Copy the binary from builder
 COPY --from=builder /openpos .
 
+# Copy migration files used at startup.
+COPY db/migrations ./db/migrations
+
 # Create non-root user
 RUN adduser -D -g '' appuser
 USER appuser
