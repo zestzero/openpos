@@ -38,6 +38,7 @@ export function InventoryPage() {
   const stockQuery = useInventoryStockLevelQuery(selectedVariantId)
   const ledgerQuery = useInventoryLedgerQuery(selectedVariantId)
   const adjustStockMutation = useAdjustStockMutation()
+  const currentStockLevel = selectedVariant?.stockLevel ?? stockQuery.data?.stock_level
 
   useEffect(() => {
     if (variants.length === 0) {
@@ -160,7 +161,7 @@ export function InventoryPage() {
                     <p className="text-foreground">{selectedVariant.name}</p>
                     <p>{selectedVariant.productName}</p>
                     <p>{selectedVariant.sku}</p>
-                    <p>Current stock: {stockQuery.data?.stock_level ?? selectedVariant.stockLevel ?? '—'}</p>
+                    <p>Current stock: {currentStockLevel ?? '—'}</p>
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">Choose a variant to view its ledger and adjust stock.</p>

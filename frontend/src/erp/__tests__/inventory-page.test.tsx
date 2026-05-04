@@ -31,7 +31,7 @@ const productRecords = [
 describe('InventoryPage', () => {
   beforeEach(() => {
     useProductsQuery.mockReturnValue({ data: productRecords, isLoading: false, isError: false })
-    useInventoryStockLevelQuery.mockImplementation((variantId: string | null) => ({ data: variantId === 'var-1' ? { stock_level: 12 } : { stock_level: 0 } }))
+    useInventoryStockLevelQuery.mockImplementation((variantId: string | null) => ({ data: variantId === 'var-1' ? { stock_level: 0 } : { stock_level: 0 } }))
     useInventoryLedgerQuery.mockImplementation((variantId: string | null) => ({
       data: variantId === 'var-1'
         ? [{ id: 'entry-1', variant_id: 'var-1', quantity_change: 5, reason: 'RESTOCK', reference_id: null, created_at: '2026-01-01T10:00:00Z', created_by: null }]
@@ -60,6 +60,12 @@ describe('InventoryPage', () => {
     await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
     expect(screen.getByText('RESTOCK')).toBeInTheDocument()
     expect(screen.getByLabelText('Quantity')).toBeInTheDocument()
+  })
+
+  it('prefers the product cache stock over a stale selected stock query', async () => {
+    render(<InventoryPage />)
+
+    await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
   })
 
   it('keeps filter-empty distinct from true empty', async () => {
