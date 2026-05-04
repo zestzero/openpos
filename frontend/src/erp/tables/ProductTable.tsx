@@ -41,7 +41,7 @@ export function ProductTable({
           <p className="text-sm text-muted-foreground">Parent products with nested variants, THB pricing, and archive actions.</p>
         </div>
 
-        <Button className="gap-2" onClick={onCreateProduct}>
+        <Button className="gap-2 transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]" onClick={onCreateProduct}>
           <Plus className="h-4 w-4" />
           Create product
         </Button>
@@ -61,7 +61,7 @@ export function ProductTable({
               <tr>
                 <th className="px-6 py-3">Product</th>
                 <th className="px-6 py-3">Category</th>
-                <th className="px-6 py-3">Variants</th>
+                <th className="px-6 py-3">Variants / Stock</th>
                 <th className="px-6 py-3">Price range</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3 text-right">Actions</th>
@@ -73,10 +73,11 @@ export function ProductTable({
                 const prices = variants.map((variant) => variant.price)
                 const minPrice = prices.length ? Math.min(...prices) : 0
                 const maxPrice = prices.length ? Math.max(...prices) : 0
+                const totalStock = variants.reduce((sum, v) => sum + ((v as any).stockLevel ?? 0), 0)
 
                 return (
                   <Fragment key={record.product.id}>
-                    <tr className="border-t border-border/70 align-top">
+                    <tr className="border-t border-border/70 align-top transition-colors duration-150 hover:bg-muted/30">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {record.product.image_url ? (
@@ -93,7 +94,18 @@ export function ProductTable({
                         </div>
                       </td>
                       <td className="px-6 py-4">{record.category?.name ?? categoryNames.get(record.product.category_id ?? '') ?? 'Uncategorized'}</td>
-                      <td className="px-6 py-4">{variants.length}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium">{variants.length} variant{variants.length !== 1 ? 's' : ''}</span>
+                          {totalStock > 0 ? (
+                            <span className={`text-xs font-medium ${totalStock < 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                              {totalStock} in stock
+                            </span>
+                          ) : (
+                            <span className="text-xs text-destructive">Out of stock</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4">{variants.length ? `${formatTHB(minPrice)} – ${formatTHB(maxPrice)}` : '—'}</td>
                       <td className="px-6 py-4">{record.product.is_active ? 'Active' : 'Archived'}</td>
                       <td className="px-6 py-4">
@@ -137,11 +149,19 @@ export function ProductTable({
                                 }
 
                                 return (
-                                  <div key={variant.id} className="flex flex-wrap items-center gap-3 rounded-card border border-border bg-background px-4 py-3">
+<div key={variant.id} 
+                                      className="animate-fade-in-up flex flex-wrap items-center gap-3 rounded-card border border-border bg-background px-4 py-3 transition-all duration-200 hover:border-border/90 hover:shadow-sm"
+                                      style={{ animationDelay: `${index * 40}ms` }}
+                                    >
                                     <div className="min-w-0 flex-1">
                                       <p className="font-medium">{variant.name}</p>
                                       <p className="text-xs text-muted-foreground">
                                         SKU {variant.sku} · {variant.barcode ?? 'No barcode'} · {formatTHB(variant.price)}
+                                        {(variant as any).stockLevel !== undefined && (
+                                          <span className={`ml-2 font-medium ${(variant as any).stockLevel === 0 ? 'text-destructive' : (variant as any).stockLevel < 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                            · Stock: {(variant as any).stockLevel}
+                                          </span>
+                                        )}
                                       </p>
                                     </div>
 

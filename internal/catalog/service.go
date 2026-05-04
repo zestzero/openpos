@@ -265,7 +265,24 @@ type CreateVariantInput struct {
 type ProductWithVariants struct {
 	Product  sqlc.Product   `json:"product"`
 	Category *sqlc.Category `json:"category,omitempty"`
-	Variants []sqlc.Variant `json:"variants"`
+	Variants []VariantWithStock `json:"variants"`
+}
+
+type VariantWithStock struct {
+	sqlc.Variant
+	StockLevel *int64 `json:"stockLevel,omitempty"`
+}
+
+func variantsToWithStock(variants []sqlc.Variant, stockLevels map[string]int64) []VariantWithStock {
+	result := make([]VariantWithStock, 0, len(variants))
+	for _, v := range variants {
+		stockLevel := stockLevels[v.ID.String()]
+		result = append(result, VariantWithStock{
+			Variant:    v,
+			StockLevel: &stockLevel,
+		})
+	}
+	return result
 }
 
 func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (ProductWithVariants, error) {
@@ -389,7 +406,7 @@ func (s *Service) CreateProduct(ctx context.Context, input CreateProductInput) (
 	return ProductWithVariants{
 		Product:  product,
 		Category: category,
-		Variants: variants,
+		Variants: variantsToWithStock(variants, nil),
 	}, nil
 }
 
@@ -442,7 +459,7 @@ func (s *Service) GetProduct(ctx context.Context, id string) (ProductWithVariant
 	return ProductWithVariants{
 		Product:  product,
 		Category: category,
-		Variants: variants,
+		Variants: variantsToWithStock(variants, nil),
 	}, nil
 }
 
@@ -472,12 +489,42 @@ func (s *Service) ListProducts(ctx context.Context, input ListProductsInput) ([]
 		return nil, fmt.Errorf("listing products: %w", err)
 	}
 
-	result := make([]ProductWithVariants, 0, len(products))
+	allVariantIDs := []pgtype.UUID{}
+	productVariants := make(map[string][]sqlc.Variant)
 	for _, p := range products {
 		variants, err := s.db.ListVariantsByProductID(ctx, p.ID)
 		if err != nil {
 			return nil, fmt.Errorf("getting variants for product %s: %w", p.ID, err)
 		}
+		productVariants[p.ID.String()] = variants
+		for _, v := range variants {
+			allVariantIDs = append(allVariantIDs, v.ID)
+		}
+	}
+
+	stockLevels := make(map[string]int64)
+	if len(allVariantIDs) > 0 {
+		stockRows, err := s.db.GetStockLevelByVariants(ctx, allVariantIDs)
+		if err != nil {
+			return nil, fmt.Errorf("getting stock levels: %w", err)
+		}
+		for _, row := range stockRows {
+			var stockLevel int64
+			switch v := row.StockLevel.(type) {
+			case int64:
+				stockLevel = v
+			case int32:
+				stockLevel = int64(v)
+			case float64:
+				stockLevel = int64(v)
+			}
+			stockLevels[row.VariantID.String()] = stockLevel
+		}
+	}
+
+	result := make([]ProductWithVariants, 0, len(products))
+	for _, p := range products {
+		variants := productVariants[p.ID.String()]
 
 		var category *sqlc.Category
 		if p.CategoryID.Valid {
@@ -495,10 +542,19 @@ func (s *Service) ListProducts(ctx context.Context, input ListProductsInput) ([]
 			}
 		}
 
+		variantsWithStock := make([]VariantWithStock, 0, len(variants))
+		for _, v := range variants {
+			stockLevel := stockLevels[v.ID.String()]
+			variantsWithStock = append(variantsWithStock, VariantWithStock{
+				Variant:    v,
+				StockLevel: &stockLevel,
+			})
+		}
+
 		result = append(result, ProductWithVariants{
 			Product:  p,
 			Category: category,
-			Variants: variants,
+			Variants: variantsWithStock,
 		})
 	}
 
@@ -572,7 +628,7 @@ func (s *Service) UpdateProduct(ctx context.Context, id string, input CreateProd
 	return ProductWithVariants{
 		Product:  product,
 		Category: category,
-		Variants: variants,
+		Variants: variantsToWithStock(variants, nil),
 	}, nil
 }
 

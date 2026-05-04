@@ -1,34 +1,37 @@
 import type { LucideIcon } from 'lucide-react'
 import { BarChart3, Boxes, LayoutDashboard, Settings2, ShoppingCart, Table2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 type NavItem = {
   label: string
   icon: LucideIcon
-  active?: boolean
+  to: string | null
 }
 
 const navGroups: Array<{ label: string; items: NavItem[] }> = [
   {
     label: 'Workspace',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, active: true },
-      { label: 'Products', icon: Boxes },
-      { label: 'Inventory', icon: Table2 },
+      { label: 'Dashboard', icon: LayoutDashboard, to: '/erp' },
+      { label: 'Products', icon: Boxes, to: '/erp/products' },
+      { label: 'Inventory', icon: Table2, to: null },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { label: 'Sales handoff', icon: ShoppingCart },
-      { label: 'Reports', icon: BarChart3 },
-      { label: 'Settings', icon: Settings2 },
+      { label: 'Sales handoff', icon: ShoppingCart, to: null },
+      { label: 'Reports', icon: BarChart3, to: '/erp/reports' },
+      { label: 'Settings', icon: Settings2, to: null },
     ],
   },
 ]
 
 export function ErpNav() {
+  const pathname = typeof window !== 'undefined' && window.location.pathname !== '/' ? window.location.pathname : '/erp'
+
   return (
     <aside className="flex w-72 shrink-0 flex-col border-r border-border bg-secondary/40 px-4 py-5">
       <div className="flex items-center gap-3 px-2 pb-6">
@@ -48,13 +51,24 @@ export function ErpNav() {
             <nav className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon
+                const isActive = item.to === pathname
+                const className = 'h-10 w-full justify-start gap-3 rounded-card px-3'
 
-                return (
+                return item.to ? (
+                  <a
+                    key={item.label}
+                    href={item.to}
+                    className={cn(buttonVariants({ variant: isActive ? 'secondary' : 'ghost' }), className)}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </a>
+                ) : (
                   <Button
                     key={item.label}
                     type="button"
-                    variant={item.active ? 'secondary' : 'ghost'}
-                    className="h-10 w-full justify-start gap-3 rounded-card px-3"
+                    variant="ghost"
+                    className={className}
                   >
                     <Icon className="h-4 w-4" />
                     {item.label}

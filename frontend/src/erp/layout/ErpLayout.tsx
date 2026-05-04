@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { ErpNav } from '../navigation/ErpNav'
 
 const tabs = [
-  { label: 'Products', to: '/erp' },
+  { label: 'Products', to: '/erp/products' },
   { label: 'Inventory', to: null },
   { label: 'Reporting', to: '/erp/reports' },
 ] as const

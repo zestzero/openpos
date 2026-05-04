@@ -4,6 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErpLayout } from '../layout/ErpLayout'
 import { ErpNav } from '../navigation/ErpNav'
 import { Route as erpRoute } from '@/routes/erp'
+import { Route as erpProductsRoute } from '@/routes/erp.products'
+
+type TestRoute = {
+  options: {
+    path?: string
+    getParentRoute?: () => unknown
+    beforeLoad?: () => void
+  }
+}
 
 const getStoredSession = vi.hoisted(() => vi.fn())
 const getLandingPath = vi.hoisted(() => vi.fn())
@@ -40,7 +49,7 @@ describe('ERP shell', () => {
 
     expect(screen.getByText('OpenPOS ERP')).toBeInTheDocument()
     expect(screen.getByRole('tablist', { name: 'ERP workspace tabs' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Products' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByRole('tab', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
     expect(screen.getByText('Outlet content')).toBeInTheDocument()
   })
 
@@ -48,12 +57,20 @@ describe('ERP shell', () => {
     render(<ErpNav />)
 
     expect(screen.getByText('Owner access only')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Reports' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/erp')
+    expect(screen.getByRole('link', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
+    expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/erp/reports')
+  })
+
+  it('includes the dedicated products route in the ERP route tree', () => {
+    const productsRoute = erpProductsRoute as TestRoute
+
+    expect(productsRoute.options.path).toBe('products')
+    expect(productsRoute.options.getParentRoute?.()).toBe(erpRoute)
   })
 
   it('preserves the owner gate and redirects non-owners', () => {
-    const beforeLoad = (erpRoute as any).options.beforeLoad as (() => void) | undefined
+    const beforeLoad = (erpRoute as TestRoute).options.beforeLoad
 
     expect(beforeLoad).toBeTypeOf('function')
 
