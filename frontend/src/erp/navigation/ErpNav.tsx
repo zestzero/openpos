@@ -16,7 +16,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/erp' },
       { label: 'Products', icon: Boxes, to: '/erp/products' },
-      { label: 'Inventory', icon: Table2, to: null },
+      { label: 'Inventory', icon: Table2, to: '/erp/inventory' },
     ],
   },
   {
