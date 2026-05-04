@@ -20,6 +20,10 @@ function formatDate(value: string) {
 export function InventoryPage() {
   const { data: products = [] } = useProductsQuery()
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
+  const [variantSearch, setVariantSearch] = useState('')
+  const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero'>('all')
+  const [ledgerReasonFilter, setLedgerReasonFilter] = useState<'all' | InventoryReasonCode>('all')
+  const [ledgerTimeRange, setLedgerTimeRange] = useState<'all' | '24h' | '7d' | '30d'>('all')
   const [quantity, setQuantity] = useState('1')
   const [reason, setReason] = useState<InventoryReasonCode>('ADJUSTMENT')
   const [note, setNote] = useState('')
@@ -34,6 +38,25 @@ export function InventoryPage() {
   const stockQuery = useInventoryStockLevelQuery(selectedVariantId)
   const ledgerQuery = useInventoryLedgerQuery(selectedVariantId)
   const adjustStockMutation = useAdjustStockMutation()
+
+  const filteredVariants = variants.filter((variant) => {
+    const stockLevel = variant.stockLevel ?? 0
+    const matchesSearch = !variantSearch.trim() || [variant.name, variant.productName, variant.categoryName, variant.sku].join(' ').toLowerCase().includes(variantSearch.trim().toLowerCase())
+    const matchesStock = stockFilter === 'all' || (stockFilter === 'low' && stockLevel > 0 && stockLevel < 10) || (stockFilter === 'zero' && stockLevel === 0)
+    return matchesSearch && matchesStock
+  })
+
+  const visibleLedgerEntries = (ledgerQuery.data ?? []).filter((entry) => {
+    const matchesReason = ledgerReasonFilter === 'all' || entry.reason === ledgerReasonFilter
+    const createdAt = new Date(entry.created_at).getTime()
+    const now = Date.now()
+    const rangeMs = ledgerTimeRange === '24h' ? 24 * 60 * 60 * 1000 : ledgerTimeRange === '7d' ? 7 * 24 * 60 * 60 * 1000 : ledgerTimeRange === '30d' ? 30 * 24 * 60 * 60 * 1000 : null
+    const matchesTime = rangeMs === null || (Number.isFinite(createdAt) && createdAt >= now - rangeMs)
+    return matchesReason && matchesTime
+  })
+
+  const lowStockCount = variants.filter((variant) => (variant.stockLevel ?? 0) > 0 && (variant.stockLevel ?? 0) < 10).length
+  const zeroStockCount = variants.filter((variant) => (variant.stockLevel ?? 0) === 0).length
 
   const submitAdjustment = async () => {
     if (!selectedVariantId) return
@@ -66,10 +89,22 @@ export function InventoryPage() {
         <div className="rounded-card border border-border bg-background p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Variant stock</h2>
-            <p className="text-sm text-muted-foreground">{variants.length} variants</p>
+            <p className="text-sm text-muted-foreground">{filteredVariants.length} of {variants.length} variants</p>
+          </div>
+          <div className="mb-4 grid gap-3 md:grid-cols-3">
+            <Input aria-label="Search variants" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder="Search variant, SKU, category" />
+            <select aria-label="Stock state filter" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={stockFilter} onChange={(event) => setStockFilter(event.target.value as typeof stockFilter)}>
+              <option value="all">All stock states</option>
+              <option value="low">Low stock</option>
+              <option value="zero">Zero stock</option>
+            </select>
+            <div className="flex gap-2 text-sm">
+              <Button type="button" variant="outline" onClick={() => setStockFilter('low')}>Low stock ({lowStockCount})</Button>
+              <Button type="button" variant="outline" onClick={() => setStockFilter('zero')}>Zero stock ({zeroStockCount})</Button>
+            </div>
           </div>
           <div className="space-y-3">
-            {variants.map((variant) => (
+            {filteredVariants.map((variant) => (
               <button
                 key={variant.id}
                 type="button"
@@ -86,10 +121,12 @@ export function InventoryPage() {
                     <p className={`text-lg font-semibold ${(variant.stockLevel ?? 0) === 0 ? 'text-destructive' : (variant.stockLevel ?? 0) < 10 ? 'text-amber-600' : 'text-foreground'}`}>
                       {variant.stockLevel ?? '—'}
                     </p>
+                    {(variant.stockLevel ?? 0) === 0 ? <p className="text-xs font-medium text-destructive">Zero stock</p> : (variant.stockLevel ?? 0) < 10 ? <p className="text-xs font-medium text-amber-600">Low stock</p> : null}
                   </div>
                 </div>
               </button>
             ))}
+            {filteredVariants.length === 0 ? <p className="text-sm text-muted-foreground">No variants match the current filters.</p> : null}
           </div>
         </div>
 
@@ -134,8 +171,21 @@ export function InventoryPage() {
       <section className="rounded-card border border-border bg-background p-5 shadow-sm">
         <h2 className="text-lg font-semibold">Ledger history</h2>
         {selectedVariant ? (
-          <div className="mt-4 space-y-3">
-            {(ledgerQuery.data ?? []).map((entry) => (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-3 md:grid-cols-3">
+              <select aria-label="Ledger reason filter" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={ledgerReasonFilter} onChange={(event) => setLedgerReasonFilter(event.target.value as typeof ledgerReasonFilter)}>
+                <option value="all">All reasons</option>
+                {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <select aria-label="Ledger time range" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={ledgerTimeRange} onChange={(event) => setLedgerTimeRange(event.target.value as typeof ledgerTimeRange)}>
+                <option value="all">All time</option>
+                <option value="24h">Last 24 hours</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+              </select>
+              <Button type="button" variant="outline" onClick={() => { setLedgerReasonFilter('all'); setLedgerTimeRange('all') }}>Clear ledger filters</Button>
+            </div>
+            {(visibleLedgerEntries).map((entry) => (
               <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium">{entry.reason}</p>
@@ -144,7 +194,7 @@ export function InventoryPage() {
                 <p className="text-muted-foreground">Change: {entry.quantity_change}</p>
               </div>
             ))}
-            {ledgerQuery.data?.length === 0 ? <p className="text-sm text-muted-foreground">No ledger entries yet.</p> : null}
+            {visibleLedgerEntries.length === 0 ? <p className="text-sm text-muted-foreground">No ledger entries match the current filters.</p> : null}
           </div>
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">Select a variant to view its ledger.</p>
