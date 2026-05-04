@@ -1,11 +1,11 @@
 import { createRoute } from '@tanstack/react-router'
 
-import { ErpDashboardPage } from '@/erp/dashboard/ErpDashboardPage'
+import { ProductManagementPage } from '@/erp/products/ProductManagementPage'
 
 import { Route as erpRoute } from './erp'
 
 export const Route = createRoute({
   getParentRoute: () => erpRoute,
-  path: '/',
-  component: ErpDashboardPage,
+  path: 'products',
+  component: ProductManagementPage,
 })

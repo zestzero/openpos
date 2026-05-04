@@ -11,7 +11,9 @@ export interface CatalogCategory extends Category {
 
 export interface CatalogProduct extends Product {}
 
-export interface CatalogVariant extends Variant {}
+export interface CatalogVariant extends Variant {
+  stockLevel?: number
+}
 
 export interface CatalogProductRecord {
   product: CatalogProduct
