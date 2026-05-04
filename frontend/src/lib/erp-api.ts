@@ -40,8 +40,10 @@ export interface VariantFormValues {
 export interface AdjustStockValues {
   variantId: string
   quantity: number
-  reason: 'RESTOCK'
+  reason: InventoryReasonCode
 }
+
+export type InventoryReasonCode = 'RESTOCK' | 'SALE' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST'
 
 export interface InventoryLedgerEntry {
   id: string
@@ -51,6 +53,11 @@ export interface InventoryLedgerEntry {
   reference_id: string | null
   created_at: string
   created_by: string | null
+}
+
+export interface InventoryStockLevel {
+  variant_id: string
+  stock_level: number
 }
 
 export interface ProductFormValues {
@@ -259,6 +266,16 @@ async function adjustStock(values: AdjustStockValues) {
   return response.data
 }
 
+async function fetchStockLevel(variantId: string) {
+  const response = await requestJSON<ApiSuccess<InventoryStockLevel>>(`/api/inventory/variants/${variantId}/stock`)
+  return response.data
+}
+
+async function fetchLedgerEntries(variantId: string) {
+  const response = await requestJSON<ApiSuccess<InventoryLedgerEntry[]>>(`/api/inventory/variants/${variantId}/ledger?limit=20`)
+  return response.data
+}
+
 function buildQueryClientInvalidation(queryClient: ReturnType<typeof useQueryClient>) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['erp', 'categories'] }),
@@ -362,6 +379,22 @@ export function useAdjustStockMutation() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['erp', 'products'] })
     },
+  })
+}
+
+export function useInventoryStockLevelQuery(variantId: string | null) {
+  return useQuery({
+    queryKey: ['erp', 'inventory', 'stock', variantId],
+    queryFn: () => fetchStockLevel(variantId ?? ''),
+    enabled: Boolean(variantId),
+  })
+}
+
+export function useInventoryLedgerQuery(variantId: string | null) {
+  return useQuery({
+    queryKey: ['erp', 'inventory', 'ledger', variantId],
+    queryFn: () => fetchLedgerEntries(variantId ?? ''),
+    enabled: Boolean(variantId),
   })
 }
 
