@@ -60,6 +60,17 @@ export interface InventoryStockLevel {
   stock_level: number
 }
 
+function updateProductVariantStock(records: CatalogProductRecord[] | undefined, variantId: string, stockLevel: number) {
+  if (!records) return records
+
+  return records.map((record) => ({
+    ...record,
+    variants: record.variants.map((variant) => (
+      variant.id === variantId ? { ...variant, stockLevel } : variant
+    )),
+  }))
+}
+
 export interface ProductFormValues {
   name: string
   description: string
@@ -376,8 +387,38 @@ export function useAdjustStockMutation() {
 
   return useMutation({
     mutationFn: adjustStock,
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['erp', 'products'] })
+    onSuccess: async (_data, variables) => {
+      if (variables?.variantId) {
+        const variantId = variables.variantId
+
+        queryClient.setQueryData?.<InventoryStockLevel | undefined>(['erp', 'inventory', 'stock', variantId], (current) => {
+          if (!current) return current
+          return {
+            ...current,
+            stock_level: current.stock_level + variables.quantity,
+          }
+        })
+
+        queryClient.setQueryData?.<InventoryLedgerEntry[] | undefined>(['erp', 'inventory', 'ledger', variantId], (current) => {
+          if (!current) return current
+          return current.length > 0 ? [(_data as InventoryLedgerEntry), ...current] : [(_data as InventoryLedgerEntry)]
+        })
+
+        queryClient.setQueryData?.<CatalogProductRecord[] | undefined>(['erp', 'products'], (current) => (
+          updateProductVariantStock(current, variantId, Math.max(0, (current?.flatMap((record) => record.variants).find((variant) => variant.id === variantId)?.stockLevel ?? 0) + variables.quantity))
+        ))
+      }
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['erp', 'inventory'] }),
+        queryClient.invalidateQueries({ queryKey: ['erp', 'products'] }),
+        variables?.variantId
+          ? queryClient.invalidateQueries({ queryKey: ['erp', 'inventory', 'stock', variables.variantId] })
+          : Promise.resolve(),
+        variables?.variantId
+          ? queryClient.invalidateQueries({ queryKey: ['erp', 'inventory', 'ledger', variables.variantId] })
+          : Promise.resolve(),
+      ])
     },
   })
 }
