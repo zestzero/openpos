@@ -4,6 +4,15 @@ OpenPOS is a retail point-of-sale and ERP system. Its core product promise is th
 
 This document is the shared project context for agents and maintainers. Use it to preserve the project language, architectural boundaries, and non-negotiable data model rules.
 
+## Current Project Status
+
+OpenPOS is in the late polishing stage of the Products/Inventory split. The remaining work is concentrated around:
+
+- stock-state correctness and ledger-derived current stock
+- removing stock edits from the catalog UI
+- a few remaining UI affordance cleanups
+- adding the issue-tracking GitHub Action
+
 ## Product Shape
 
 - **POS**: mobile-first cashier/salesperson flow for catalog browsing, barcode scanning, cart management, checkout, payment, receipt replay, offline operation, and sync status.
