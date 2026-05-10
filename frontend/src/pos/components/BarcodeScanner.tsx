@@ -49,16 +49,6 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
     }
   }, [onScanError, onScanSuccess])
 
-  const handleStartScanning = async () => {
-    setStatus('scanning')
-    await startScanning('barcode-video')
-  }
-
-  const handleStopScanning = () => {
-    stopScanning()
-    setStatus('idle')
-  }
-
   const {
     isSupported,
     isScanning,
@@ -66,6 +56,18 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
     startScanning,
     stopScanning,
   } = useBarcodeDetector({ onScan: handleVariantSearch })
+
+  const scannerTargetId = 'barcode-video'
+
+  const handleStartScanning = async () => {
+    setStatus('scanning')
+    await startScanning(scannerTargetId)
+  }
+
+  const handleStopScanning = () => {
+    stopScanning()
+    setStatus('idle')
+  }
 
   // Render states
   if (status === 'success' && scannedCode) {
@@ -129,13 +131,21 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
           </span>
         </div>
         <div className="relative overflow-hidden rounded-[1.25rem] bg-black/5">
-          <video
-            id="barcode-video"
-            className="aspect-video w-full object-cover"
-            autoPlay
-            playsInline
-            muted
-          />
+          {isSupported ? (
+            <video
+              id={scannerTargetId}
+              className="aspect-video w-full object-cover"
+              autoPlay
+              playsInline
+              muted
+            />
+          ) : (
+            <div
+              id={scannerTargetId}
+              className="min-h-[18rem] w-full bg-black/5"
+              aria-label="Barcode scanner preview"
+            />
+          )}
           <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-foreground/10" />
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
