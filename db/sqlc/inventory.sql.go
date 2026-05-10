@@ -68,28 +68,28 @@ func (q *Queries) GetLedgerEntry(ctx context.Context, id pgtype.UUID) (Inventory
 }
 
 const getStockLevel = `-- name: GetStockLevel :one
-SELECT COALESCE(SUM(quantity_change), 0) as stock_level
+SELECT COALESCE(SUM(quantity_change), 0)::BIGINT as stock_level
 FROM inventory_ledger
 WHERE variant_id = $1
 `
 
-func (q *Queries) GetStockLevel(ctx context.Context, variantID pgtype.UUID) (interface{}, error) {
+func (q *Queries) GetStockLevel(ctx context.Context, variantID pgtype.UUID) (int64, error) {
 	row := q.db.QueryRow(ctx, getStockLevel, variantID)
-	var stock_level interface{}
+	var stock_level int64
 	err := row.Scan(&stock_level)
 	return stock_level, err
 }
 
 const getStockLevelByVariants = `-- name: GetStockLevelByVariants :many
-SELECT variant_id, COALESCE(SUM(quantity_change), 0) as stock_level
-FROM inventory_ledger
-WHERE variant_id = ANY($1::uuid[])
-GROUP BY variant_id
+SELECT requested.variant_id::uuid AS variant_id, COALESCE(SUM(ledger.quantity_change), 0)::BIGINT as stock_level
+FROM unnest($1::uuid[]) AS requested(variant_id)
+LEFT JOIN inventory_ledger AS ledger ON ledger.variant_id = requested.variant_id
+GROUP BY requested.variant_id
 `
 
 type GetStockLevelByVariantsRow struct {
 	VariantID  pgtype.UUID `json:"variant_id"`
-	StockLevel interface{} `json:"stock_level"`
+	StockLevel int64       `json:"stock_level"`
 }
 
 func (q *Queries) GetStockLevelByVariants(ctx context.Context, dollar_1 []pgtype.UUID) ([]GetStockLevelByVariantsRow, error) {

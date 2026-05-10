@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, PencilLine, Plus } from 'lucide-react'
+import { PencilLine, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,27 +9,15 @@ type CategoryTableProps = {
   reorderBusy?: boolean
   onCreateCategory: () => void
   onEditCategory: (category: CatalogCategory) => void
-  onReorderCategories: (ids: string[]) => void
 }
 
-export function CategoryTable({ categories, reorderBusy = false, onCreateCategory, onEditCategory, onReorderCategories }: CategoryTableProps) {
-  const moveCategory = (index: number, targetIndex: number) => {
-    if (targetIndex < 0 || targetIndex >= categories.length) {
-      return
-    }
-
-    const nextIds = categories.map((category) => category.id)
-    const [selected] = nextIds.splice(index, 1)
-    nextIds.splice(targetIndex, 0, selected)
-    onReorderCategories(nextIds)
-  }
-
+export function CategoryTable({ categories, reorderBusy = false, onCreateCategory, onEditCategory }: CategoryTableProps) {
   return (
-    <Card className="overflow-hidden border-border/70">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-5">
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
           <h2 className="text-xl font-semibold">Categories</h2>
-          <p className="text-sm text-muted-foreground">Create, edit, and reorder the category list used by products and POS navigation.</p>
+          <p className="text-sm text-muted-foreground">Create and edit the category list used by products and POS navigation.</p>
         </div>
 
         <Button className="gap-2" onClick={onCreateCategory}>
@@ -46,7 +34,7 @@ export function CategoryTable({ categories, reorderBusy = false, onCreateCategor
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            <thead className="border-b border-border bg-muted/70 text-left text-xs uppercase tracking-[0.16em] text-foreground">
               <tr>
                 <th className="px-6 py-3">Category</th>
                 <th className="px-6 py-3">Parent</th>
@@ -56,7 +44,7 @@ export function CategoryTable({ categories, reorderBusy = false, onCreateCategor
               </tr>
             </thead>
             <tbody>
-              {categories.map((category, index) => (
+              {categories.map((category) => (
                 <tr key={category.id} className="border-t border-border/70">
                   <td className="px-6 py-4">
                     <p className="font-medium">{category.name}</p>
@@ -67,12 +55,6 @@ export function CategoryTable({ categories, reorderBusy = false, onCreateCategor
                   <td className="px-6 py-4">Active</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index - 1)} disabled={index === 0 || reorderBusy}>
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon-sm" onClick={() => moveCategory(index, index + 1)} disabled={index === categories.length - 1 || reorderBusy}>
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
                       <Button variant="outline" size="sm" className="gap-2" onClick={() => onEditCategory(category)} disabled={reorderBusy}>
                         <PencilLine className="h-4 w-4" />
                         Edit

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/zestzero/openpos/db/sqlc"
 )
@@ -17,7 +17,7 @@ const (
 	ReasonRestock    = "RESTOCK"    // Adding stock (new inventory)
 	ReasonSale       = "SALE"       // Stock sold (deducted via sales)
 	ReasonAdjustment = "ADJUSTMENT" // Manual adjustment (correction, waste, etc.)
-	ReasonReturn     = "RETURN"      // Customer returned item
+	ReasonReturn     = "RETURN"     // Customer returned item
 	ReasonDamage     = "DAMAGE"     // Damaged goods written off
 	ReasonLost       = "LOST"       // Lost/missing inventory
 )
@@ -64,13 +64,13 @@ type StockLevel struct {
 
 // LedgerEntry represents a single inventory movement
 type LedgerEntry struct {
-	ID             string `json:"id"`
-	VariantID      string `json:"variant_id"`
-	QuantityChange int64  `json:"quantity_change"`
-	Reason         string `json:"reason"`
-	ReferenceID    *string `json:"reference_id,omitempty"`
+	ID             string      `json:"id"`
+	VariantID      string      `json:"variant_id"`
+	QuantityChange int64       `json:"quantity_change"`
+	Reason         string      `json:"reason"`
+	ReferenceID    *string     `json:"reference_id,omitempty"`
 	CreatedAt      interface{} `json:"created_at"`
-	CreatedBy      *string `json:"created_by,omitempty"`
+	CreatedBy      *string     `json:"created_by,omitempty"`
 }
 
 // AdjustStockInput represents input for manual stock adjustment
@@ -159,22 +159,9 @@ func (s *Service) GetStockLevel(ctx context.Context, variantID string) (StockLev
 		return StockLevel{}, ErrVariantNotFound
 	}
 
-	result, err := s.db.GetStockLevel(ctx, variantUUID)
+	stockLevel, err := s.db.GetStockLevel(ctx, variantUUID)
 	if err != nil {
 		return StockLevel{}, fmt.Errorf("getting stock level: %w", err)
-	}
-
-	// Convert result to int64
-	var stockLevel int64
-	if result != nil {
-		switch v := result.(type) {
-		case int64:
-			stockLevel = v
-		case int32:
-			stockLevel = int64(v)
-		case float64:
-			stockLevel = int64(v)
-		}
 	}
 
 	return StockLevel{
@@ -273,21 +260,9 @@ func (s *Service) GetStockLevelsByVariants(ctx context.Context, variantIDs []str
 
 	stockLevels := make([]StockLevel, len(results))
 	for i, r := range results {
-		var stockLevel int64
-		if r.StockLevel != nil {
-			switch v := r.StockLevel.(type) {
-			case int64:
-				stockLevel = v
-			case int32:
-				stockLevel = int64(v)
-			case float64:
-				stockLevel = int64(v)
-			}
-		}
-
 		stockLevels[i] = StockLevel{
 			VariantID:  r.VariantID.String(),
-			StockLevel: stockLevel,
+			StockLevel: r.StockLevel,
 		}
 	}
 

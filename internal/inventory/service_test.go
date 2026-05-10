@@ -127,7 +127,7 @@ func (f *fakeInventoryQueries) QueryRow(_ context.Context, query string, args ..
 			pgtype.Timestamptz{},
 			pgtype.Timestamptz{},
 		}}
-	case strings.Contains(query, "COALESCE(SUM(quantity_change), 0) as stock_level"):
+	case strings.Contains(query, "COALESCE(SUM(quantity_change), 0)") && strings.Contains(query, "stock_level"):
 		f.getStockLevelCalls++
 		return fakeRow{values: []any{f.stockLevel}}
 	case strings.Contains(query, "INSERT INTO inventory_ledger"):

@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { Archive, ChevronDown, ChevronUp, PackagePlus, PencilLine, Plus } from 'lucide-react'
+import { Archive, ChevronDown, ChevronUp, PencilLine, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,12 +10,10 @@ type ProductTableProps = {
   products: CatalogProductRecord[]
   categories: CatalogCategory[]
   archiveBusy?: boolean
-  restockBusy?: boolean
   onCreateProduct: () => void
   onEditProduct: (product: CatalogProductRecord) => void
   onArchiveProduct: (product: CatalogProductRecord) => void
   onArchiveVariant: (product: CatalogProductRecord, variantId: string) => void
-  onRestockVariant: (product: CatalogProductRecord, variantId: string) => void
   onReorderVariants: (productId: string, variantIds: string[]) => void
 }
 
@@ -23,19 +21,17 @@ export function ProductTable({
   products,
   categories,
   archiveBusy = false,
-  restockBusy = false,
   onCreateProduct,
   onEditProduct,
   onArchiveProduct,
   onArchiveVariant,
-  onRestockVariant,
   onReorderVariants,
 }: ProductTableProps) {
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
 
   return (
-    <Card className="overflow-hidden border-border/70">
-      <div className="flex items-center justify-between gap-4 border-b border-border px-6 py-5">
+    <Card className="overflow-hidden border-border/70 shadow-sm">
+      <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
           <h2 className="text-xl font-semibold">Products</h2>
           <p className="text-sm text-muted-foreground">Parent products with nested variants, THB pricing, and archive actions.</p>
@@ -57,7 +53,7 @@ export function ProductTable({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            <thead className="border-b border-border bg-muted/70 text-left text-xs uppercase tracking-[0.16em] text-foreground">
               <tr>
                 <th className="px-6 py-3">Product</th>
                 <th className="px-6 py-3">Category</th>
@@ -171,10 +167,6 @@ export function ProductTable({
                                       </Button>
                                       <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === variants.length - 1 || archiveBusy}>
                                         <ChevronDown className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="outline" size="sm" className="gap-2" onClick={() => onRestockVariant(record, variant.id)} disabled={archiveBusy || restockBusy}>
-                                        <PackagePlus className="h-4 w-4" />
-                                        Restock
                                       </Button>
                                       <Button variant="destructive" size="sm" onClick={() => onArchiveVariant(record, variant.id)} disabled={archiveBusy}>
                                         <Archive className="mr-2 h-4 w-4" />

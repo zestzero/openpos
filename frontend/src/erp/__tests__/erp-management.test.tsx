@@ -52,14 +52,12 @@ describe('ERP catalog management', () => {
           onEditProduct={() => undefined}
           onArchiveProduct={() => undefined}
           onArchiveVariant={() => undefined}
-          onRestockVariant={() => undefined}
           onReorderVariants={() => undefined}
         />
         <CategoryTable
           categories={[]}
           onCreateCategory={() => undefined}
           onEditCategory={() => undefined}
-          onReorderCategories={() => undefined}
         />
       </div>,
     )
@@ -153,7 +151,6 @@ describe('ERP catalog management', () => {
         onEditProduct={() => undefined}
         onArchiveProduct={() => undefined}
         onArchiveVariant={() => undefined}
-        onRestockVariant={() => undefined}
         onReorderVariants={() => undefined}
       />,
     )
@@ -162,11 +159,10 @@ describe('ERP catalog management', () => {
     expect(screen.getByText('Tea')).toBeInTheDocument()
   })
 
-  it('wires the product table edit, archive, variant archive, and reorder actions', () => {
+  it('wires the product table edit, archive, variant archive, and reorder actions without restock', () => {
     const onEditProduct = vi.fn()
     const onArchiveProduct = vi.fn()
     const onArchiveVariant = vi.fn()
-    const onRestockVariant = vi.fn()
     const onReorderVariants = vi.fn()
 
     render(
@@ -177,21 +173,32 @@ describe('ERP catalog management', () => {
         onEditProduct={onEditProduct}
         onArchiveProduct={onArchiveProduct}
         onArchiveVariant={onArchiveVariant}
-        onRestockVariant={onRestockVariant}
         onReorderVariants={onReorderVariants}
       />,
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     fireEvent.click(screen.getByRole('button', { name: 'Archive' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Restock' }))
     fireEvent.click(screen.getByRole('button', { name: 'Archive variant' }))
     fireEvent.click(screen.getByRole('button', { name: 'Reorder variants' }))
 
     expect(onEditProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
     expect(onArchiveProduct).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }))
-    expect(onRestockVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
     expect(onArchiveVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
     expect(onReorderVariants).toHaveBeenCalledWith('prod-1', ['var-1'])
+    expect(screen.queryByRole('button', { name: 'Restock' })).not.toBeInTheDocument()
+  })
+
+  it('does not render category reorder arrows when category ordering is out of scope', () => {
+    render(
+      <CategoryTable
+        categories={[makeCategory('cat-1', 'Tea'), makeCategory('cat-2', 'Coffee')]}
+        onCreateCategory={() => undefined}
+        onEditCategory={() => undefined}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: /up|down/i })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Edit' })).toHaveLength(2)
   })
 })

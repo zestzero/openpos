@@ -55,8 +55,8 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-auto right-0 top-0 h-full max-w-3xl translate-x-0 translate-y-0 rounded-none border-l p-0">
-        <div className="flex h-full flex-col">
+      <DialogContent className="flex max-h-[min(90vh,760px)] w-[calc(100vw-2rem)] max-w-3xl flex-col gap-0 overflow-hidden p-0 sm:rounded-card">
+        <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>

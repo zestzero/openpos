@@ -35,6 +35,7 @@ Choose **ONE** of these setups:
 - Go 1.22+
 - PostgreSQL 15+ (via Homebrew, apt, or installer)
 - Node.js 20+ (for frontend development)
+- sqlc 1.31.1+ (for regenerating `db/sqlc/` after SQL query changes)
 
 **Install PostgreSQL:**
 ```bash
@@ -45,6 +46,18 @@ brew services start postgresql@15
 # Create database
 createdb openpos
 createuser -P openpos  # Set password: openpos
+```
+
+**Install sqlc:**
+```bash
+# Go install, matches the generated-code version used in this repo
+go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+
+# If GOPATH/bin is not already on PATH
+export PATH="$(go env GOPATH)/bin:$PATH"
+
+# Verify
+sqlc version
 ```
 
 ## Quick Start
@@ -128,6 +141,9 @@ openpos/
 ```bash
 # Generate sqlc code (after editing db/queries/*.sql)
 sqlc generate
+
+# If sqlc is installed but not on PATH
+"$(go env GOPATH)/bin/sqlc" generate
 
 # Run tests
 go test ./...

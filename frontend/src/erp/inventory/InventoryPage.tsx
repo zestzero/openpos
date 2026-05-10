@@ -38,7 +38,7 @@ export function InventoryPage() {
   const stockQuery = useInventoryStockLevelQuery(selectedVariantId)
   const ledgerQuery = useInventoryLedgerQuery(selectedVariantId)
   const adjustStockMutation = useAdjustStockMutation()
-  const currentStockLevel = selectedVariant?.stockLevel ?? stockQuery.data?.stock_level
+  const currentStockLevel = stockQuery.data?.stock_level ?? selectedVariant?.stockLevel
 
   useEffect(() => {
     if (variants.length === 0) {
@@ -54,9 +54,9 @@ export function InventoryPage() {
   }, [selectedVariantId, variants])
 
   const filteredVariants = variants.filter((variant) => {
-    const stockLevel = variant.stockLevel ?? 0
+    const stockLevel = selectedVariantId === variant.id ? currentStockLevel : variant.stockLevel
     const matchesSearch = !variantSearch.trim() || [variant.name, variant.productName, variant.categoryName, variant.sku].join(' ').toLowerCase().includes(variantSearch.trim().toLowerCase())
-    const matchesStock = stockFilter === 'all' || (stockFilter === 'low' && stockLevel > 0 && stockLevel < 10) || (stockFilter === 'zero' && stockLevel === 0)
+    const matchesStock = stockFilter === 'all' || (stockFilter === 'low' && typeof stockLevel === 'number' && stockLevel > 0 && stockLevel < 10) || (stockFilter === 'zero' && stockLevel === 0)
     return matchesSearch && matchesStock
   })
 
@@ -69,8 +69,8 @@ export function InventoryPage() {
     return matchesReason && matchesTime
   })
 
-  const lowStockCount = variants.filter((variant) => (variant.stockLevel ?? 0) > 0 && (variant.stockLevel ?? 0) < 10).length
-  const zeroStockCount = variants.filter((variant) => (variant.stockLevel ?? 0) === 0).length
+  const lowStockCount = variants.filter((variant) => typeof variant.stockLevel === 'number' && variant.stockLevel > 0 && variant.stockLevel < 10).length
+  const zeroStockCount = variants.filter((variant) => variant.stockLevel === 0).length
 
   const submitAdjustment = async () => {
     if (!selectedVariantId) return
@@ -127,28 +127,32 @@ export function InventoryPage() {
                 </div>
               </div>
               <div className="space-y-3">
-                {filteredVariants.map((variant) => (
-                  <button
-                    key={variant.id}
-                    type="button"
-                    onClick={() => setSelectedVariantId(variant.id)}
-                    className={`w-full rounded-lg border px-4 py-3 text-left transition ${selectedVariantId === variant.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'}`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-foreground">{variant.name}</p>
-                        <p className="text-sm text-muted-foreground">{variant.productName} · {variant.categoryName} · {variant.sku}</p>
+                {filteredVariants.map((variant) => {
+                  const displayStockLevel = selectedVariantId === variant.id ? currentStockLevel : variant.stockLevel
+
+                  return (
+                    <button
+                      key={variant.id}
+                      type="button"
+                      onClick={() => setSelectedVariantId(variant.id)}
+                      className={`w-full rounded-lg border px-4 py-3 text-left transition ${selectedVariantId === variant.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-medium text-foreground">{variant.name}</p>
+                          <p className="text-sm text-muted-foreground">{variant.productName} · {variant.categoryName} · {variant.sku}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Stock</p>
+                          <p className={`text-lg font-semibold ${stockTone(displayStockLevel)}`}>
+                            {formatStockValue(displayStockLevel)}
+                          </p>
+                          {stockStatusLabel(displayStockLevel)}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Stock</p>
-                        <p className={`text-lg font-semibold ${(variant.stockLevel ?? 0) === 0 ? 'text-destructive' : (variant.stockLevel ?? 0) < 10 ? 'text-amber-600' : 'text-foreground'}`}>
-                          {variant.stockLevel ?? '—'}
-                        </p>
-                        {(variant.stockLevel ?? 0) === 0 ? <p className="text-xs font-medium text-destructive">Zero stock</p> : (variant.stockLevel ?? 0) < 10 ? <p className="text-xs font-medium text-amber-600">Low stock</p> : null}
-                      </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  )
+                })}
                 {filteredVariants.length === 0 ? <p className="text-sm text-muted-foreground">No variants match the current filters.</p> : null}
               </div>
             </div>
@@ -161,7 +165,12 @@ export function InventoryPage() {
                     <p className="text-foreground">{selectedVariant.name}</p>
                     <p>{selectedVariant.productName}</p>
                     <p>{selectedVariant.sku}</p>
-                    <p>Current stock: {currentStockLevel ?? '—'}</p>
+                    <p>
+                      Current stock:{' '}
+                      <span className={`font-semibold ${stockTone(currentStockLevel)}`}>{formatStockValue(currentStockLevel)}</span>
+                    </p>
+                    {stockQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing ledger-derived stock…</p> : null}
+                    {stockQuery.isError ? <p className="text-xs text-destructive">Unable to refresh Current Stock. Showing catalog value if available.</p> : null}
                   </div>
                 ) : (
                   <p className="mt-3 text-sm text-muted-foreground">Choose a variant to view its ledger and adjust stock.</p>
@@ -223,4 +232,22 @@ export function InventoryPage() {
       )}
     </div>
   )
+}
+
+function formatStockValue(value: number | undefined) {
+  return typeof value === 'number' ? value : 'Unknown'
+}
+
+function stockTone(value: number | undefined) {
+  if (value === undefined) return 'text-muted-foreground'
+  if (value === 0) return 'text-destructive'
+  if (value < 10) return 'text-amber-600'
+  return 'text-foreground'
+}
+
+function stockStatusLabel(value: number | undefined) {
+  if (value === undefined) return <p className="text-xs font-medium text-muted-foreground">Stock not loaded</p>
+  if (value === 0) return <p className="text-xs font-medium text-destructive">Zero stock</p>
+  if (value < 10) return <p className="text-xs font-medium text-amber-600">Low stock</p>
+  return null
 }
