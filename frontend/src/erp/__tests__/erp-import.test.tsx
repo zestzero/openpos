@@ -69,26 +69,21 @@ describe('ERP import workflow', () => {
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ parentId: 'cat-2' }))
   })
 
-  it('wires the category table edit and reorder controls', () => {
+  it('wires the category table edit control without reorder arrows', () => {
     const onEditCategory = vi.fn()
-    const onReorderCategories = vi.fn()
 
     render(
       <CategoryTable
         categories={[makeCategory('cat-1', 'Tea'), makeCategory('cat-2', 'Coffee')]}
         onCreateCategory={() => undefined}
         onEditCategory={onEditCategory}
-        onReorderCategories={onReorderCategories}
       />,
     )
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0])
 
-    const buttons = screen.getAllByRole('button')
-    fireEvent.click(buttons[2])
-
     expect(onEditCategory).toHaveBeenCalledWith(expect.objectContaining({ id: 'cat-1' }))
-    expect(onReorderCategories).toHaveBeenCalledWith(['cat-2', 'cat-1'])
+    expect(screen.getAllByRole('button')).toHaveLength(3)
   })
 
   it('parses a CSV preview, lets owners generate a barcode, and submits the import', async () => {

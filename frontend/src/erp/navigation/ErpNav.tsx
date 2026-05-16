@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import { BarChart3, Boxes, LayoutDashboard, Settings2, ShoppingCart, Table2 } from 'lucide-react'
+import { BarChart3, Boxes, FolderTree, LayoutDashboard, Settings2, ShoppingCart, Table2 } from 'lucide-react'
 
 import { Button, buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: 'Dashboard', icon: LayoutDashboard, to: '/erp' },
       { label: 'Products', icon: Boxes, to: '/erp/products' },
+      { label: 'Categories', icon: FolderTree, to: '/erp/categories' },
       { label: 'Inventory', icon: Table2, to: '/erp/inventory' },
     ],
   },
@@ -51,7 +52,7 @@ export function ErpNav() {
             <nav className="space-y-1">
               {group.items.map((item) => {
                 const Icon = item.icon
-                const isActive = item.to === pathname
+                const isActive = item.to === '/erp' ? pathname === '/erp' : Boolean(item.to && (pathname === item.to || pathname.startsWith(`${item.to}/`)))
                 const className = 'h-10 w-full justify-start gap-3 rounded-card px-3'
 
                 return item.to ? (

@@ -1,0 +1,76 @@
+name: Local issue progress
+
+on:
+  push:
+    paths:
+      - '.scratch/**/*.md'
+      - '.github/workflows/local-issue-progress.yml'
+  pull_request:
+    paths:
+      - '.scratch/**/*.md'
+      - '.github/workflows/local-issue-progress.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  summarize:
+    name: Summarize local issue statuses
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Write issue progress summary
+        shell: python
+        run: |
+          from collections import Counter, defaultdict
+          from pathlib import Path
+          import os
+
+          known_statuses = [
+              'needs-triage',
+              'needs-info',
+              'ready-for-agent',
+              'ready-for-human',
+              'wontfix',
+          ]
+
+          issue_files = sorted(Path('.scratch').glob('**/*.md')) if Path('.scratch').exists() else []
+          counts = Counter()
+          by_status = defaultdict(list)
+
+          for issue_file in issue_files:
+              status = 'unknown'
+              title = issue_file.stem
+              for line in issue_file.read_text(encoding='utf-8').splitlines():
+                  if line.startswith('# '):
+                      title = line[2:].strip()
+                  if line.lower().startswith('status:'):
+                      status = line.split(':', 1)[1].strip() or 'unknown'
+              if status not in known_statuses:
+                  status = 'unknown'
+              counts[status] += 1
+              by_status[status].append((title, issue_file.as_posix()))
+
+          summary_path = Path(os.environ['GITHUB_STEP_SUMMARY'])
+          with summary_path.open('a', encoding='utf-8') as summary:
+              summary.write('# Local issue progress\n\n')
+              summary.write('| Status | Count |\n')
+              summary.write('| --- | ---: |\n')
+              for status in [*known_statuses, 'unknown']:
+                  summary.write(f'| `{status}` | {counts[status]} |\n')
+
+              total = sum(counts.values())
+              summary.write(f'\n**Total local issues:** {total}\n')
+
+              if total:
+                  summary.write('\n## Issues by status\n')
+                  for status in [*known_statuses, 'unknown']:
+                      if not by_status[status]:
+                          continue
+                      summary.write(f'\n### `{status}`\n')
+                      for title, path in by_status[status]:
+                          summary.write(f'- `{path}`: {title}\n')
+              else:
+                  summary.write('\nNo local issue files found under `.scratch/**/*.md`.\n')

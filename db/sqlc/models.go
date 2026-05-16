@@ -49,9 +49,9 @@ type Order struct {
 	UserID         pgtype.UUID        `json:"user_id"`
 	Status         string             `json:"status"`
 	TotalAmount    int64              `json:"total_amount"`
-	DiscountAmount int64              `json:"discount_amount"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	DiscountAmount int64              `json:"discount_amount"`
 }
 
 type OrderItem struct {

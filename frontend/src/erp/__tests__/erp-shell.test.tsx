@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErpLayout } from '../layout/ErpLayout'
 import { ErpNav } from '../navigation/ErpNav'
 import { Route as erpRoute } from '@/routes/erp'
+import { Route as erpCategoriesRoute } from '@/routes/erp.categories'
 import { Route as erpInventoryRoute } from '@/routes/erp.inventory'
 import { Route as erpProductsRoute } from '@/routes/erp.products'
 
@@ -41,7 +42,7 @@ describe('ERP shell', () => {
     logout.mockReset()
   })
 
-  it('renders the desktop navigation, utility bar, and tabs', () => {
+  it('renders the desktop navigation and utility bar', () => {
     render(
       <ErpLayout>
         <div>Outlet content</div>
@@ -49,9 +50,9 @@ describe('ERP shell', () => {
     )
 
     expect(screen.getByText('OpenPOS ERP')).toBeInTheDocument()
-    expect(screen.getByRole('tablist', { name: 'ERP workspace tabs' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
-    expect(screen.getByRole('tab', { name: 'Inventory' })).toHaveAttribute('href', '/erp/inventory')
+    expect(screen.getByText('Management shell')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search products, variants, reports')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'POS' })).toHaveAttribute('href', '/pos')
     expect(screen.getByText('Outlet content')).toBeInTheDocument()
   })
 
@@ -61,6 +62,7 @@ describe('ERP shell', () => {
     expect(screen.getByText('Owner access only')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/erp')
     expect(screen.getByRole('link', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
+    expect(screen.getByRole('link', { name: 'Categories' })).toHaveAttribute('href', '/erp/categories')
     expect(screen.getByRole('link', { name: 'Inventory' })).toHaveAttribute('href', '/erp/inventory')
     expect(screen.getByRole('link', { name: 'Reports' })).toHaveAttribute('href', '/erp/reports')
   })
@@ -70,6 +72,13 @@ describe('ERP shell', () => {
 
     expect(productsRoute.options.path).toBe('products')
     expect(productsRoute.options.getParentRoute?.()).toBe(erpRoute)
+  })
+
+  it('includes the dedicated categories route in the ERP route tree', () => {
+    const categoriesRoute = erpCategoriesRoute as TestRoute
+
+    expect(categoriesRoute.options.path).toBe('categories')
+    expect(categoriesRoute.options.getParentRoute?.()).toBe(erpRoute)
   })
 
   it('includes the dedicated inventory route in the ERP route tree', () => {

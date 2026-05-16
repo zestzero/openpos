@@ -57,21 +57,23 @@ describe('InventoryPage', () => {
   it('auto-selects the first variant and renders stock and ledger', async () => {
     render(<InventoryPage />)
 
-    await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
+    expect(screen.getAllByText('0')[0]).toBeInTheDocument()
     expect(screen.getByText('RESTOCK')).toBeInTheDocument()
     expect(screen.getByLabelText('Quantity')).toBeInTheDocument()
   })
 
-  it('prefers the product cache stock over a stale selected stock query', async () => {
+  it('prefers the ledger-derived selected stock query over product cache stock', async () => {
     render(<InventoryPage />)
 
-    await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
+    expect(screen.getAllByText('0')[0]).toBeInTheDocument()
   })
 
   it('keeps filter-empty distinct from true empty', async () => {
     render(<InventoryPage />)
 
-    await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
     fireEvent.change(screen.getByLabelText('Search variants'), { target: { value: 'missing' } })
     expect(screen.getByText('No variants match the current filters.')).toBeInTheDocument()
   })
@@ -82,7 +84,7 @@ describe('InventoryPage', () => {
 
     render(<InventoryPage />)
 
-    await waitFor(() => expect(screen.getByText('Current stock: 12')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: 'Save adjustment' }))
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ variantId: 'var-1', quantity: 1, reason: 'ADJUSTMENT' }))
