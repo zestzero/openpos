@@ -1,18 +1,51 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import QRCode from 'qrcode'
+import { vi } from 'vitest'
 
 import { CategoryDrawer } from '../categories/CategoryDrawer'
+import { CategoryManagementPage } from '../categories/CategoryManagementPage'
+import { ProductManagementPage } from '../products/ProductManagementPage'
 import { CategoryTable } from '../tables/CategoryTable'
 import { ProductDrawer } from '../products/ProductDrawer'
 import { BarcodeBatchPrintDialog } from '../products/BarcodeBatchPrintDialog'
 import { ProductTable } from '../tables/ProductTable'
+import {
+  useArchiveProductMutation,
+  useArchiveVariantMutation,
+  useCategoriesQuery,
+  useCreateCategoryMutation,
+  useCreateProductMutation,
+  useCreateVariantMutation,
+  useProductsQuery,
+  useUpdateCategoryMutation,
+  useUpdateProductMutation,
+  useUpdateVariantMutation,
+} from '@/lib/erp-api'
 
 vi.mock('qrcode', () => ({
   default: {
     toDataURL: vi.fn(async (payload: string) => `data:image/png;base64,qr-${payload}`),
   },
 }))
+
+vi.mock('@/lib/erp-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/erp-api')>()
+
+  return {
+    ...actual,
+    useArchiveProductMutation: vi.fn(),
+    useArchiveVariantMutation: vi.fn(),
+    useCategoriesQuery: vi.fn(),
+    useCreateCategoryMutation: vi.fn(),
+    useCreateProductMutation: vi.fn(),
+    useCreateVariantMutation: vi.fn(),
+    useProductsQuery: vi.fn(),
+    useUpdateCategoryMutation: vi.fn(),
+    useUpdateProductMutation: vi.fn(),
+    useUpdateVariantMutation: vi.fn(),
+  }
+})
 
 function makeCategory(id: string, name: string) {
   return {
@@ -62,7 +95,57 @@ function productTableSelectionProps(overrides: Partial<ComponentProps<typeof Pro
   }
 }
 
+function mockMutation() {
+  return {
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+    error: null,
+    reset: vi.fn(),
+  }
+}
+
+function mockManagementHooks() {
+  vi.mocked(useProductsQuery).mockReturnValue({ data: [], isLoading: false, error: null } as any)
+  vi.mocked(useCategoriesQuery).mockReturnValue({ data: [], isLoading: false, error: null } as any)
+  vi.mocked(useCreateProductMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useUpdateProductMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useArchiveProductMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useCreateVariantMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useUpdateVariantMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useArchiveVariantMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useCreateCategoryMutation).mockReturnValue(mockMutation() as any)
+  vi.mocked(useUpdateCategoryMutation).mockReturnValue(mockMutation() as any)
+}
+
 describe('ERP catalog management', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(QRCode.toDataURL).mockReset()
+    vi.mocked(QRCode.toDataURL).mockImplementation(async (payload: string) => `data:image/png;base64,qr-${payload}`)
+    mockManagementHooks()
+  })
+
+  it('renders the product management page without category actions', () => {
+    render(<ProductManagementPage />)
+
+    expect(screen.getByText('Products')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create product' })).toBeInTheDocument()
+    expect(screen.queryByText('Categories')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create category' })).not.toBeInTheDocument()
+  })
+
+  it('renders the category management page without product actions', () => {
+    render(<CategoryManagementPage />)
+
+    expect(screen.getByText('Categories')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create category' })).toBeInTheDocument()
+    expect(screen.queryByText('Products')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create product' })).not.toBeInTheDocument()
+  })
+
   it('renders product and category empty states instead of placeholders', () => {
     render(
       <div>
