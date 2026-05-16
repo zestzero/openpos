@@ -131,18 +131,18 @@ describe('ERP catalog management', () => {
   it('renders the product management page without category actions', () => {
     render(<ProductManagementPage />)
 
-    expect(screen.getByText('Products')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Products' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create product' })).toBeInTheDocument()
-    expect(screen.queryByText('Categories')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Categories' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Create category' })).not.toBeInTheDocument()
   })
 
   it('renders the category management page without product actions', () => {
     render(<CategoryManagementPage />)
 
-    expect(screen.getByText('Categories')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Categories' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Create category' })).toBeInTheDocument()
-    expect(screen.queryByText('Products')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Products' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Create product' })).not.toBeInTheDocument()
   })
 
