@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Printer } from 'lucide-react'
+import QRCode from 'qrcode'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,19 +14,44 @@ type BarcodeBatchPrintDialogProps = {
   onClearSelection: () => void
 }
 
+type LabelMachineFormat = 'barcode' | 'qr'
+
 export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSelection }: BarcodeBatchPrintDialogProps) {
   const canPrint = labels.length > 0
+  const [format, setFormat] = useState<LabelMachineFormat>('barcode')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[min(90vh,820px)] w-[calc(100vw-2rem)] max-w-5xl overflow-hidden p-0 print:fixed print:inset-0 print:max-h-none print:w-full print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-0 print:shadow-none">
         <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left print:hidden">
-            <DialogTitle>Barcode label preview</DialogTitle>
+            <DialogTitle>Label preview</DialogTitle>
             <DialogDescription>
-              {labels.length} label{labels.length !== 1 ? 's' : ''} selected. Product selections print labels for each active Variant.
+              {labels.length} label{labels.length !== 1 ? 's' : ''} selected. Choose Barcode or QR code for the print sheet.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-3 print:hidden">
+            <p className="text-sm font-medium text-foreground">Machine-readable format</p>
+            <div className="inline-flex rounded-lg border border-border bg-background p-1">
+              <Button
+                type="button"
+                size="sm"
+                variant={format === 'barcode' ? 'default' : 'ghost'}
+                onClick={() => setFormat('barcode')}
+              >
+                Barcode
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={format === 'qr' ? 'default' : 'ghost'}
+                onClick={() => setFormat('qr')}
+              >
+                QR code
+              </Button>
+            </div>
+          </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 p-6 print:overflow-visible print:bg-background print:p-0">
             {canPrint ? (
@@ -36,7 +63,7 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                         <p className="truncate text-sm font-semibold text-foreground" title={`${label.productName} · ${label.variantName}`}>{label.productName}</p>
                         <p className="truncate text-xs text-muted-foreground" title={label.variantName}>{label.variantName}</p>
                       </div>
-                      <MachineBarcode value={label.payload} />
+                      {format === 'barcode' ? <MachineBarcode value={label.payload} /> : <QrCodeImage value={label.payload} />}
                       <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
                         <span className="min-w-0 truncate">SKU {label.sku}</span>
                         <span className="shrink-0 font-medium text-foreground">{label.price}</span>
@@ -67,6 +94,60 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function QrCodeImage({ value }: { value: string }) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setDataUrl(null)
+    setError(null)
+
+    void QRCode.toDataURL(value, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      scale: 6,
+      type: 'image/png',
+    })
+      .then((nextDataUrl) => {
+        if (active) {
+          setDataUrl(nextDataUrl)
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError('QR code unavailable')
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [value])
+
+  if (error) {
+    return (
+      <div className="flex h-20 items-center justify-center rounded-sm border border-dashed border-destructive/40 bg-destructive/5 px-3 text-center text-xs font-medium text-destructive">
+        {error}
+      </div>
+    )
+  }
+
+  if (!dataUrl) {
+    return (
+      <div className="flex h-20 items-center justify-center rounded-sm border border-dashed border-border bg-muted/30 text-xs text-muted-foreground">
+        Rendering QR…
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex justify-center">
+      <img src={dataUrl} alt={`QR code for ${value}`} className="h-20 w-20 object-contain print:h-[20mm] print:w-[20mm]" />
+    </div>
   )
 }
 

@@ -1,10 +1,18 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import type { ComponentProps } from 'react'
+import QRCode from 'qrcode'
 
 import { CategoryDrawer } from '../categories/CategoryDrawer'
 import { CategoryTable } from '../tables/CategoryTable'
 import { ProductDrawer } from '../products/ProductDrawer'
+import { BarcodeBatchPrintDialog } from '../products/BarcodeBatchPrintDialog'
 import { ProductTable } from '../tables/ProductTable'
+
+vi.mock('qrcode', () => ({
+  default: {
+    toDataURL: vi.fn(async (payload: string) => `data:image/png;base64,qr-${payload}`),
+  },
+}))
 
 function makeCategory(id: string, name: string) {
   return {
@@ -247,6 +255,36 @@ describe('ERP catalog management', () => {
     expect(onOpenBarcodePreview).toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Clear 1' }))
     expect(onClearBarcodeSelection).toHaveBeenCalled()
+  })
+
+  it('switches batch label preview from barcode to QR while keeping the same payload', async () => {
+    render(
+      <BarcodeBatchPrintDialog
+        open
+        labels={[
+          {
+            id: 'var-1',
+            productName: 'Jasmine Tea',
+            variantName: 'Large',
+            sku: 'TEA-001',
+            price: '฿129.00',
+            payload: '1234567890123',
+            humanReadable: '1234567890123',
+          },
+        ]}
+        onOpenChange={() => undefined}
+        onClearSelection={() => undefined}
+      />,
+    )
+
+    expect(screen.getByText('Label preview')).toBeInTheDocument()
+    expect(screen.getByLabelText('Machine-readable Code 39 barcode 1234567890123')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'QR code' }))
+
+    expect(QRCode.toDataURL).toHaveBeenCalledWith('1234567890123', expect.any(Object))
+    expect(await screen.findByAltText('QR code for 1234567890123')).toHaveAttribute('src', 'data:image/png;base64,qr-1234567890123')
+    expect(screen.queryByLabelText('Machine-readable Code 39 barcode 1234567890123')).not.toBeInTheDocument()
   })
 
   it('does not render category reorder arrows when category ordering is out of scope', () => {
