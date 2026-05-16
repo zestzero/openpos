@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Printer } from 'lucide-react'
 import QRCode from 'qrcode'
 
@@ -20,13 +20,13 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
   const canPrint = labels.length > 0
   const [format, setFormat] = useState<LabelMachineFormat>('barcode')
   const [qrStatuses, setQrStatuses] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
-  const qrPending = format === 'qr' && labels.some((label) => qrStatuses[label.id] === 'loading' || qrStatuses[label.id] === undefined)
-  const qrHasError = format === 'qr' && labels.some((label) => qrStatuses[label.id] === 'error')
+  const handleQrStatusChange = useCallback((statusKey: string, status: 'loading' | 'ready' | 'error') => {
+    setQrStatuses((current) => ({ ...current, [statusKey]: status }))
+  }, [])
+  const qrStatusValues = format === 'qr' ? labels.map((label) => qrStatuses[statusKey(label)] ?? 'loading') : []
+  const qrPending = format === 'qr' && qrStatusValues.some((status) => status === 'loading')
+  const qrHasError = format === 'qr' && qrStatusValues.some((status) => status === 'error')
   const printDisabled = !canPrint || qrPending || qrHasError
-
-  useEffect(() => {
-    setQrStatuses({})
-  }, [format, labels])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,11 +77,9 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                         <MachineBarcode value={label.payload} />
                       ) : (
                         <QrCodeImage
-                          id={label.id}
+                          statusKey={statusKey(label)}
                           value={label.payload}
-                          onStatusChange={(value, status) => {
-                            setQrStatuses((current) => ({ ...current, [value]: status }))
-                          }}
+                          onStatusChange={handleQrStatusChange}
                         />
                       )}
                       <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
@@ -117,15 +115,12 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
   )
 }
 
-function QrCodeImage({ id, value, onStatusChange }: { id: string; value: string; onStatusChange: (value: string, status: 'loading' | 'ready' | 'error') => void }) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+function QrCodeImage({ statusKey, value, onStatusChange }: { statusKey: string; value: string; onStatusChange: (value: string, status: 'loading' | 'ready' | 'error') => void }) {
+  const [state, setState] = useState<{ dataUrl: string | null; error: string | null }>({ dataUrl: null, error: null })
 
   useEffect(() => {
     let active = true
-    setDataUrl(null)
-    setError(null)
-    onStatusChange(id, 'loading')
+    onStatusChange(statusKey, 'loading')
 
     void QRCode.toDataURL(value, {
       errorCorrectionLevel: 'M',
@@ -135,31 +130,31 @@ function QrCodeImage({ id, value, onStatusChange }: { id: string; value: string;
     })
       .then((nextDataUrl) => {
         if (active) {
-          setDataUrl(nextDataUrl)
-          onStatusChange(id, 'ready')
+          setState({ dataUrl: nextDataUrl, error: null })
+          onStatusChange(statusKey, 'ready')
         }
       })
       .catch(() => {
         if (active) {
-          setError('QR code unavailable')
-          onStatusChange(id, 'error')
+          setState({ dataUrl: null, error: 'QR code unavailable' })
+          onStatusChange(statusKey, 'error')
         }
       })
 
     return () => {
       active = false
     }
-  }, [value])
+  }, [onStatusChange, statusKey, value])
 
-  if (error) {
+  if (state.error) {
     return (
       <div className="flex h-20 items-center justify-center rounded-sm border border-dashed border-destructive/40 bg-destructive/5 px-3 text-center text-xs font-medium text-destructive">
-        {error}
+        {state.error}
       </div>
     )
   }
 
-  if (!dataUrl) {
+  if (!state.dataUrl) {
     return (
       <div className="flex h-20 items-center justify-center rounded-sm border border-dashed border-border bg-muted/30 text-xs text-muted-foreground">
         Rendering QR…
@@ -169,9 +164,13 @@ function QrCodeImage({ id, value, onStatusChange }: { id: string; value: string;
 
   return (
     <div className="flex justify-center">
-      <img src={dataUrl} alt={`QR code for ${value}`} className="h-20 w-20 object-contain print:h-[20mm] print:w-[20mm]" />
+      <img src={state.dataUrl} alt={`QR code for ${value}`} className="h-20 w-20 object-contain print:h-[20mm] print:w-[20mm]" />
     </div>
   )
+}
+
+function statusKey(label: BarcodeLabel) {
+  return `${label.id}:${label.payload}`
 }
 
 function MachineBarcode({ value }: { value: string }) {
