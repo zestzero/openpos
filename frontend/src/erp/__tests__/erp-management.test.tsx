@@ -123,8 +123,9 @@ function mockManagementHooks() {
 describe('ERP catalog management', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(QRCode.toDataURL).mockReset()
-    vi.mocked(QRCode.toDataURL).mockImplementation(async (payload: string) => `data:image/png;base64,qr-${payload}`)
+    const qrCodeToDataURL = vi.mocked(QRCode.toDataURL) as unknown as ReturnType<typeof vi.fn>
+    qrCodeToDataURL.mockReset()
+    qrCodeToDataURL.mockImplementation(async (payload: string) => `data:image/png;base64,qr-${payload}`)
     mockManagementHooks()
   })
 
