@@ -48,6 +48,8 @@ describe('barcode label helpers', () => {
     })
     expect(labels[1].payload).toBe('ERP-JASMINE-TEA-WITH-A-VERY-LONG-PRODUCT-NAME-NO-BARCODE-VARIANT')
     expect(labels[1].sku).toBe('No SKU')
+    const qrPayloads = labels.map((label) => label.payload)
+    expect(qrPayloads).toEqual(['8850000000012', 'ERP-JASMINE-TEA-WITH-A-VERY-LONG-PRODUCT-NAME-NO-BARCODE-VARIANT'])
   })
 
   it('dedupes duplicate selected variants by payload', () => {
