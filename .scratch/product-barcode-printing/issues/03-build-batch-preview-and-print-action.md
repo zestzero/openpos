@@ -1,6 +1,6 @@
 # Build barcode batch preview and print action
 
-Status: ready-for-agent
+Status: ready-for-human
 
 ## Summary
 Create the preview surface that shows selected items and a print action that opens the browser print flow.

@@ -1,6 +1,6 @@
 # Add validation and edge-case handling for barcode printing
 
-Status: ready-for-agent
+Status: ready-for-human
 
 ## Summary
 Cover the expected failure cases and edge conditions for batch barcode generation.

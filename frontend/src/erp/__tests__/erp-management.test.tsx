@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ComponentProps } from 'react'
 
 import { CategoryDrawer } from '../categories/CategoryDrawer'
 import { CategoryTable } from '../tables/CategoryTable'
@@ -41,6 +42,18 @@ function makeProductRecord() {
   }
 }
 
+function productTableSelectionProps(overrides: Partial<ComponentProps<typeof ProductTable>> = {}) {
+  return {
+    selectedVariantIds: new Set<string>(),
+    barcodeLabelCount: 0,
+    onToggleProductVariants: vi.fn(),
+    onToggleVariant: vi.fn(),
+    onOpenBarcodePreview: vi.fn(),
+    onClearBarcodeSelection: vi.fn(),
+    ...overrides,
+  }
+}
+
 describe('ERP catalog management', () => {
   it('renders product and category empty states instead of placeholders', () => {
     render(
@@ -53,6 +66,7 @@ describe('ERP catalog management', () => {
           onArchiveProduct={() => undefined}
           onArchiveVariant={() => undefined}
           onReorderVariants={() => undefined}
+          {...productTableSelectionProps()}
         />
         <CategoryTable
           categories={[]}
@@ -152,6 +166,7 @@ describe('ERP catalog management', () => {
         onArchiveProduct={() => undefined}
         onArchiveVariant={() => undefined}
         onReorderVariants={() => undefined}
+        {...productTableSelectionProps()}
       />,
     )
 
@@ -174,6 +189,7 @@ describe('ERP catalog management', () => {
         onArchiveProduct={onArchiveProduct}
         onArchiveVariant={onArchiveVariant}
         onReorderVariants={onReorderVariants}
+        {...productTableSelectionProps()}
       />,
     )
 
@@ -187,6 +203,50 @@ describe('ERP catalog management', () => {
     expect(onArchiveVariant).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), 'var-1')
     expect(onReorderVariants).toHaveBeenCalledWith('prod-1', ['var-1'])
     expect(screen.queryByRole('button', { name: 'Restock' })).not.toBeInTheDocument()
+  })
+
+  it('selects variants for barcode batch printing', () => {
+    const onToggleProductVariants = vi.fn()
+    const onToggleVariant = vi.fn()
+    const onOpenBarcodePreview = vi.fn()
+    const onClearBarcodeSelection = vi.fn()
+
+    const { rerender } = render(
+      <ProductTable
+        categories={[makeCategory('cat-1', 'Tea')]}
+        products={[makeProductRecord() as any]}
+        onCreateProduct={() => undefined}
+        onEditProduct={() => undefined}
+        onArchiveProduct={() => undefined}
+        onArchiveVariant={() => undefined}
+        onReorderVariants={() => undefined}
+        {...productTableSelectionProps({ onToggleProductVariants, onToggleVariant, onOpenBarcodePreview, onClearBarcodeSelection })}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Print barcodes' })).toBeDisabled()
+    fireEvent.click(screen.getByLabelText('Select barcode label for Jasmine Tea Large'))
+    expect(onToggleVariant).toHaveBeenCalledWith('var-1', true)
+    fireEvent.click(screen.getByLabelText('Select all active variants for Jasmine Tea'))
+    expect(onToggleProductVariants).toHaveBeenCalledWith(expect.objectContaining({ product: expect.any(Object) }), true)
+
+    rerender(
+      <ProductTable
+        categories={[makeCategory('cat-1', 'Tea')]}
+        products={[makeProductRecord() as any]}
+        onCreateProduct={() => undefined}
+        onEditProduct={() => undefined}
+        onArchiveProduct={() => undefined}
+        onArchiveVariant={() => undefined}
+        onReorderVariants={() => undefined}
+        {...productTableSelectionProps({ selectedVariantIds: new Set(['var-1']), barcodeLabelCount: 1, onOpenBarcodePreview, onClearBarcodeSelection })}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Print barcodes (1)' }))
+    expect(onOpenBarcodePreview).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear 1' }))
+    expect(onClearBarcodeSelection).toHaveBeenCalled()
   })
 
   it('does not render category reorder arrows when category ordering is out of scope', () => {

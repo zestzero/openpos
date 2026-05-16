@@ -1,6 +1,6 @@
 # Select products and variants for barcode batch printing
 
-Status: ready-for-agent
+Status: ready-for-human
 
 ## Summary
 Add selection state and UI affordances on the product page so users can select multiple products and/or variants for batch barcode creation.

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { CategoryTable } from '@/erp/tables/CategoryTable'
 import { ProductTable } from '@/erp/tables/ProductTable'
@@ -22,6 +22,8 @@ import {
 } from '@/lib/erp-api'
 
 import { CategoryDrawer } from '@/erp/categories/CategoryDrawer'
+import { activeVariantIds, buildBarcodeLabels } from './barcodeLabels'
+import { BarcodeBatchPrintDialog } from './BarcodeBatchPrintDialog'
 import { ProductDrawer } from './ProductDrawer'
 
 export function ProductManagementPage() {
@@ -40,8 +42,12 @@ export function ProductManagementPage() {
   const updateCategoryMutation = useUpdateCategoryMutation()
   const [productDrawerOpen, setProductDrawerOpen] = useState(false)
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false)
+  const [barcodePreviewOpen, setBarcodePreviewOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogProductRecord | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<CatalogCategory | null>(null)
+  const [selectedBarcodeVariantIds, setSelectedBarcodeVariantIds] = useState<Set<string>>(() => new Set())
+
+  const barcodeLabels = useMemo(() => buildBarcodeLabels(products, selectedBarcodeVariantIds), [products, selectedBarcodeVariantIds])
 
   const openCreateProduct = () => {
     setSelectedProduct(null)
@@ -114,6 +120,37 @@ export function ProductManagementPage() {
     await archiveVariantMutation.mutateAsync({ id: variant.id, variant: toVariantFormValues(variant) })
   }
 
+  const toggleVariantForBarcode = (variantId: string, checked: boolean) => {
+    setSelectedBarcodeVariantIds((current) => {
+      const next = new Set(current)
+      if (checked) {
+        next.add(variantId)
+      } else {
+        next.delete(variantId)
+      }
+      return next
+    })
+  }
+
+  const toggleProductVariantsForBarcode = (product: CatalogProductRecord, checked: boolean) => {
+    const ids = activeVariantIds(product)
+    setSelectedBarcodeVariantIds((current) => {
+      const next = new Set(current)
+      for (const id of ids) {
+        if (checked) {
+          next.add(id)
+        } else {
+          next.delete(id)
+        }
+      }
+      return next
+    })
+  }
+
+  const clearBarcodeSelection = () => {
+    setSelectedBarcodeVariantIds(new Set())
+  }
+
   return (
     <div className="space-y-6">
       <CategoryTable
@@ -126,6 +163,8 @@ export function ProductManagementPage() {
         products={products}
         categories={categories}
         archiveBusy={archiveBusy}
+        selectedVariantIds={selectedBarcodeVariantIds}
+        barcodeLabelCount={barcodeLabels.length}
         onCreateProduct={openCreateProduct}
         onEditProduct={openEditProduct}
         onArchiveProduct={async (product) => {
@@ -133,6 +172,10 @@ export function ProductManagementPage() {
         }}
         onArchiveVariant={archiveVariant}
         onReorderVariants={async () => undefined}
+        onToggleProductVariants={toggleProductVariantsForBarcode}
+        onToggleVariant={toggleVariantForBarcode}
+        onOpenBarcodePreview={() => setBarcodePreviewOpen(true)}
+        onClearBarcodeSelection={clearBarcodeSelection}
       />
 
       <ProductDrawer
@@ -159,6 +202,13 @@ export function ProductManagementPage() {
           }
         }}
         onSave={saveCategory}
+      />
+
+      <BarcodeBatchPrintDialog
+        open={barcodePreviewOpen}
+        labels={barcodeLabels}
+        onOpenChange={setBarcodePreviewOpen}
+        onClearSelection={clearBarcodeSelection}
       />
 
     </div>

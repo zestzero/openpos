@@ -1,6 +1,6 @@
 # Design barcode payload and printable label format
 
-Status: ready-for-agent
+Status: ready-for-human
 
 ## Summary
 Define what data is encoded into each barcode and how each printed label should look.
