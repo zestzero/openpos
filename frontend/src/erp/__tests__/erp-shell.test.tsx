@@ -41,7 +41,7 @@ describe('ERP shell', () => {
     logout.mockReset()
   })
 
-  it('renders the desktop navigation, utility bar, and tabs', () => {
+  it('renders the desktop navigation and utility bar', () => {
     render(
       <ErpLayout>
         <div>Outlet content</div>
@@ -49,9 +49,9 @@ describe('ERP shell', () => {
     )
 
     expect(screen.getByText('OpenPOS ERP')).toBeInTheDocument()
-    expect(screen.getByRole('tablist', { name: 'ERP workspace tabs' })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: 'Products' })).toHaveAttribute('href', '/erp/products')
-    expect(screen.getByRole('tab', { name: 'Inventory' })).toHaveAttribute('href', '/erp/inventory')
+    expect(screen.getByText('Management shell')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Search products, variants, reports')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'POS' })).toHaveAttribute('href', '/pos')
     expect(screen.getByText('Outlet content')).toBeInTheDocument()
   })
 
