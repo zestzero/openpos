@@ -1,27 +1,21 @@
 import { useMemo, useState } from 'react'
 
-import { CategoryTable } from '@/erp/tables/CategoryTable'
 import { ProductTable } from '@/erp/tables/ProductTable'
 import {
   normalizeProductDraft,
   useArchiveProductMutation,
   useArchiveVariantMutation,
   useCategoriesQuery,
-  useCreateCategoryMutation,
   useCreateProductMutation,
   useCreateVariantMutation,
   useProductsQuery,
-  useUpdateCategoryMutation,
   useUpdateProductMutation,
   useUpdateVariantMutation,
-  type CatalogCategory,
   type CatalogProductRecord,
-  type CategoryFormValues,
   type ProductFormValues,
   type VariantFormValues,
 } from '@/lib/erp-api'
 
-import { CategoryDrawer } from '@/erp/categories/CategoryDrawer'
 import { activeVariantIds, buildBarcodeLabels } from './barcodeLabels'
 import { BarcodeBatchPrintDialog } from './BarcodeBatchPrintDialog'
 import { ProductDrawer } from './ProductDrawer'
@@ -38,13 +32,9 @@ export function ProductManagementPage() {
   const archiveVariantMutation = useArchiveVariantMutation()
   const archiveBusy = archiveProductMutation.isPending || archiveVariantMutation.isPending
 
-  const createCategoryMutation = useCreateCategoryMutation()
-  const updateCategoryMutation = useUpdateCategoryMutation()
   const [productDrawerOpen, setProductDrawerOpen] = useState(false)
-  const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false)
   const [barcodePreviewOpen, setBarcodePreviewOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<CatalogProductRecord | null>(null)
-  const [selectedCategory, setSelectedCategory] = useState<CatalogCategory | null>(null)
   const [selectedBarcodeVariantIds, setSelectedBarcodeVariantIds] = useState<Set<string>>(() => new Set())
 
   const barcodeLabels = useMemo(() => buildBarcodeLabels(products, selectedBarcodeVariantIds), [products, selectedBarcodeVariantIds])
@@ -57,16 +47,6 @@ export function ProductManagementPage() {
   const openEditProduct = (product: CatalogProductRecord) => {
     setSelectedProduct(product)
     setProductDrawerOpen(true)
-  }
-
-  const openCreateCategory = () => {
-    setSelectedCategory(null)
-    setCategoryDrawerOpen(true)
-  }
-
-  const openEditCategory = (category: CatalogCategory) => {
-    setSelectedCategory(category)
-    setCategoryDrawerOpen(true)
   }
 
   const saveProduct = async (values: ProductFormValues) => {
@@ -98,17 +78,6 @@ export function ProductManagementPage() {
 
     setSelectedProduct(null)
     setProductDrawerOpen(false)
-  }
-
-  const saveCategory = async (values: CategoryFormValues) => {
-    if (selectedCategory) {
-      await updateCategoryMutation.mutateAsync({ id: selectedCategory.id, values })
-    } else {
-      await createCategoryMutation.mutateAsync(values)
-    }
-
-    setSelectedCategory(null)
-    setCategoryDrawerOpen(false)
   }
 
   const archiveVariant = async (product: CatalogProductRecord, variantId: string) => {
@@ -153,12 +122,6 @@ export function ProductManagementPage() {
 
   return (
     <div className="space-y-6">
-      <CategoryTable
-        categories={categories}
-        onCreateCategory={openCreateCategory}
-        onEditCategory={openEditCategory}
-      />
-
       <ProductTable
         products={products}
         categories={categories}
@@ -191,26 +154,12 @@ export function ProductManagementPage() {
         onSave={saveProduct}
       />
 
-      <CategoryDrawer
-        open={categoryDrawerOpen}
-        category={selectedCategory}
-        categories={categories}
-        onOpenChange={(open) => {
-          setCategoryDrawerOpen(open)
-          if (!open) {
-            setSelectedCategory(null)
-          }
-        }}
-        onSave={saveCategory}
-      />
-
       <BarcodeBatchPrintDialog
         open={barcodePreviewOpen}
         labels={barcodeLabels}
         onOpenChange={setBarcodePreviewOpen}
         onClearSelection={clearBarcodeSelection}
       />
-
     </div>
   )
 }
