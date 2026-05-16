@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ComponentProps } from 'react'
 import QRCode from 'qrcode'
 
@@ -258,6 +258,14 @@ describe('ERP catalog management', () => {
   })
 
   it('switches batch label preview from barcode to QR while keeping the same payload', async () => {
+    let resolveQr!: (value: string) => void
+    const qrPromise = new Promise<string>((resolve) => {
+      resolveQr = resolve
+    })
+
+    vi.mocked(QRCode.toDataURL).mockImplementationOnce(() => qrPromise)
+    const printSpy = vi.spyOn(window, 'print').mockImplementation(() => undefined)
+
     render(
       <BarcodeBatchPrintDialog
         open
@@ -279,11 +287,27 @@ describe('ERP catalog management', () => {
 
     expect(screen.getByText('Label preview')).toBeInTheDocument()
     expect(screen.getByLabelText('Machine-readable Code 39 barcode 1234567890123')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Barcode' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'QR code' })).toHaveAttribute('aria-pressed', 'false')
 
     fireEvent.click(screen.getByRole('button', { name: 'QR code' }))
 
+    expect(screen.getByRole('button', { name: 'Print labels' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Print labels' }))
+    expect(printSpy).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'QR code' })).toHaveAttribute('aria-pressed', 'true')
+
+    await act(async () => {
+      resolveQr('data:image/png;base64,qr-1234567890123')
+      await qrPromise
+    })
+
     expect(QRCode.toDataURL).toHaveBeenCalledWith('1234567890123', expect.any(Object))
     expect(await screen.findByAltText('QR code for 1234567890123')).toHaveAttribute('src', 'data:image/png;base64,qr-1234567890123')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Print labels' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Print labels' }))
+    expect(printSpy).toHaveBeenCalledTimes(1)
+    printSpy.mockRestore()
     expect(screen.queryByLabelText('Machine-readable Code 39 barcode 1234567890123')).not.toBeInTheDocument()
   })
 

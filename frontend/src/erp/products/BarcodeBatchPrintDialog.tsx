@@ -19,6 +19,14 @@ type LabelMachineFormat = 'barcode' | 'qr'
 export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSelection }: BarcodeBatchPrintDialogProps) {
   const canPrint = labels.length > 0
   const [format, setFormat] = useState<LabelMachineFormat>('barcode')
+  const [qrStatuses, setQrStatuses] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
+  const qrPending = format === 'qr' && labels.some((label) => qrStatuses[label.id] === 'loading' || qrStatuses[label.id] === undefined)
+  const qrHasError = format === 'qr' && labels.some((label) => qrStatuses[label.id] === 'error')
+  const printDisabled = !canPrint || qrPending || qrHasError
+
+  useEffect(() => {
+    setQrStatuses({})
+  }, [format, labels])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,11 +41,12 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
 
           <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-3 print:hidden">
             <p className="text-sm font-medium text-foreground">Machine-readable format</p>
-            <div className="inline-flex rounded-lg border border-border bg-background p-1">
+            <div className="inline-flex rounded-lg border border-border bg-background p-1" role="group" aria-label="Machine-readable format">
               <Button
                 type="button"
                 size="sm"
                 variant={format === 'barcode' ? 'default' : 'ghost'}
+                aria-pressed={format === 'barcode'}
                 onClick={() => setFormat('barcode')}
               >
                 Barcode
@@ -46,6 +55,7 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                 type="button"
                 size="sm"
                 variant={format === 'qr' ? 'default' : 'ghost'}
+                aria-pressed={format === 'qr'}
                 onClick={() => setFormat('qr')}
               >
                 QR code
@@ -63,7 +73,17 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                         <p className="truncate text-sm font-semibold text-foreground" title={`${label.productName} · ${label.variantName}`}>{label.productName}</p>
                         <p className="truncate text-xs text-muted-foreground" title={label.variantName}>{label.variantName}</p>
                       </div>
-                      {format === 'barcode' ? <MachineBarcode value={label.payload} /> : <QrCodeImage value={label.payload} />}
+                      {format === 'barcode' ? (
+                        <MachineBarcode value={label.payload} />
+                      ) : (
+                        <QrCodeImage
+                          id={label.id}
+                          value={label.payload}
+                          onStatusChange={(value, status) => {
+                            setQrStatuses((current) => ({ ...current, [value]: status }))
+                          }}
+                        />
+                      )}
                       <div className="flex items-center justify-between gap-3 text-[11px] text-muted-foreground">
                         <span className="min-w-0 truncate">SKU {label.sku}</span>
                         <span className="shrink-0 font-medium text-foreground">{label.price}</span>
@@ -86,7 +106,7 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
           <DialogFooter className="border-t border-border px-6 py-4 print:hidden">
             <Button type="button" variant="outline" onClick={onClearSelection} disabled={!canPrint}>Clear selection</Button>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Adjust selection</Button>
-            <Button type="button" className="gap-2" onClick={() => window.print()} disabled={!canPrint}>
+            <Button type="button" className="gap-2" onClick={() => window.print()} disabled={printDisabled}>
               <Printer className="h-4 w-4" />
               Print labels
             </Button>
@@ -97,7 +117,7 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
   )
 }
 
-function QrCodeImage({ value }: { value: string }) {
+function QrCodeImage({ id, value, onStatusChange }: { id: string; value: string; onStatusChange: (value: string, status: 'loading' | 'ready' | 'error') => void }) {
   const [dataUrl, setDataUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -105,6 +125,7 @@ function QrCodeImage({ value }: { value: string }) {
     let active = true
     setDataUrl(null)
     setError(null)
+    onStatusChange(id, 'loading')
 
     void QRCode.toDataURL(value, {
       errorCorrectionLevel: 'M',
@@ -115,11 +136,13 @@ function QrCodeImage({ value }: { value: string }) {
       .then((nextDataUrl) => {
         if (active) {
           setDataUrl(nextDataUrl)
+          onStatusChange(id, 'ready')
         }
       })
       .catch(() => {
         if (active) {
           setError('QR code unavailable')
+          onStatusChange(id, 'error')
         }
       })
 
