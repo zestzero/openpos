@@ -1,7 +1,7 @@
 -- name: CreateUser :one
 INSERT INTO users (email, password_hash, role, name, pin_hash)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, email, role, name, created_at, updated_at;
+RETURNING id, email, role, name, is_active, created_at, updated_at;
 
 -- name: GetUserByEmail :one
 SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
@@ -29,3 +29,20 @@ UPDATE users
 SET pin_hash = $2, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING id, email, role, name, updated_at;
+
+-- name: ListUsers :many
+SELECT id, email, role, name, is_active, created_at, updated_at
+FROM users
+ORDER BY created_at DESC;
+
+-- name: UpdateUser :one
+UPDATE users
+SET email = $2, name = $3, role = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, email, role, name, is_active, created_at, updated_at;
+
+-- name: ToggleUserActive :one
+UPDATE users
+SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, email, role, name, is_active, created_at, updated_at;
