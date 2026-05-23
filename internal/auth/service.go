@@ -22,10 +22,11 @@ var (
 
 // User represents an authenticated user
 type User struct {
-	ID    string
-	Email string
-	Role  string
-	Name  string
+	ID       string `json:"id"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
+	Name     string `json:"name"`
+	IsActive bool   `json:"is_active"`
 }
 
 // TokenClaims represents JWT claims
@@ -78,10 +79,11 @@ func (s *AuthService) RegisterOwner(ctx context.Context, email, password, name s
 	}
 
 	return &User{
-		ID:    user.ID.String(),
-		Email: user.Email,
-		Role:  user.Role,
-		Name:  user.Name,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
 	}, nil
 }
 
@@ -91,6 +93,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*User,
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, "", ErrInvalidCredentials
+	}
+
+	// Verify user is active
+	if !user.IsActive {
+		return nil, "", ErrUnauthorized
 	}
 
 	// Verify password
@@ -105,10 +112,11 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*User,
 	}
 
 	return &User{
-		ID:    user.ID.String(),
-		Email: user.Email,
-		Role:  user.Role,
-		Name:  user.Name,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
 	}, token, nil
 }
 
@@ -118,6 +126,11 @@ func (s *AuthService) LoginWithPIN(ctx context.Context, email, pin string) (*Use
 	user, err := s.queries.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, "", ErrInvalidCredentials
+	}
+
+	// Verify user is active
+	if !user.IsActive {
+		return nil, "", ErrUnauthorized
 	}
 
 	// Verify user is a cashier
@@ -140,10 +153,11 @@ func (s *AuthService) LoginWithPIN(ctx context.Context, email, pin string) (*Use
 	}
 
 	return &User{
-		ID:    user.ID.String(),
-		Email: user.Email,
-		Role:  user.Role,
-		Name:  user.Name,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
 	}, token, nil
 }
 
@@ -187,10 +201,11 @@ func (s *AuthService) CreateCashier(ctx context.Context, ownerID, email, pin, na
 	}
 
 	return &User{
-		ID:    user.ID.String(),
-		Email: user.Email,
-		Role:  user.Role,
-		Name:  user.Name,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
 	}, nil
 }
 
@@ -207,10 +222,11 @@ func (s *AuthService) GetUserByID(ctx context.Context, userID string) (*User, er
 	}
 
 	return &User{
-		ID:    user.ID.String(),
-		Email: user.Email,
-		Role:  user.Role,
-		Name:  user.Name,
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
 	}, nil
 }
 
@@ -224,14 +240,109 @@ func (s *AuthService) ListCashiers(ctx context.Context) ([]User, error) {
 	users := make([]User, len(cashiers))
 	for i, c := range cashiers {
 		users[i] = User{
-			ID:    c.ID.String(),
-			Email: c.Email,
-			Role:  c.Role,
-			Name:  c.Name,
+			ID:       c.ID.String(),
+			Email:    c.Email,
+			Role:     c.Role,
+			Name:     c.Name,
+			IsActive: c.IsActive,
 		}
 	}
 
 	return users, nil
+}
+
+// ListUsers returns all users (owner only)
+func (s *AuthService) ListUsers(ctx context.Context) ([]User, error) {
+	users, err := s.queries.ListUsers(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]User, len(users))
+	for i, u := range users {
+		result[i] = User{
+			ID:       u.ID.String(),
+			Email:    u.Email,
+			Role:     u.Role,
+			Name:     u.Name,
+			IsActive: u.IsActive,
+		}
+	}
+
+	return result, nil
+}
+
+// UpdateUser updates a user's email, name, and role (owner only)
+func (s *AuthService) UpdateUser(ctx context.Context, actorID, userID, email, name, role string) (*User, error) {
+	// Parse UUIDs
+	userUUID, err := parseUUID(userID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	// Prevent changing own role or deactivating self
+	actorUUID, err := parseUUID(actorID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	if actorUUID == userUUID {
+		return nil, errors.New("cannot change your own account from user management")
+	}
+
+	// Validate role
+	if role != "owner" && role != "cashier" {
+		return nil, errors.New("invalid role: must be 'owner' or 'cashier'")
+	}
+
+	user, err := s.queries.UpdateUser(ctx, sqlc.UpdateUserParams{
+		ID:    userUUID,
+		Email: email,
+		Name:  name,
+		Role:  role,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &User{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
+	}, nil
+}
+
+// ToggleUserActive toggles the is_active flag on a user (owner only)
+func (s *AuthService) ToggleUserActive(ctx context.Context, actorID, userID string) (*User, error) {
+	userUUID, err := parseUUID(userID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	// Prevent deactivating self
+	actorUUID, err := parseUUID(actorID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	if actorUUID == userUUID {
+		return nil, errors.New("cannot deactivate your own account")
+	}
+
+	user, err := s.queries.ToggleUserActive(ctx, userUUID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &User{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
+	}, nil
 }
 
 // ValidateToken validates a JWT token and returns the user
