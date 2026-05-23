@@ -26,7 +26,18 @@ type CreateOrderParams struct {
 	DiscountAmount int64       `json:"discount_amount"`
 }
 
-func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
+type CreateOrderRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (CreateOrderRow, error) {
 	row := q.db.QueryRow(ctx, createOrder,
 		arg.ClientUuid,
 		arg.UserID,
@@ -34,7 +45,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.TotalAmount,
 		arg.DiscountAmount,
 	)
-	var i Order
+	var i CreateOrderRow
 	err := row.Scan(
 		&i.ID,
 		&i.ClientUuid,
@@ -136,9 +147,20 @@ FROM orders
 WHERE client_uuid = $1
 `
 
-func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (Order, error) {
+type GetOrderByClientUUIDRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetOrderByClientUUID(ctx context.Context, clientUuid string) (GetOrderByClientUUIDRow, error) {
 	row := q.db.QueryRow(ctx, getOrderByClientUUID, clientUuid)
-	var i Order
+	var i GetOrderByClientUUIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.ClientUuid,
@@ -158,9 +180,20 @@ FROM orders
 WHERE id = $1
 `
 
-func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (Order, error) {
+type GetOrderByIDRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetOrderByID(ctx context.Context, id pgtype.UUID) (GetOrderByIDRow, error) {
 	row := q.db.QueryRow(ctx, getOrderByID, id)
-	var i Order
+	var i GetOrderByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.ClientUuid,
@@ -254,15 +287,26 @@ type ListOrdersParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]Order, error) {
+type ListOrdersRow struct {
+	ID             pgtype.UUID        `json:"id"`
+	ClientUuid     string             `json:"client_uuid"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Status         string             `json:"status"`
+	TotalAmount    int64              `json:"total_amount"`
+	DiscountAmount int64              `json:"discount_amount"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListOrders(ctx context.Context, arg ListOrdersParams) ([]ListOrdersRow, error) {
 	rows, err := q.db.Query(ctx, listOrders, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Order
+	var items []ListOrdersRow
 	for rows.Next() {
-		var i Order
+		var i ListOrdersRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ClientUuid,
