@@ -57,25 +57,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE email = $1
 `
 
-type GetUserByEmailRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	Role         string             `json:"role"`
-	Name         string             `json:"name"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	PinHash      pgtype.Text        `json:"pin_hash"`
-}
-
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i GetUserByEmailRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -85,30 +74,20 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE id = $1
 `
 
-type GetUserByIDRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	Role         string             `json:"role"`
-	Name         string             `json:"name"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	PinHash      pgtype.Text        `json:"pin_hash"`
-}
-
-func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDRow, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i GetUserByIDRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -118,12 +97,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (GetUserByIDR
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const getUserByPIN = `-- name: GetUserByPIN :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE email = $1 AND pin_hash = $2
 `
@@ -133,20 +113,9 @@ type GetUserByPINParams struct {
 	PinHash pgtype.Text `json:"pin_hash"`
 }
 
-type GetUserByPINRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Email        string             `json:"email"`
-	PasswordHash string             `json:"password_hash"`
-	Role         string             `json:"role"`
-	Name         string             `json:"name"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	PinHash      pgtype.Text        `json:"pin_hash"`
-}
-
-func (q *Queries) GetUserByPIN(ctx context.Context, arg GetUserByPINParams) (GetUserByPINRow, error) {
+func (q *Queries) GetUserByPIN(ctx context.Context, arg GetUserByPINParams) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByPIN, arg.Email, arg.PinHash)
-	var i GetUserByPINRow
+	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
@@ -156,12 +125,13 @@ func (q *Queries) GetUserByPIN(ctx context.Context, arg GetUserByPINParams) (Get
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const listCashiers = `-- name: ListCashiers :many
-SELECT id, email, role, name, created_at, updated_at, pin_hash
+SELECT id, email, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE role = 'cashier'
 ORDER BY created_at DESC
@@ -175,6 +145,7 @@ type ListCashiersRow struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	PinHash   pgtype.Text        `json:"pin_hash"`
+	IsActive  bool               `json:"is_active"`
 }
 
 func (q *Queries) ListCashiers(ctx context.Context) ([]ListCashiersRow, error) {
@@ -194,6 +165,7 @@ func (q *Queries) ListCashiers(ctx context.Context) ([]ListCashiersRow, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PinHash,
+			&i.IsActive,
 		); err != nil {
 			return nil, err
 		}
