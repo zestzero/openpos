@@ -56,6 +56,13 @@ type CreateCashierRequest struct {
 	Name  string `json:"name"`
 }
 
+// UpdateUserRequest represents an update user request
+type UpdateUserRequest struct {
+	Email string `json:"email"`
+	Name  string `json:"name"`
+	Role  string `json:"role"`
+}
+
 // AuthResponse represents an authentication response
 type AuthResponse struct {
 	User  *User  `json:"user"`
@@ -164,4 +171,81 @@ func (h *Handler) ListCashiers(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(cashiers)
+}
+
+// ListUsers handles GET /api/users (owner only)
+func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.service.ListUsers(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+// UpdateUser handles PUT /api/users/{id} (owner only)
+func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	actorID := r.Context().Value("user_id")
+	if actorID == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID := chi.URLParam(r, "id")
+	if userID == "" {
+		http.Error(w, "missing user id", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.service.UpdateUser(r.Context(), actorID.(string), userID, req.Email, req.Name, req.Role)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+// ToggleUserActive handles PATCH /api/users/{id}/toggle-active (owner only)
+func (h *Handler) ToggleUserActive(w http.ResponseWriter, r *http.Request) {
+	actorID := r.Context().Value("user_id")
+	if actorID == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID := chi.URLParam(r, "id")
+	if userID == "" {
+		http.Error(w, "missing user id", http.StatusBadRequest)
+		return
+	}
+
+	user, err := h.service.ToggleUserActive(r.Context(), actorID.(string), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+// UsersRouter returns the chi router for user management endpoints (owner-only)
+func (h *Handler) UsersRouter() *chi.Mux {
+	r := chi.NewRouter()
+
+	r.Get("/", h.ListUsers)
+	r.Put("/{id}", h.UpdateUser)
+	r.Patch("/{id}/toggle-active", h.ToggleUserActive)
+
+	return r
 }
