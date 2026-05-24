@@ -105,6 +105,13 @@ func buildRouter(pool *pgxpool.Pool) chi.Router {
 	reportingHandler := reporting.NewHandler(reportingService)
 	protected.Mount("/reports", reportingHandler.Routes())
 
+	// User management routes (owner-only, requires auth middleware)
+	usersRouter := authHandler.UsersRouter()
+	protected.Group(func(r chi.Router) {
+		r.Use(appmiddleware.RequireRole("owner"))
+		r.Mount("/users", usersRouter)
+	})
+
 	r.Mount("/api", protected)
 	return r
 }
