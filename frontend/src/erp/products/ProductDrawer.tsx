@@ -27,11 +27,11 @@ const emptyVariant = (): VariantFormValues => ({
 })
 
 const controlBaseClass =
-  'w-full rounded-card border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  'w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
 const selectClassName = `${controlBaseClass} h-11`
-const textareaClassName = `${controlBaseClass} min-h-28 resize-y`
-const panelClassName = 'rounded-2xl border border-border bg-background p-4 shadow-sm'
+const textareaClassName = `${controlBaseClass} min-h-24 resize-y`
+const panelClassName = 'rounded-xl border border-border bg-background p-4 shadow-sm'
 
 export function ProductDrawer({ open, product, categories, onOpenChange, onSave }: ProductDrawerProps) {
   const [draft, setDraft] = useState<ProductFormValues>(() => normalizeProductDraft(product))
@@ -227,8 +227,8 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 </div>
 
                 <ActiveSwitch
-                  label="Active in POS"
-                  description="Visible to cashiers and available for sales."
+                  label="Available for sale"
+                  description="Show this product in POS for cashiers to ring up."
                   checked={draft.isActive}
                   onCheckedChange={(checked) => setDraft((current) => ({ ...current, isActive: checked }))}
                   className="md:col-span-2"
@@ -257,8 +257,12 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                   <article key={variant.id ?? `${variant.sku}-${index}`} className={panelClassName}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h4 className="text-base font-semibold text-foreground">Variant {index + 1}</h4>
-                        <p className="mt-1 text-xs text-muted-foreground">Keep barcode, SKU, and pricing aligned.</p>
+                        <h4 className="text-base font-semibold text-foreground">
+                          {variant.name || variant.sku || `Variant ${index + 1}`}
+                        </h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {variant.name ? (variant.sku ? `SKU ${variant.sku}` : 'No SKU set') : 'Keep barcode, SKU, and pricing aligned.'}
+                        </p>
                       </div>
                       <ActiveSwitch
                         label="Active"

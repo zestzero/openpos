@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { Archive, ChevronDown, ChevronUp, PackagePlus, PencilLine, Plus } from 'lucide-react'
+import { Archive, PackagePlus, PencilLine, Plus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -77,13 +77,13 @@ export function ProductTable({
 
                 return (
                   <Fragment key={record.product.id}>
-                    <tr className="border-t border-border/70 align-top transition-colors duration-150 hover:bg-muted/30">
+                    <tr className="align-top transition-colors duration-150 hover:bg-muted/20">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {record.product.image_url ? (
-                            <img src={record.product.image_url} alt={record.product.name} className="h-10 w-10 rounded-md object-cover" />
+                            <img src={record.product.image_url} alt={record.product.name} className="h-10 w-10 rounded-lg object-cover" />
                           ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-muted-foreground">
                               {record.product.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
@@ -122,68 +122,46 @@ export function ProductTable({
                       </td>
                     </tr>
 
-                    <tr className="border-t border-border/50 bg-muted/20">
-                      <td className="px-6 py-4" colSpan={6}>
+                    <tr className="bg-muted/10">
+                      <td className="px-6 py-4 pl-16" colSpan={6}>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Nested variants</p>
-                            <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, variants.map((variant) => variant.id))} disabled={archiveBusy}>
-                              Reorder variants
-                            </Button>
+                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Variants</p>
                           </div>
 
-                          {variants.length === 0 ? (
+{variants.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No variants yet.</p>
                           ) : (
                             <div className="space-y-2">
-                              {variants.map((variant, index) => {
-                                const nextIds = variants.map((item) => item.id)
-                                const moveVariant = (from: number, to: number) => {
-                                  if (to < 0 || to >= nextIds.length) {
-                                    return
-                                  }
-                                  const next = [...nextIds]
-                                  const [selected] = next.splice(from, 1)
-                                  next.splice(to, 0, selected)
-                                  onReorderVariants(record.product.id, next)
-                                }
-
-                                return (
-<div key={variant.id} 
-                                      className="animate-fade-in-up flex flex-wrap items-center gap-3 rounded-card border border-border bg-background px-4 py-3 transition-all duration-200 hover:border-border/90 hover:shadow-sm"
-                                      style={{ animationDelay: `${index * 40}ms` }}
-                                    >
-                                    <div className="min-w-0 flex-1">
-                                      <p className="font-medium">{variant.name}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        SKU {variant.sku} · {variant.barcode ?? 'No barcode'} · {formatTHB(variant.price)}
-                                        {(variant as any).stockLevel !== undefined && (
-                                          <span className={`ml-2 font-medium ${(variant as any).stockLevel === 0 ? 'text-destructive' : (variant as any).stockLevel < 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                                            · Stock: {(variant as any).stockLevel}
-                                          </span>
-                                        )}
-                                      </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index - 1)} disabled={index === 0 || archiveBusy}>
-                                        <ChevronUp className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="outline" size="icon-sm" onClick={() => moveVariant(index, index + 1)} disabled={index === variants.length - 1 || archiveBusy}>
-                                        <ChevronDown className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="outline" size="sm" className="gap-2" onClick={() => onRestockVariant(record, variant.id)} disabled={archiveBusy || restockBusy}>
-                                        <PackagePlus className="h-4 w-4" />
-                                        Restock
-                                      </Button>
-                                      <Button variant="destructive" size="sm" onClick={() => onArchiveVariant(record, variant.id)} disabled={archiveBusy}>
-                                        <Archive className="mr-2 h-4 w-4" />
-                                        Archive variant
-                                      </Button>
-                                    </div>
+                              {variants.map((variant, index) => (
+                                <div key={variant.id}
+                                  className="animate-fade-in-up flex flex-wrap items-center gap-3 rounded-xl bg-background px-4 py-3 transition-all duration-200 hover:bg-muted/30"
+                                  style={{ animationDelay: `${index * 40}ms` }}
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <p className="font-medium">{variant.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      SKU {variant.sku} · {variant.barcode ?? 'No barcode'} · {formatTHB(variant.price)}
+                                      {(variant as any).stockLevel !== undefined && (
+                                        <span className={`ml-2 font-medium ${(variant as any).stockLevel === 0 ? 'text-destructive' : (variant as any).stockLevel < 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                                          · Stock: {(variant as any).stockLevel}
+                                        </span>
+                                      )}
+                                    </p>
                                   </div>
-                                )
-                              })}
+
+                                  <div className="flex items-center gap-2">
+                                    <Button variant="outline" size="sm" className="gap-2" onClick={() => onRestockVariant(record, variant.id)} disabled={archiveBusy || restockBusy}>
+                                      <PackagePlus className="h-4 w-4" />
+                                      Restock
+                                    </Button>
+                                    <Button variant="destructive" size="sm" onClick={() => onArchiveVariant(record, variant.id)} disabled={archiveBusy}>
+                                      <Archive className="mr-2 h-4 w-4" />
+                                      Archive variant
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
