@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -138,6 +139,44 @@ func TestListProductsReturnsNormalizedJSON(t *testing.T) {
 	}
 	if _, ok := record["variants"]; !ok {
 		t.Fatalf("expected lower-case variants field, got %#v", record)
+	}
+}
+
+func TestUploadImageReturnsAbsolutePublicURL(t *testing.T) {
+	t.Setenv("UPLOADS_DIR", t.TempDir())
+	svc := &fakeReorderService{}
+	h := NewHandler(svc)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("image", "tea.jpg")
+	if err != nil {
+		t.Fatalf("failed to create form file: %v", err)
+	}
+	if _, err := part.Write([]byte("fake image data")); err != nil {
+		t.Fatalf("failed to write form file: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("failed to close multipart writer: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "http://api.example.test/images", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	rr := httptest.NewRecorder()
+
+	h.Routes().ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var payload map[string]string
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if !strings.HasPrefix(payload["url"], "http://api.example.test/uploads/") {
+		t.Fatalf("expected absolute upload URL on API host, got %q", payload["url"])
 	}
 }
 

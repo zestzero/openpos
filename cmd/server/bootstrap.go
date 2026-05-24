@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -113,5 +114,11 @@ func buildRouter(pool *pgxpool.Pool) chi.Router {
 	})
 
 	r.Mount("/api", protected)
+
+	// Serve uploaded images
+	uploadsDir := getEnv("UPLOADS_DIR", "uploads")
+	_ = os.MkdirAll(uploadsDir, 0755)
+	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
+
 	return r
 }

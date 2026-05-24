@@ -88,6 +88,27 @@ describe('ERP catalog management', () => {
     expect(screen.getByRole('button', { name: 'Add variant' })).toBeInTheDocument()
   })
 
+  it('uses the shared compact green switch treatment for product and variant active controls', () => {
+    render(
+      <ProductDrawer
+        open
+        product={makeProductRecord() as any}
+        categories={[
+          makeCategory('cat-1', 'Tea'),
+          makeCategory('cat-2', 'Coffee'),
+        ]}
+        onOpenChange={() => undefined}
+        onSave={() => undefined}
+      />,
+    )
+
+    const productActiveSwitch = screen.getByRole('switch', { name: 'Active in POS' })
+    const variantActiveSwitch = screen.getByRole('switch', { name: 'Variant 1 active' })
+
+    expect(productActiveSwitch).toHaveClass('h-5', 'w-9', 'data-[checked]:bg-emerald-600')
+    expect(variantActiveSwitch).toHaveClass('h-5', 'w-9', 'data-[checked]:bg-emerald-600')
+  })
+
   it('saves edited product drawer values with nested variants intact', () => {
     const onSave = vi.fn()
 
