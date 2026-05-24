@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/zestzero/openpos/db/sqlc"
@@ -270,6 +270,74 @@ func (s *AuthService) ListUsers(ctx context.Context) ([]User, error) {
 	}
 
 	return result, nil
+}
+
+// CreateUser creates a managed owner or cashier user (owner only)
+func (s *AuthService) CreateUser(ctx context.Context, actorID, email, password, pin, name, role string) (*User, error) {
+	actorUUID, err := parseUUID(actorID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	actor, err := s.queries.GetUserByID(ctx, actorUUID)
+	if err != nil {
+		return nil, ErrUnauthorized
+	}
+
+	if actor.Role != "owner" {
+		return nil, ErrForbidden
+	}
+
+	if role != "owner" && role != "cashier" {
+		return nil, errors.New("invalid role: must be 'owner' or 'cashier'")
+	}
+
+	params := sqlc.CreateUserParams{
+		Email: email,
+		Role:  role,
+		Name:  name,
+	}
+
+	if role == "owner" {
+		if password == "" {
+			return nil, errors.New("password is required for owner users")
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+
+		params.PasswordHash = string(hashedPassword)
+	} else {
+		if pin == "" {
+			return nil, errors.New("pin is required for cashier users")
+		}
+
+		hashedPIN, err := bcrypt.GenerateFromPassword([]byte(pin), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, err
+		}
+
+		params.PasswordHash = ""
+		params.PinHash = pgtype.Text{
+			String: string(hashedPIN),
+			Valid:  true,
+		}
+	}
+
+	user, err := s.queries.CreateUser(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	return &User{
+		ID:       user.ID.String(),
+		Email:    user.Email,
+		Role:     user.Role,
+		Name:     user.Name,
+		IsActive: user.IsActive,
+	}, nil
 }
 
 // UpdateUser updates a user's email, name, and role (owner only)
