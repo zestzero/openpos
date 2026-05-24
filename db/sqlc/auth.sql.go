@@ -14,7 +14,7 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (email, password_hash, role, name, pin_hash)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, email, role, name, created_at, updated_at
+RETURNING id, email, role, name, is_active, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -30,6 +30,7 @@ type CreateUserRow struct {
 	Email     string             `json:"email"`
 	Role      string             `json:"role"`
 	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
@@ -48,6 +49,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		&i.Email,
 		&i.Role,
 		&i.Name,
+		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -55,7 +57,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE email = $1
 `
@@ -72,12 +74,13 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE id = $1
 `
@@ -94,12 +97,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const getUserByPIN = `-- name: GetUserByPIN :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash
+SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE email = $1 AND pin_hash = $2
 `
@@ -121,12 +125,13 @@ func (q *Queries) GetUserByPIN(ctx context.Context, arg GetUserByPINParams) (Use
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PinHash,
+		&i.IsActive,
 	)
 	return i, err
 }
 
 const listCashiers = `-- name: ListCashiers :many
-SELECT id, email, role, name, created_at, updated_at, pin_hash
+SELECT id, email, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
 WHERE role = 'cashier'
 ORDER BY created_at DESC
@@ -140,6 +145,7 @@ type ListCashiersRow struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	PinHash   pgtype.Text        `json:"pin_hash"`
+	IsActive  bool               `json:"is_active"`
 }
 
 func (q *Queries) ListCashiers(ctx context.Context) ([]ListCashiersRow, error) {
@@ -159,6 +165,7 @@ func (q *Queries) ListCashiers(ctx context.Context) ([]ListCashiersRow, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.PinHash,
+			&i.IsActive,
 		); err != nil {
 			return nil, err
 		}
@@ -168,6 +175,126 @@ func (q *Queries) ListCashiers(ctx context.Context) ([]ListCashiersRow, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, email, role, name, is_active, created_at, updated_at
+FROM users
+ORDER BY created_at DESC
+`
+
+type ListUsersRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Email     string             `json:"email"`
+	Role      string             `json:"role"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUsersRow
+	for rows.Next() {
+		var i ListUsersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Role,
+			&i.Name,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const toggleUserActive = `-- name: ToggleUserActive :one
+UPDATE users
+SET is_active = NOT is_active, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, email, role, name, is_active, created_at, updated_at
+`
+
+type ToggleUserActiveRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Email     string             `json:"email"`
+	Role      string             `json:"role"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ToggleUserActive(ctx context.Context, id pgtype.UUID) (ToggleUserActiveRow, error) {
+	row := q.db.QueryRow(ctx, toggleUserActive, id)
+	var i ToggleUserActiveRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Role,
+		&i.Name,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET email = $2, name = $3, role = $4, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING id, email, role, name, is_active, created_at, updated_at
+`
+
+type UpdateUserParams struct {
+	ID    pgtype.UUID `json:"id"`
+	Email string      `json:"email"`
+	Name  string      `json:"name"`
+	Role  string      `json:"role"`
+}
+
+type UpdateUserRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Email     string             `json:"email"`
+	Role      string             `json:"role"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateUserRow, error) {
+	row := q.db.QueryRow(ctx, updateUser,
+		arg.ID,
+		arg.Email,
+		arg.Name,
+		arg.Role,
+	)
+	var i UpdateUserRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Role,
+		&i.Name,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const updateUserPin = `-- name: UpdateUserPin :one
