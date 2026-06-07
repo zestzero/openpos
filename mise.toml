@@ -1,7 +1,7 @@
 [tools]
 go = "1.26.2"
 node = "20"
-pnpm = "latest"
+pnpm = "10"
 
 [env]
 DATABASE_URL = "postgres://openpos:openpos@localhost:5432/openpos?sslmode=disable"
