@@ -33,8 +33,8 @@ vi.mock('exceljs', () => {
 
   const mockWorksheet = parseCsv('')
 
-  const Workbook = vi.fn(function WorkbookMock() {
-    const self = this as Record<string, unknown>
+  const Workbook = vi.fn(function WorkbookMock(this: Record<string, unknown>) {
+    const self = this
     self.worksheets = [mockWorksheet]
 
     self.csv = {
@@ -44,7 +44,7 @@ vi.mock('exceljs', () => {
       }),
     }
     self.xlsx = {
-      load: vi.fn(async (buffer: ArrayBuffer) => {
+      load: vi.fn(async () => {
         // Keep the default mock worksheet for xlsx
       }),
     }
