@@ -34,7 +34,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Pin pnpm to v10 while this workflow remains on Node.js 20.
+      # Pin pnpm to v10 for compatibility with Node.js 20.
       - uses: pnpm/action-setup@v4
         with:
           version: '10'

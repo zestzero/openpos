@@ -31,16 +31,23 @@ vi.mock('exceljs', () => {
     return { eachRow }
   }
 
+  type MockWorksheet = ReturnType<typeof parseCsv>
+  type MockWorkbook = {
+    worksheets: MockWorksheet[]
+    csv: { read: (text: string) => Promise<void> }
+    xlsx: { load: () => Promise<void> }
+  }
+
   const mockWorksheet = parseCsv('')
 
-  const Workbook = vi.fn(function WorkbookMock(this: Record<string, unknown>) {
+  const Workbook = vi.fn(function WorkbookMock(this: MockWorkbook) {
     const self = this
     self.worksheets = [mockWorksheet]
 
     self.csv = {
       read: vi.fn(async (text: string) => {
         const ws = parseCsv(text)
-        ;(self.worksheets as unknown[])[0] = ws
+        self.worksheets[0] = ws
       }),
     }
     self.xlsx = {
