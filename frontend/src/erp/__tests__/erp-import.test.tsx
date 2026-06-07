@@ -8,6 +8,52 @@ import { CategoryTable } from '../tables/CategoryTable'
 import { ImportDrawer } from '../import/ImportDrawer'
 import { generateVariantBarcode } from '../products/variantBarcode'
 
+// Mock exceljs for jsdom test environment — Node.js CSV reader expects streams,
+// browser build accepts strings. Provide a working in-memory CSV parser.
+vi.mock('exceljs', () => {
+  function createMockRow(values: string[]) {
+    return {
+      values: [undefined, ...values],
+      eachCell: vi.fn(),
+    }
+  }
+
+  function parseCsv(text: string) {
+    const lines = text.trim().split('\n')
+    const rows = lines.map((line) => line.split(','))
+
+    const eachRow = vi.fn((callback: (row: ReturnType<typeof createMockRow>, rowNumber: number) => void) => {
+      rows.forEach((values, index) => {
+        callback(createMockRow(values), index + 1)
+      })
+    })
+
+    return { eachRow }
+  }
+
+  const mockWorksheet = parseCsv('')
+
+  const Workbook = vi.fn(function WorkbookMock() {
+    const self = this as Record<string, unknown>
+    self.worksheets = [mockWorksheet]
+
+    self.csv = {
+      read: vi.fn(async (text: string) => {
+        const ws = parseCsv(text)
+        ;(self.worksheets as unknown[])[0] = ws
+      }),
+    }
+    self.xlsx = {
+      load: vi.fn(async (buffer: ArrayBuffer) => {
+        // Keep the default mock worksheet for xlsx
+      }),
+    }
+    return self
+  })
+
+  return { default: { Workbook } }
+})
+
 function makeCategory(id: string, name: string) {
   return {
     id,
