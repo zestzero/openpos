@@ -4,7 +4,15 @@ import (
 	"context"
 	"errors"
 	"encoding/json"
+	"fmt"
+	"io"
+	"mime"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -42,22 +50,25 @@ func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
 
 	// Categories
-		r.Group(func(r chi.Router) {
-			r.Get("/categories", h.ListCategories)
-			r.Post("/categories", h.CreateCategory)
-			r.Get("/categories/{id}", h.GetCategory)
-			r.Put("/categories/{id}", h.UpdateCategory)
-			r.Put("/categories/reorder", h.ReorderCategories)
-		})
+	r.Group(func(r chi.Router) {
+		r.Get("/categories", h.ListCategories)
+		r.Post("/categories", h.CreateCategory)
+		r.Get("/categories/{id}", h.GetCategory)
+		r.Put("/categories/{id}", h.UpdateCategory)
+		r.Put("/categories/reorder", h.ReorderCategories)
+	})
 
 	// Products
-		r.Group(func(r chi.Router) {
-			r.Get("/products", h.ListProducts)
-			r.Post("/products", h.CreateProduct)
-			r.Post("/import", h.ImportProducts)
-			r.Get("/products/{id}", h.GetProduct)
-			r.Put("/products/{id}", h.UpdateProduct)
-		})
+	r.Group(func(r chi.Router) {
+		r.Get("/products", h.ListProducts)
+		r.Post("/products", h.CreateProduct)
+		r.Post("/import", h.ImportProducts)
+		r.Get("/products/{id}", h.GetProduct)
+		r.Put("/products/{id}", h.UpdateProduct)
+	})
+
+	// Image upload
+	r.Post("/images", h.UploadImage)
 
 	// Variants
 	r.Group(func(r chi.Router) {
@@ -71,10 +82,114 @@ func (h *Handler) Routes() http.Handler {
 	return r
 }
 
+// UploadImage handles multipart image uploads, saves the file to the uploads directory,
+// and returns the public URL.
+func (h *Handler) UploadImage(w http.ResponseWriter, r *http.Request) {
+	const maxSize = 10 << 20 // 10 MB
+	if err := r.ParseMultipartForm(maxSize); err != nil {
+		writeError(w, http.StatusBadRequest, "request too large or not multipart")
+		return
+	}
+
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "field 'image' required")
+		return
+	}
+	defer file.Close()
+
+	// Validate MIME type from extension + content-type header
+	ext := strings.ToLower(filepath.Ext(header.Filename))
+	allowedExts := map[string]string{
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".png":  "image/png",
+		".webp": "image/webp",
+		".gif":  "image/gif",
+		".avif": "image/avif",
+	}
+	if _, ok := allowedExts[ext]; !ok {
+		// fall back to content-type
+		ct := header.Header.Get("Content-Type")
+		mediaType, _, _ := mime.ParseMediaType(ct)
+		if !strings.HasPrefix(mediaType, "image/") {
+			writeError(w, http.StatusBadRequest, "unsupported image format")
+			return
+		}
+		ext = "." + strings.TrimPrefix(mediaType, "image/")
+	}
+
+	uploadsDir := getUploadsDir()
+	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not create uploads directory")
+		return
+	}
+
+	// Generate a unique filename
+	filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+	destPath := filepath.Join(uploadsDir, filename)
+
+	dst, err := os.Create(destPath)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "could not save image")
+		return
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, file); err != nil {
+		writeError(w, http.StatusInternalServerError, "could not write image")
+		return
+	}
+
+	publicURL := publicUploadURL(r, filename)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	_ = json.NewEncoder(w).Encode(map[string]string{"url": publicURL})
+}
+
+func publicUploadURL(r *http.Request, filename string) string {
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		if r.TLS != nil {
+			scheme = "https"
+		} else {
+			scheme = "http"
+		}
+	}
+
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+
+	if host == "" {
+		return "/uploads/" + filename
+	}
+
+	return (&url.URL{
+		Scheme: scheme,
+		Host:   host,
+		Path:   "/uploads/" + filename,
+	}).String()
+}
+
+func getUploadsDir() string {
+	if d := os.Getenv("UPLOADS_DIR"); d != "" {
+		return d
+	}
+	return "uploads"
+}
+
 // Response helpers
 
 type errorResponse struct {
 	Error string `json:"error"`
+}
+
+func writeError(w http.ResponseWriter, status int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(errorResponse{Error: msg})
 }
 
 type successResponse struct {

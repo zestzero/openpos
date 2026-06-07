@@ -25,7 +25,7 @@ const navGroups: Array<{ label: string; items: NavItem[] }> = [
     items: [
       { label: 'Sales handoff', icon: ShoppingCart, to: null },
       { label: 'Reports', icon: BarChart3, to: '/erp/reports' },
-      { label: 'Settings', icon: Settings2, to: null },
+      { label: 'Settings', icon: Settings2, to: '/erp/settings' },
     ],
   },
 ]

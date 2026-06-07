@@ -95,6 +95,7 @@ type User struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	PinHash      pgtype.Text        `json:"pin_hash"`
+	IsActive     bool               `json:"is_active"`
 }
 
 type Variant struct {
