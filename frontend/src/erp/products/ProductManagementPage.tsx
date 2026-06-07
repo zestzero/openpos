@@ -56,6 +56,7 @@ export function ProductManagementPage() {
   const [restockTarget, setRestockTarget] = useState<{ product: CatalogProductRecord; variantId: string; variantName: string } | null>(null)
   const [restockQuantity, setRestockQuantity] = useState('1')
   const [restockError, setRestockError] = useState<string | null>(null)
+  const [archiveConfirm, setArchiveConfirm] = useState<{ type: 'product' | 'variant'; product: CatalogProductRecord; id: string; name: string } | null>(null)
 
   const openCreateProduct = () => {
     setSelectedProduct(null)
@@ -193,10 +194,13 @@ export function ProductManagementPage() {
         restockBusy={restockBusy}
         onCreateProduct={openCreateProduct}
         onEditProduct={openEditProduct}
-        onArchiveProduct={async (product) => {
-          await archiveProductMutation.mutateAsync({ id: product.product.id, values: normalizeProductDraft(product) })
+        onArchiveProduct={(product) => {
+          setArchiveConfirm({ type: 'product', product, id: product.product.id, name: product.product.name })
         }}
-        onArchiveVariant={archiveVariant}
+        onArchiveVariant={(product, variantId) => {
+          const variant = product.variants.find(v => v.id === variantId)
+          setArchiveConfirm({ type: 'variant', product, id: variantId, name: variant?.name ?? 'this variant' })
+        }}
         onRestockVariant={openRestockVariant}
         onReorderVariants={async () => undefined}
       />
@@ -262,6 +266,38 @@ export function ProductManagementPage() {
             </Button>
             <Button onClick={() => void submitRestock()} disabled={restockBusy}>
               {restockBusy ? 'Restocking...' : 'Restock'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={archiveConfirm !== null} onOpenChange={(open) => { if (!open) setArchiveConfirm(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Archive {archiveConfirm?.type === 'variant' ? 'variant' : 'product'}?</DialogTitle>
+            <DialogDescription>
+              {archiveConfirm?.name} will be hidden from POS. This can be undone from the archive.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setArchiveConfirm(null)} disabled={archiveBusy}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!archiveConfirm) return
+                if (archiveConfirm.type === 'product') {
+                  void archiveProductMutation.mutateAsync({ id: archiveConfirm.product.product.id, values: normalizeProductDraft(archiveConfirm.product) })
+                } else {
+                  void archiveVariantMutation.mutateAsync({ id: archiveConfirm.id, variant: toVariantFormValues(archiveConfirm.product.variants.find(v => v.id === archiveConfirm.id)!) })
+                }
+                setArchiveConfirm(null)
+              }}
+              disabled={archiveBusy}
+            >
+              {archiveBusy ? 'Archiving...' : 'Archive'}
             </Button>
           </DialogFooter>
         </DialogContent>

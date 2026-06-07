@@ -6,3 +6,6 @@
 # GSD workflow (machine-specific paths + state)
 .opencode/
 .planning/
+
+# Upload folder
+uploads/
