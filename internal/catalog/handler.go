@@ -2,8 +2,8 @@ package catalog
 
 import (
 	"context"
-	"errors"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -356,12 +356,12 @@ func (h *Handler) ListProducts(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Name        string                  `json:"name"`
-		Description string                  `json:"description"`
-		CategoryID  *string                 `json:"category_id"`
-		ImageURL    string                  `json:"image_url"`
-		IsActive    *bool                   `json:"is_active"`
-		Variants    []CreateVariantInput    `json:"variants"`
+		Name        string               `json:"name"`
+		Description string               `json:"description"`
+		CategoryID  *string              `json:"category_id"`
+		ImageURL    string               `json:"image_url"`
+		IsActive    *bool                `json:"is_active"`
+		Variants    []CreateVariantInput `json:"variants"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

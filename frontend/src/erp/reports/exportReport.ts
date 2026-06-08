@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 import { formatTHB } from '@/lib/formatCurrency'
 import { formatReportingMonth, type ReportingMonthRow } from '@/lib/reporting-api'
@@ -30,7 +30,7 @@ export function buildReportExportFilename(format: ReportExportFormat, title: str
   return `${slug}-${start}-to-${end}.${format}`
 }
 
-export function exportReportRows(format: ReportExportFormat, payload: ReportExportPayload) {
+export async function exportReportRows(format: ReportExportFormat, payload: ReportExportPayload) {
   return format === 'pdf' ? exportPdfReport(payload) : exportXlsxReport(payload)
 }
 
@@ -80,7 +80,7 @@ function exportPdfReport({ title, rows }: ReportExportPayload) {
   doc.save(filename)
 }
 
-function exportXlsxReport({ title, rows }: ReportExportPayload) {
+async function exportXlsxReport({ title, rows }: ReportExportPayload) {
   const filename = buildReportExportFilename('xlsx', title, rows)
   const worksheetRows = rows.map((row) => ({
     Month: formatReportingMonth(row.month),
@@ -91,12 +91,21 @@ function exportXlsxReport({ title, rows }: ReportExportPayload) {
     'Average order value': formatTHB(row.averageOrderValue),
   }))
 
-  const worksheet = XLSX.utils.json_to_sheet(worksheetRows)
-  const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Report')
+  const workbook = new ExcelJS.Workbook()
+  const worksheet = workbook.addWorksheet('Report')
+  worksheet.columns = [
+    { header: 'Month', key: 'Month' },
+    { header: 'Orders', key: 'Orders' },
+    { header: 'Revenue', key: 'Revenue' },
+    { header: 'Cost of goods sold', key: 'Cost of goods sold' },
+    { header: 'Gross profit', key: 'Gross profit' },
+    { header: 'Average order value', key: 'Average order value' },
+  ]
 
-  const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })
-  downloadBuffer(buffer, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  worksheetRows.forEach((row) => worksheet.addRow(row))
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  downloadBuffer(buffer as ArrayBuffer, filename, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 }
 
 function downloadBuffer(buffer: ArrayBuffer, filename: string, mimeType: string) {

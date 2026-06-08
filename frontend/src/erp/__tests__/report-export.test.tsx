@@ -18,10 +18,21 @@ const mocks = vi.hoisted(() => {
     }
   })
 
-  const jsonToSheet = vi.fn(() => ({ worksheet: true }))
-  const bookNew = vi.fn(() => ({ workbook: true }))
-  const bookAppendSheet = vi.fn()
-  const write = vi.fn(() => new ArrayBuffer(8))
+  const writeBuffer = vi.fn(async () => new ArrayBuffer(8))
+  const addRow = vi.fn()
+  const addWorksheet = vi.fn(() => ({
+    addRow,
+    addWorksheet: vi.fn(),
+  }))
+
+  const Workbook = vi.fn(function WorkbookMock() {
+    return {
+      addWorksheet,
+      xlsx: {
+        writeBuffer,
+      },
+    }
+  })
 
   return {
     autoTable,
@@ -29,10 +40,10 @@ const mocks = vi.hoisted(() => {
     setFontSize,
     text,
     jsPDF,
-    jsonToSheet,
-    bookNew,
-    bookAppendSheet,
-    write,
+    addRow,
+    addWorksheet,
+    writeBuffer,
+    Workbook,
   }
 })
 
@@ -44,13 +55,10 @@ vi.mock('jspdf-autotable', () => ({
   default: mocks.autoTable,
 }))
 
-vi.mock('xlsx', () => ({
-  utils: {
-    json_to_sheet: mocks.jsonToSheet,
-    book_new: mocks.bookNew,
-    book_append_sheet: mocks.bookAppendSheet,
+vi.mock('exceljs', () => ({
+  default: {
+    Workbook: mocks.Workbook,
   },
-  write: mocks.write,
 }))
 
 import { buildReportExportFilename, exportReportRows } from '../reports/exportReport'
@@ -124,7 +132,7 @@ describe('report export helpers', () => {
     expect(mocks.save).toHaveBeenCalledWith('monthly-sales-and-gross-profit-2026-03-to-2026-04.pdf')
   })
 
-  it('exports xlsx rows with THB-formatted worksheet data and downloads the file', () => {
+  it('exports xlsx rows with THB-formatted worksheet data and downloads the file', async () => {
     const anchor = {
       click: vi.fn(),
       download: '',
@@ -133,31 +141,30 @@ describe('report export helpers', () => {
     } as unknown as HTMLAnchorElement
     const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue(anchor)
 
-    exportReportRows('xlsx', {
+    await exportReportRows('xlsx', {
       title: 'Monthly sales and gross profit',
       rows: [...rows] as unknown as never,
     })
 
-    expect(mocks.jsonToSheet).toHaveBeenCalledWith([
-      {
-        Month: 'Apr 2026',
-        Orders: 42,
-        Revenue: '฿1,250.00',
-        'Cost of goods sold': '฿760.00',
-        'Gross profit': '฿490.00',
-        'Average order value': '฿29.76',
-      },
-      {
-        Month: 'Mar 2026',
-        Orders: 35,
-        Revenue: '฿980.00',
-        'Cost of goods sold': '฿640.00',
-        'Gross profit': '฿340.00',
-        'Average order value': '฿28.00',
-      },
-    ])
-    expect(mocks.bookAppendSheet).toHaveBeenCalledWith({ workbook: true }, { worksheet: true }, 'Report')
-    expect(mocks.write).toHaveBeenCalledWith({ workbook: true }, { bookType: 'xlsx', type: 'array' })
+    expect(mocks.addWorksheet).toHaveBeenCalledWith('Report')
+    expect(mocks.addRow).toHaveBeenCalledTimes(2)
+    expect(mocks.addRow).toHaveBeenNthCalledWith(1, {
+      Month: 'Apr 2026',
+      Orders: 42,
+      Revenue: '฿1,250.00',
+      'Cost of goods sold': '฿760.00',
+      'Gross profit': '฿490.00',
+      'Average order value': '฿29.76',
+    })
+    expect(mocks.addRow).toHaveBeenNthCalledWith(2, {
+      Month: 'Mar 2026',
+      Orders: 35,
+      Revenue: '฿980.00',
+      'Cost of goods sold': '฿640.00',
+      'Gross profit': '฿340.00',
+      'Average order value': '฿28.00',
+    })
+    expect(mocks.writeBuffer).toHaveBeenCalledTimes(1)
     expect(createElementSpy).toHaveBeenCalledWith('a')
     expect(anchor.download).toBe('monthly-sales-and-gross-profit-2026-03-to-2026-04.xlsx')
     expect(anchor.click).toHaveBeenCalledTimes(1)

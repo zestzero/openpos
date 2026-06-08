@@ -3,7 +3,7 @@
 import { useMemo, useState, type ChangeEvent } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { AlertCircle, FileSpreadsheet, Upload, Wand2 } from 'lucide-react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -195,28 +195,46 @@ function rowsToProducts(rows: ImportPreviewRow[]): ImportProductInput[] {
 }
 
 async function readFileRows(file: File) {
-  const workbook = file.name.toLowerCase().endsWith('.csv')
-    ? XLSX.read(await file.text(), { type: 'string' })
-    : XLSX.read(await file.arrayBuffer(), { type: 'array' })
+  const workbook = new ExcelJS.Workbook()
 
-  const sheetName = workbook.SheetNames[0]
-  if (!sheetName) {
+  if (file.name.toLowerCase().endsWith('.csv')) {
+    // ExcelJS csv.read() types expect Node.js Stream, but browser build accepts string
+    // @ts-expect-error - browser-compatible string input not reflected in types
+    await workbook.csv.read(await file.text())
+  } else {
+    await workbook.xlsx.load(await file.arrayBuffer())
+  }
+
+  const worksheet = workbook.worksheets[0]
+  if (!worksheet) {
     return []
   }
 
-  const sheet = workbook.Sheets[sheetName]
-  if (!sheet) {
-    return []
-  }
+  const rawRows: Record<string, unknown>[] = []
+  let headers: string[] = []
 
-  return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' })
-    .map((row) => {
-      const normalizedRow: Record<string, unknown> = {}
-      Object.entries(row).forEach(([key, value]) => {
-        normalizedRow[normalizeHeader(key)] = value
-      })
-      return normalizedRow
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      headers = (row.values as unknown[]).slice(1).map((value) => String(value ?? ''))
+      return
+    }
+
+    const values = row.values as unknown[]
+    const obj: Record<string, unknown> = {}
+    for (let col = 1; col < values.length; col++) {
+      const header = headers[col - 1] ?? `col_${col}`
+      obj[header] = values[col] ?? ''
+    }
+    rawRows.push(obj)
+  })
+
+  return rawRows.map((row) => {
+    const normalizedRow: Record<string, unknown> = {}
+    Object.entries(row).forEach(([key, value]) => {
+      normalizedRow[normalizeHeader(key)] = value
     })
+    return normalizedRow
+  })
 }
 
 export function ImportDrawer() {

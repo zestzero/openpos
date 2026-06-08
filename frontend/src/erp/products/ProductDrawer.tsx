@@ -227,7 +227,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 </div>
 
                 <ActiveSwitch
-                  label="Available for sale"
+                  label="Active in POS"
                   description="Show this product in POS for cashiers to ring up."
                   checked={draft.isActive}
                   onCheckedChange={(checked) => setDraft((current) => ({ ...current, isActive: checked }))}
