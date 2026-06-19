@@ -1,21 +1,14 @@
-import type { ReactNode } from 'react'
-import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from 'lucide-react'
+import type { ReactNode } from "react";
+import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useAuth } from '@/hooks/useAuth'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
 
-import { ErpNav } from '../navigation/ErpNav'
-
-const tabs = [
-  { label: 'Products', to: '/erp/products' },
-  { label: 'Inventory', to: '/erp/inventory' },
-  { label: 'Reporting', to: '/erp/reports' },
-] as const
+import { ErpNav } from "../navigation/ErpNav";
 
 export function ErpLayout({ children }: { children: ReactNode }) {
-  const { logout } = useAuth()
-  const pathname = typeof window !== 'undefined' && window.location.pathname !== '/' ? window.location.pathname : '/erp'
+  const { logout } = useAuth();
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
@@ -39,14 +32,18 @@ export function ErpLayout({ children }: { children: ReactNode }) {
               <div className="flex items-center gap-3">
                 <div className="relative hidden min-w-72 lg:block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input className="h-10 rounded-pill pl-9" placeholder="Search products, variants, reports" />
+                  <Input
+                    className="h-10 rounded-pill pl-9"
+                    placeholder="Search products, variants, reports"
+                  />
                 </div>
-                <a href="/pos" className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted">
+                <a
+                  href="/pos"
+                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
                   <ScanLine className="h-4 w-4" />
                   POS
                 </a>
-                <Button variant="outline">Create product</Button>
-                <Button variant="outline">Import</Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -58,40 +55,11 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                 </Button>
               </div>
             </div>
-
-            <div className="flex items-center justify-between gap-4 border-t border-border pt-4">
-              <nav className="flex flex-wrap gap-2" role="tablist" aria-label="ERP workspace tabs">
-                {tabs.map((tab) => {
-                  const isActive = tab.to ? pathname === tab.to : false
-
-                  return (
-                    <a
-                      key={tab.label}
-                      href={tab.to ?? '#'}
-                      role="tab"
-                      aria-selected={isActive}
-                      className={isActive
-                        ? 'rounded-pill bg-primary px-4 py-2 text-sm font-medium text-primary-foreground'
-                        : 'rounded-pill border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'}
-                    >
-                      {tab.label}
-                    </a>
-                  )
-                })}
-              </nav>
-
-              <div className="hidden items-center gap-2 text-sm text-muted-foreground md:flex">
-                <span className="h-2 w-2 rounded-full bg-brand" />
-                Reporting tab ready for Phase 4 workflows
-              </div>
-            </div>
           </div>
         </header>
 
-        <main className="flex-1 bg-muted/20 px-6 py-6">
-          {children}
-        </main>
+        <main className="flex-1 bg-muted/20 px-6 py-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }

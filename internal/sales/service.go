@@ -68,6 +68,42 @@ func (s sqlcOrderStore) WithTx(tx pgx.Tx) orderStore {
 	return sqlcOrderStore{Queries: s.Queries.WithTx(tx)}
 }
 
+func (s sqlcOrderStore) CreateOrder(ctx context.Context, arg sqlc.CreateOrderParams) (sqlc.Order, error) {
+	row, err := s.Queries.CreateOrder(ctx, arg)
+	if err != nil {
+		return sqlc.Order{}, err
+	}
+	return createOrderRowToOrder(row), nil
+}
+
+func (s sqlcOrderStore) GetOrderByClientUUID(ctx context.Context, clientUUID string) (sqlc.Order, error) {
+	row, err := s.Queries.GetOrderByClientUUID(ctx, clientUUID)
+	if err != nil {
+		return sqlc.Order{}, err
+	}
+	return getOrderByClientUUIDRowToOrder(row), nil
+}
+
+func (s sqlcOrderStore) GetOrderByID(ctx context.Context, id pgtype.UUID) (sqlc.Order, error) {
+	row, err := s.Queries.GetOrderByID(ctx, id)
+	if err != nil {
+		return sqlc.Order{}, err
+	}
+	return getOrderByIDRowToOrder(row), nil
+}
+
+func (s sqlcOrderStore) ListOrders(ctx context.Context, arg sqlc.ListOrdersParams) ([]sqlc.Order, error) {
+	rows, err := s.Queries.ListOrders(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+	orders := make([]sqlc.Order, len(rows))
+	for i, row := range rows {
+		orders[i] = listOrdersRowToOrder(row)
+	}
+	return orders, nil
+}
+
 type sqlcInventoryGateway struct {
 	*inventory.Service
 }
@@ -377,6 +413,58 @@ func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, i
 	}
 
 	return s.loadOrder(ctx, orderRow, created)
+}
+
+func createOrderRowToOrder(row sqlc.CreateOrderRow) sqlc.Order {
+	return sqlc.Order{
+		ID:             row.ID,
+		ClientUuid:     row.ClientUuid,
+		UserID:         row.UserID,
+		Status:         row.Status,
+		TotalAmount:    row.TotalAmount,
+		DiscountAmount: row.DiscountAmount,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+	}
+}
+
+func getOrderByClientUUIDRowToOrder(row sqlc.GetOrderByClientUUIDRow) sqlc.Order {
+	return sqlc.Order{
+		ID:             row.ID,
+		ClientUuid:     row.ClientUuid,
+		UserID:         row.UserID,
+		Status:         row.Status,
+		TotalAmount:    row.TotalAmount,
+		DiscountAmount: row.DiscountAmount,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+	}
+}
+
+func getOrderByIDRowToOrder(row sqlc.GetOrderByIDRow) sqlc.Order {
+	return sqlc.Order{
+		ID:             row.ID,
+		ClientUuid:     row.ClientUuid,
+		UserID:         row.UserID,
+		Status:         row.Status,
+		TotalAmount:    row.TotalAmount,
+		DiscountAmount: row.DiscountAmount,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+	}
+}
+
+func listOrdersRowToOrder(row sqlc.ListOrdersRow) sqlc.Order {
+	return sqlc.Order{
+		ID:             row.ID,
+		ClientUuid:     row.ClientUuid,
+		UserID:         row.UserID,
+		Status:         row.Status,
+		TotalAmount:    row.TotalAmount,
+		DiscountAmount: row.DiscountAmount,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+	}
 }
 
 func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, payment sqlc.Payment, storeName string) (*ReceiptSnapshot, error) {

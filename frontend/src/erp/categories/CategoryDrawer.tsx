@@ -27,8 +27,8 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="left-auto right-0 top-0 h-full max-w-xl translate-x-0 translate-y-0 rounded-none border-l p-0">
-        <div className="flex h-full flex-col">
+      <DialogContent className="flex max-h-[min(90vh,640px)] w-[calc(100vw-2rem)] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:rounded-card">
+        <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
