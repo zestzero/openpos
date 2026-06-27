@@ -23,8 +23,6 @@ export function PosLayout({ children }: PosLayoutProps) {
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden bg-background text-foreground">
-      <div className="pointer-events-none fixed right-[-12%] top-[-14%] -z-10 h-[52%] w-[52%] rounded-full bg-brand/8 blur-[140px]" />
-      <div className="pointer-events-none fixed bottom-[-10%] left-[-10%] -z-10 h-[42%] w-[42%] rounded-full bg-brand/5 blur-[120px]" />
       <PosHeader user={user} online={online} />
       <OfflineBanner />
 
@@ -39,29 +37,26 @@ export function PosLayout({ children }: PosLayoutProps) {
       <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 xl:hidden">
         <Button
           type="button"
-          className="flex h-auto w-full items-center justify-between rounded-full px-5 py-4 shadow-[0_14px_30px_rgba(0,0,0,0.14)]"
+          className="flex h-14 w-full items-center justify-between rounded-full bg-brand px-6 py-4 text-brand-foreground shadow-lg transition-transform active:scale-95"
           onClick={() => setCartOpen(true)}
         >
           <div className="flex items-center gap-3">
-            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-background/10 text-xs font-semibold text-background">
-              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1 text-[10px] font-semibold text-foreground">
-                {itemCount}
-              </span>
-              <span className="text-xs font-semibold">Cart</span>
+            <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+              {itemCount}
             </span>
-            <span className="text-sm font-semibold">View cart</span>
+            <span className="text-sm font-semibold text-white">View cart</span>
           </div>
-          <span className="text-lg font-semibold tracking-tight">
+          <span className="text-lg font-bold tracking-tight text-white">
             {formatCurrency(total)}
           </span>
         </Button>
       </div>
 
       <Dialog open={cartOpen} onOpenChange={setCartOpen}>
-        <DialogContent className="left-1/2 top-auto bottom-0 h-[80dvh] w-[min(100vw-1rem,56rem)] max-w-none translate-x-[-50%] translate-y-0 rounded-b-none rounded-t-[1.75rem] border-b-0 p-0 sm:w-[min(100vw-2rem,56rem)]">
+        <DialogContent className="left-1/2 top-auto bottom-0 h-[80dvh] w-[min(100vw-1rem,56rem)] max-w-none translate-x-[-50%] translate-y-0 rounded-b-none rounded-t-3xl border-b-0 p-0 sm:w-[min(100vw-2rem,56rem)]">
           <div className="flex h-full flex-col overflow-hidden">
-            <DialogHeader className="border-b border-border/70 px-4 pb-4 pt-5 text-left sm:px-6">
-              <DialogTitle>Cart</DialogTitle>
+            <DialogHeader className="border-b border-border/70 px-6 pb-4 pt-6 text-left">
+              <DialogTitle className="text-xl font-bold">Cart</DialogTitle>
             </DialogHeader>
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-3 sm:px-6">
               <CartPanel compact />

@@ -19,7 +19,7 @@ export function CartItemRow({
   compact = false,
 }: CartItemRowProps) {
   return (
-    <div className={`flex items-center gap-3 rounded-card border border-border bg-background px-3 py-3 ${compact ? '' : 'shadow-card'} last:mb-0`}>
+    <div className={`flex items-center gap-3 rounded-2xl border-none bg-gray-50 px-4 py-3 ${compact ? '' : 'shadow-sm'} mb-2 last:mb-0`}>
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-foreground">{item.productName}</div>
         {!compact ? <div className="truncate text-sm text-muted-foreground">{item.variantName}</div> : null}
@@ -53,7 +53,7 @@ export function CartItemRow({
       </div>
 
       <div className="flex flex-col items-end gap-1">
-        <span className="font-semibold text-primary">
+        <span className="font-bold text-brand">
           {formatCurrency(item.subtotal)}
         </span>
         <Button

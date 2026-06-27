@@ -175,8 +175,8 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   }
 
   return (
-    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-card border border-border/70 bg-card shadow-card'}>
-      <div className={`flex items-start justify-between gap-3 ${compact ? '' : 'border-b border-border/70 p-4'}`}>
+    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-white shadow-sm'}>
+      <div className={`flex items-start justify-between gap-3 ${compact ? '' : 'border-b border-gray-100 p-6'}`}>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             {compact ? 'Cart' : 'Order workspace'}
@@ -227,17 +227,17 @@ export function CartPanel({ compact = false }: CartPanelProps) {
             ))}
           </div>
 
-          <div className={`${compact ? 'shrink-0 border-t border-border/70 bg-background/95 px-0 pt-3' : 'border-t border-border/70 p-4'}`}>
-            <div className={`${compact ? 'rounded-card border border-border/70 bg-background p-3 shadow-card' : ''}`}>
+          <div className={`${compact ? 'shrink-0 bg-white px-0 pt-3' : 'border-t border-gray-100 p-6'}`}>
+            <div className={`${compact ? 'rounded-3xl bg-white p-3 shadow-sm' : ''}`}>
               <div className="mb-3 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Item count</span>
-                <span className="font-medium">{itemCount}</span>
+                <span className="text-gray-500 font-medium">Item count</span>
+                <span className="font-bold text-gray-900">{itemCount}</span>
               </div>
-              <div className="mb-4 flex items-center justify-between text-xl font-bold">
-                <span>Subtotal</span>
-                <span className="text-primary">{formatCurrency(total)}</span>
+              <div className="mb-6 flex items-center justify-between text-xl font-bold">
+                <span className="text-gray-900">Subtotal</span>
+                <span className="text-brand">{formatCurrency(total)}</span>
               </div>
-              <Button className="h-14 w-full rounded-card text-lg font-semibold shadow-card" onClick={startCheckout} disabled={items.length === 0}>
+              <Button className="h-14 w-full rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95" onClick={startCheckout} disabled={items.length === 0}>
                 Complete order
               </Button>
               {!compact ? (
@@ -281,13 +281,13 @@ export function CartPanel({ compact = false }: CartPanelProps) {
             </div>
           </div>
 
-          <div className={`${compact ? 'shrink-0 border-t border-border/70 bg-background/95 pt-3' : 'flex gap-2'}`}>
-            <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep('cart')} className="h-14 gap-2">
+          <div className={`${compact ? 'shrink-0 bg-white pt-3' : 'flex gap-3'}`}>
+            <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep('cart')} className="h-14 gap-2 rounded-full border-gray-200">
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button className="h-14 flex-1 rounded-card text-lg font-semibold shadow-card gap-2" onClick={continueToPayment}>
+            <Button className="h-14 flex-1 rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95 gap-2" onClick={continueToPayment}>
               <Sparkles className="h-4 w-4" />
               Confirm order
             </Button>

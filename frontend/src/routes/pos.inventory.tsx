@@ -1,13 +1,16 @@
 /* eslint-disable react-refresh/only-export-components */
 
-import { useCallback, useState, useEffect } from 'react'
-import { ArrowLeft, ScanBarcode, XCircle, RefreshCw, Trash2, CloudOff, AlertCircle, Search } from 'lucide-react'
+import { useCallback, useState, useEffect, useMemo } from 'react'
+import { ArrowLeft, ScanBarcode, XCircle, RefreshCw, Trash2, CloudOff, AlertCircle, Search, Pencil, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { createRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { api, type SearchVariantRow } from '@/lib/api'
 import { PosLayout } from '@/pos/layout/PosLayout'
 import { BarcodeScanner } from '@/pos/components/BarcodeScanner'
@@ -25,6 +28,15 @@ export const Route = createRoute({
   component: PosInventoryRoute,
 })
 
+interface DraftAdjustment {
+  variantId: string
+  variantName: string
+  sku: string
+  barcode?: string
+  quantity: number
+  reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST'
+}
+
 export function PosInventoryRoute() {
   const navigate = useNavigate()
   const { isOnline } = useNetworkStatus()
@@ -37,12 +49,47 @@ export function PosInventoryRoute() {
   } = useOfflineAdjustments()
 
   const [queuedAdjustments, setQueuedAdjustments] = useState<QueuedAdjustment[]>([])
+  const [drafts, setDrafts] = useState<DraftAdjustment[]>([])
   const [selectedVariant, setSelectedVariant] = useState<SearchVariantRow | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [lastError, setLastError] = useState<string | null>(null)
   const [showError, setShowError] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [showSuggestions, setShowSuggestions] = useState(false)
+
+  // Fetch full product catalog for manual search
+  const { data: productsData } = useQuery({
+    queryKey: ['products-all'],
+    queryFn: async () => {
+      const res = await api.getProducts()
+      return res.data
+    },
+    staleTime: 60 * 1000,
+  })
+
+  const allVariants = useMemo(() => {
+    if (!productsData) return []
+    return productsData.flatMap((p) =>
+      p.variants.map((v) => ({
+        ...v,
+        product_name: p.product.name,
+      }))
+    )
+  }, [productsData])
+
+  const filteredVariants = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const q = searchQuery.toLowerCase()
+    return allVariants.filter(
+      (v) =>
+        v.product_name.toLowerCase().includes(q) ||
+        v.name.toLowerCase().includes(q) ||
+        v.sku.toLowerCase().includes(q) ||
+        (v.barcode && v.barcode.toLowerCase().includes(q))
+    ).slice(0, 10)
+  }, [allVariants, searchQuery])
 
   // Load adjustments from Dexie
   const loadAdjustments = useCallback(async () => {
@@ -55,6 +102,14 @@ export function PosInventoryRoute() {
   useEffect(() => {
     loadAdjustments()
   }, [loadAdjustments])
+
+  useEffect(() => {
+    const handleDocumentClick = () => {
+      setShowSuggestions(false)
+    }
+    document.addEventListener('click', handleDocumentClick)
+    return () => document.removeEventListener('click', handleDocumentClick)
+  }, [])
 
   const handleVariantSearch = useCallback(async (code: string) => {
     try {
@@ -81,6 +136,7 @@ export function PosInventoryRoute() {
     if (!trimmed) return
     await handleVariantSearch(trimmed)
     setSearchQuery('')
+    setShowSuggestions(false)
   }, [searchQuery, handleVariantSearch])
 
   const handleScanSuccess = useCallback((variant: SearchVariantRow) => {
@@ -100,29 +156,88 @@ export function PosInventoryRoute() {
     }, 2500)
   }, [])
 
+  const handleSelectVariant = (variant: SearchVariantRow) => {
+    setSelectedVariant(variant)
+    setIsDialogOpen(true)
+    setSearchQuery('')
+    setShowSuggestions(false)
+  }
+
   const handleAdjustmentSubmit = useCallback(async (quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => {
     if (!selectedVariant) return
     
-    // Generate new client UUID
-    const id = crypto.randomUUID()
-    
-    await queueAdjustment({
-      id,
-      variantId: selectedVariant.id,
-      variantName: selectedVariant.product_name || selectedVariant.name,
-      sku: selectedVariant.sku,
-      quantity,
-      reason,
+    setDrafts((prev) => {
+      const existingIndex = prev.findIndex((d) => d.variantId === selectedVariant.id)
+      const newDraft: DraftAdjustment = {
+        variantId: selectedVariant.id,
+        variantName: selectedVariant.product_name || selectedVariant.name,
+        sku: selectedVariant.sku,
+        barcode: selectedVariant.barcode || undefined,
+        quantity,
+        reason,
+      }
+      if (existingIndex > -1) {
+        const updated = [...prev]
+        updated[existingIndex] = newDraft
+        return updated
+      } else {
+        return [...prev, newDraft]
+      }
     })
-    
-    setSelectedVariant(null)
-    loadAdjustments()
 
-    // If online, immediately try to sync
+    setSelectedVariant(null)
+  }, [selectedVariant])
+
+  const handleEditDraft = (draft: DraftAdjustment) => {
+    const originalVariant = allVariants.find((v) => v.id === draft.variantId)
+    if (originalVariant) {
+      setSelectedVariant(originalVariant)
+    } else {
+      setSelectedVariant({
+        id: draft.variantId,
+        product_id: '',
+        sku: draft.sku,
+        barcode: draft.barcode || null,
+        name: '',
+        price: 0,
+        cost: null,
+        is_active: true,
+        product_name: draft.variantName,
+      })
+    }
+    setIsDialogOpen(true)
+  }
+
+  const handleDeleteDraft = (variantId: string) => {
+    setDrafts((prev) => prev.filter((d) => d.variantId !== variantId))
+  }
+
+  const handleCommitAdjustments = async () => {
+    if (drafts.length === 0) return
+
+    for (const item of drafts) {
+      const id = crypto.randomUUID()
+      await queueAdjustment({
+        id,
+        variantId: item.variantId,
+        variantName: item.variantName,
+        sku: item.sku,
+        quantity: item.quantity,
+        reason: item.reason,
+      })
+    }
+
+    const count = drafts.length
+    setDrafts([])
+    setIsConfirmOpen(false)
+    loadAdjustments()
+    
+    toast.success(`Successfully queued ${count} adjustment${count > 1 ? 's' : ''}`)
+
     if (isOnline) {
       triggerSync()
     }
-  }, [selectedVariant, queueAdjustment, loadAdjustments, isOnline])
+  }
 
   const triggerSync = async () => {
     if (isSyncing) return
@@ -143,6 +258,11 @@ export function PosInventoryRoute() {
   const { isEnabled: isKeyboardWedgeEnabled, isScanning: isKeyboardScanning, toggle: toggleKeyboardWedge } = useKeyboardWedge({
     onScan: handleVariantSearch,
   })
+
+  const currentDraft = useMemo(() => {
+    if (!selectedVariant) return undefined
+    return drafts.find((d) => d.variantId === selectedVariant.id)
+  }, [selectedVariant, drafts])
 
   return (
     <PosLayout>
@@ -191,18 +311,50 @@ export function PosInventoryRoute() {
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 relative" onClick={(e) => e.stopPropagation()}>
               <form onSubmit={handleManualSearch} className="relative w-full">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Type barcode or SKU to adjust stock..."
+                  placeholder="Type product name, barcode, or SKU to adjust stock..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value)
+                    setShowSuggestions(true)
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
                   className="h-11 rounded-pill border-border/70 bg-background pl-12 pr-4 text-sm focus-visible:ring-brand shadow-card"
                   aria-label="Search variant to adjust"
                 />
               </form>
+
+              {showSuggestions && searchQuery.trim().length >= 2 && (
+                <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-border/80 bg-popover p-2 shadow-lg">
+                  {filteredVariants.length === 0 ? (
+                    <div className="px-4 py-2.5 text-sm text-muted-foreground">
+                      No matching products found
+                    </div>
+                  ) : (
+                    filteredVariants.map((v) => (
+                      <button
+                        key={v.id}
+                        type="button"
+                        onClick={() => handleSelectVariant(v as SearchVariantRow)}
+                        className="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors"
+                      >
+                        <div className="min-w-0 pr-4">
+                          <p className="font-semibold text-foreground truncate">
+                            {v.product_name} {v.name !== 'Default' ? `(${v.name})` : ''}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            SKU: {v.sku} {v.barcode ? `| Barcode: ${v.barcode}` : ''}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -234,10 +386,10 @@ export function PosInventoryRoute() {
                   How it works
                 </p>
                 <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                  <li>1. Scan barcode (Camera or wedge scanner).</li>
-                  <li>2. Select quantity (+ to add, - to subtract).</li>
-                  <li>3. Select reason code and click save.</li>
-                  <li>4. View sync queue status in the sidebar.</li>
+                  <li>1. Scan barcode or search for items to add to draft.</li>
+                  <li>2. Select quantity (+ to add, - to subtract) and reason.</li>
+                  <li>3. Review the current session list below.</li>
+                  <li>4. Click "Review & Commit" to save the batch.</li>
                 </ul>
               </div>
 
@@ -251,6 +403,90 @@ export function PosInventoryRoute() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* DRAFT ADJUSTMENTS SECTION */}
+          <div className="border-t border-border/60 px-4 py-5 sm:px-5">
+            <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3 mb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  Current Session
+                </p>
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  Draft Stock Adjustments
+                  {drafts.length > 0 && (
+                    <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                      {drafts.length}
+                    </Badge>
+                  )}
+                </h2>
+              </div>
+              {drafts.length > 0 && (
+                <Button
+                  onClick={() => setIsConfirmOpen(true)}
+                  className="gap-2 rounded-xl bg-primary text-primary-foreground font-semibold px-4"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Review & Commit
+                </Button>
+              )}
+            </div>
+
+            {drafts.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/70 bg-muted/10 px-4 py-8 text-center text-sm leading-6 text-muted-foreground">
+                No draft adjustments in this session. Scan barcodes or search above to add items.
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {drafts.map((item) => (
+                  <div
+                    key={item.variantId}
+                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background p-4 shadow-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-foreground text-sm">{item.variantName}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">SKU: {item.sku}</p>
+                      </div>
+                      <Badge
+                        variant={item.quantity > 0 ? 'default' : 'destructive'}
+                        className="shrink-0 rounded-lg px-2 py-0.5 text-xs font-bold"
+                      >
+                        {item.quantity > 0 ? `+${item.quantity}` : item.quantity}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-xs">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span>Reason:</span>
+                        <span className="font-semibold text-foreground">{item.reason}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditDraft(item)}
+                          className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                          title="Edit Adjustment"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteDraft(item.variantId)}
+                          className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-red-500"
+                          title="Remove Adjustment"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -371,7 +607,57 @@ export function PosInventoryRoute() {
           setSelectedVariant(null)
         }}
         onSubmit={handleAdjustmentSubmit}
+        initialQuantity={currentDraft?.quantity}
+        initialReason={currentDraft?.reason}
       />
+
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="sm:max-w-[480px] rounded-[1.75rem] border border-border/80 bg-card p-6 shadow-2xl backdrop-blur-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+              Confirm Stock Adjustments
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              Please review the summary of adjustments below before committing them to the system.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="my-4 max-h-[300px] overflow-y-auto pr-1 space-y-3">
+            {drafts.map((item) => (
+              <div key={item.variantId} className="flex items-center justify-between gap-4 p-3 rounded-xl border border-border/50 bg-muted/10">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm text-foreground truncate">{item.variantName}</p>
+                  <p className="text-xs text-muted-foreground">SKU: {item.sku} | Reason: <span className="font-semibold">{item.reason}</span></p>
+                </div>
+                <Badge
+                  variant={item.quantity > 0 ? 'default' : 'destructive'}
+                  className="shrink-0 rounded-lg px-2.5 py-0.5 text-xs font-extrabold"
+                >
+                  {item.quantity > 0 ? `+${item.quantity}` : item.quantity}
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-0 mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsConfirmOpen(false)}
+              className="rounded-xl border-border px-5 py-4 font-medium"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCommitAdjustments}
+              className="rounded-xl px-6 py-4 font-semibold shadow-md shadow-primary/20 bg-indigo-600 hover:bg-indigo-500 text-white"
+            >
+              Commit & Sync ({drafts.length})
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PosLayout>
   )
 }

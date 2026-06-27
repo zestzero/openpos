@@ -11,6 +11,8 @@ interface AdjustmentDialogProps {
   isOpen: boolean
   onClose: () => void
   onSubmit: (quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => void
+  initialQuantity?: number
+  initialReason?: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST'
 }
 
 const REASON_OPTIONS = [
@@ -21,16 +23,16 @@ const REASON_OPTIONS = [
   { value: 'LOST', label: 'Lost / Missing Goods' },
 ] as const
 
-export function AdjustmentDialog({ variant, isOpen, onClose, onSubmit }: AdjustmentDialogProps) {
+export function AdjustmentDialog({ variant, isOpen, onClose, onSubmit, initialQuantity, initialReason }: AdjustmentDialogProps) {
   const [quantity, setQuantity] = useState('1')
   const [reason, setReason] = useState<'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST'>('ADJUSTMENT')
 
   useEffect(() => {
     if (isOpen) {
-      setQuantity('1')
-      setReason('ADJUSTMENT')
+      setQuantity(initialQuantity !== undefined ? String(initialQuantity) : '1')
+      setReason(initialReason || 'ADJUSTMENT')
     }
-  }, [isOpen])
+  }, [isOpen, initialQuantity, initialReason])
 
   if (!variant) return null
 
