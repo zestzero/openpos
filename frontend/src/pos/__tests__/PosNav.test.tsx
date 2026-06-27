@@ -23,18 +23,19 @@ describe('PosNav', () => {
   beforeEach(() => {
     mocks.navigate.mockReset()
     mocks.useNavigate.mockReturnValue(mocks.navigate)
-    mocks.useRouterState.mockReturnValue('/pos/catalog')
+    mocks.useRouterState.mockReturnValue('/pos')
   })
 
   it('navigates to the cashier routes', () => {
     render(<PosNav />)
 
-    expect(screen.getByRole('button', { name: 'Selling' })).not.toHaveAttribute('aria-current')
-    expect(screen.getByRole('button', { name: 'Catalog' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'Scan' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Selling' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.queryByRole('button', { name: 'Catalog' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Scan' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Inventory' })).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Scan' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Inventory' }))
 
-    expect(mocks.navigate).toHaveBeenCalledWith({ to: '/pos/scan' })
+    expect(mocks.navigate).toHaveBeenCalledWith({ to: '/pos/inventory' })
   })
 })

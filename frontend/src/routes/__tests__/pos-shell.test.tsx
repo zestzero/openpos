@@ -86,9 +86,7 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 import { Route as posRoute } from '../pos'
-import { PosCatalogRoute } from '../pos.catalog'
 import { PosRoute } from '../pos'
-import { ScanPage } from '../pos.scan'
 
 describe('POS shell routes', () => {
   beforeEach(() => {
@@ -157,8 +155,7 @@ describe('POS shell routes', () => {
     expect(screen.getByText('Quick keys bar')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /view cart/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Selling' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'Catalog' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Scan' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Inventory' })).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /view cart/i }))
     expect(screen.getByRole('heading', { name: 'Cart' })).toBeInTheDocument()
@@ -184,23 +181,5 @@ describe('POS shell routes', () => {
       user: { id: 'cashier-1', email: 'cashier@example.com', role: 'cashier', name: 'Cashier' },
     })
     expect(() => beforeLoad?.()).not.toThrow()
-  })
-
-  it('shows the dedicated catalog browsing shell', () => {
-    render(<PosCatalogRoute />)
-
-    expect(screen.getByRole('heading', { name: 'POS Terminal' })).toBeInTheDocument()
-    expect(screen.getByRole('navigation', { name: 'Product categories' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Catalog grid')).toBeInTheDocument()
-  })
-
-  it('shows the scanner lane and wedge controls', () => {
-    render(<ScanPage />)
-
-    expect(screen.getByRole('heading', { name: /Keep the cashier moving without leaving the sale\./i })).toBeInTheDocument()
-    expect(screen.getByText('Barcode scanner')).toBeInTheDocument()
-    expect(screen.getByText('Keyboard wedge active')).toBeInTheDocument()
-    expect(screen.getByText('Current state')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Back to selling floor/i })).toBeInTheDocument()
   })
 })
