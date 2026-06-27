@@ -1,6 +1,7 @@
 -- name: CreateLedgerEntry :one
-INSERT INTO inventory_ledger (variant_id, quantity_change, reason, reference_id, created_by)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO inventory_ledger (id, variant_id, quantity_change, reason, reference_id, created_by)
+VALUES (COALESCE(NULLIF(sqlc.arg(id)::uuid, '00000000-0000-0000-0000-000000000000'::uuid), uuid_generate_v4()), sqlc.arg(variant_id), sqlc.arg(quantity_change), sqlc.arg(reason), sqlc.arg(reference_id), sqlc.arg(created_by))
+ON CONFLICT (id) DO NOTHING
 RETURNING id, variant_id, quantity_change, reason, reference_id, created_at, created_by;
 
 -- name: GetStockLevel :one

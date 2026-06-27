@@ -23,7 +23,7 @@ run = "trap 'kill 0' EXIT; mise run backend & mise run frontend & wait"
 
 [tasks.db]
 description = "Start only the local PostgreSQL container"
-run = "docker compose up -d db"
+run = "podman compose up -d db"
 
 [tasks.migrate]
 description = "Run database migrations against the local DATABASE_URL"

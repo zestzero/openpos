@@ -12,12 +12,14 @@ import (
 )
 
 const createLedgerEntry = `-- name: CreateLedgerEntry :one
-INSERT INTO inventory_ledger (variant_id, quantity_change, reason, reference_id, created_by)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO inventory_ledger (id, variant_id, quantity_change, reason, reference_id, created_by)
+VALUES (COALESCE(NULLIF($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid), uuid_generate_v4()), $2, $3, $4, $5, $6)
+ON CONFLICT (id) DO NOTHING
 RETURNING id, variant_id, quantity_change, reason, reference_id, created_at, created_by
 `
 
 type CreateLedgerEntryParams struct {
+	ID             pgtype.UUID `json:"id"`
 	VariantID      pgtype.UUID `json:"variant_id"`
 	QuantityChange int64       `json:"quantity_change"`
 	Reason         string      `json:"reason"`
@@ -27,6 +29,7 @@ type CreateLedgerEntryParams struct {
 
 func (q *Queries) CreateLedgerEntry(ctx context.Context, arg CreateLedgerEntryParams) (InventoryLedger, error) {
 	row := q.db.QueryRow(ctx, createLedgerEntry,
+		arg.ID,
 		arg.VariantID,
 		arg.QuantityChange,
 		arg.Reason,

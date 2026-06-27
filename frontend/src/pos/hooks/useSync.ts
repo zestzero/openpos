@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useNetworkStatus } from './useNetworkStatus'
 import { useOfflineOrders } from './useOfflineOrders'
-import { requestJSON } from '@/lib/api'
+import { useOfflineAdjustments } from './useOfflineAdjustments'
+import { api, requestJSON } from '@/lib/api'
 import { db } from '@/lib/db'
 import { buildSyncOrdersRequest, collectFailedClientUUIDs, getNextRetryDelayMs, type SyncOrdersResponse } from './syncContract'
 const MAX_RETRIES = 10
@@ -14,8 +15,17 @@ export function useSync() {
     markAsSynced,
     markAsFailed,
   } = useOfflineOrders()
+
+  const {
+    getAllQueuedAdjustments,
+    markAsSyncing: markAdjAsSyncing,
+    markAsSynced: markAdjAsSynced,
+    markAsFailed: markAdjAsFailed,
+  } = useOfflineAdjustments()
+
   const syncTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSyncingRef = useRef(false)
+  const isSyncingAdjRef = useRef(false)
 
   const syncPendingOrders = useCallback(async () => {
     if (isSyncingRef.current) return
@@ -67,12 +77,67 @@ export function useSync() {
     }
   }, [getAllQueuedOrders, markAsSyncing, markAsSynced, markAsFailed])
 
+  const syncPendingAdjustments = useCallback(async () => {
+    if (isSyncingAdjRef.current) return
+    isSyncingAdjRef.current = true
+
+    try {
+      const queuedAdjustments = await getAllQueuedAdjustments()
+      const retryableAdjustments = queuedAdjustments.filter(adj => adj.status !== 'syncing')
+      if (retryableAdjustments.length === 0) {
+        isSyncingAdjRef.current = false
+        return
+      }
+
+      // Mark all as syncing
+      await Promise.all(retryableAdjustments.map(adj => markAdjAsSyncing(adj.id)))
+
+      // Send to server
+      const payload = {
+        adjustments: retryableAdjustments.map(adj => ({
+          id: adj.id,
+          variant_id: adj.variantId,
+          quantity: adj.quantity,
+          reason: adj.reason,
+        }))
+      }
+
+      const result = await api.syncAdjustments(payload)
+
+      // Process results
+      const failedMap = new Map(result.data.errors.map(err => [err.id, err.error]))
+
+      for (const adj of retryableAdjustments) {
+        if (failedMap.has(adj.id)) {
+          const errorMsg = failedMap.get(adj.id) ?? 'Sync failed'
+          await markAdjAsFailed(adj.id, errorMsg)
+        } else {
+          await markAdjAsSynced(adj.id)
+        }
+      }
+    } catch (error) {
+      // Network or server error - mark all syncing adjustments as failed for retry
+      const syncing = (await getAllQueuedAdjustments()).filter(adj => adj.status === 'syncing')
+      for (const adj of syncing) {
+        await markAdjAsFailed(adj.id, error instanceof Error ? error.message : 'Network error')
+      }
+    } finally {
+      isSyncingAdjRef.current = false
+    }
+  }, [getAllQueuedAdjustments, markAdjAsSyncing, markAdjAsSynced, markAdjAsFailed])
+
   const scheduleRetry = useCallback(() => {
-    // Exponential backoff based on highest retry count among pending orders
-    getAllQueuedOrders().then(queuedOrders => {
-      const retryable = queuedOrders.filter(order => order.status !== 'syncing')
-      if (retryable.length === 0) return
-      const maxRetries = Math.max(...retryable.map(o => o.retryCount))
+    // Exponential backoff based on highest retry count among pending orders/adjustments
+    Promise.all([getAllQueuedOrders(), getAllQueuedAdjustments()]).then(([queuedOrders, queuedAdjustments]) => {
+      const retryableOrders = queuedOrders.filter(order => order.status !== 'syncing')
+      const retryableAdjustments = queuedAdjustments.filter(adj => adj.status !== 'syncing')
+
+      if (retryableOrders.length === 0 && retryableAdjustments.length === 0) return
+
+      const maxOrderRetries = retryableOrders.length > 0 ? Math.max(...retryableOrders.map(o => o.retryCount)) : 0
+      const maxAdjRetries = retryableAdjustments.length > 0 ? Math.max(...retryableAdjustments.map(a => a.retryCount)) : 0
+      const maxRetries = Math.max(maxOrderRetries, maxAdjRetries)
+
       const delay = getNextRetryDelayMs(maxRetries)
 
       if (syncTimeoutRef.current) {
@@ -81,17 +146,19 @@ export function useSync() {
       syncTimeoutRef.current = setTimeout(() => {
         if (isOnline) {
           syncPendingOrders()
+          syncPendingAdjustments()
         }
       }, delay)
     })
-  }, [getAllQueuedOrders, isOnline, syncPendingOrders])
+  }, [getAllQueuedOrders, getAllQueuedAdjustments, isOnline, syncPendingOrders, syncPendingAdjustments])
 
   // Trigger sync when coming back online
   useEffect(() => {
     if (isOnline) {
       syncPendingOrders()
+      syncPendingAdjustments()
     }
-  }, [isOnline, syncPendingOrders])
+  }, [isOnline, syncPendingOrders, syncPendingAdjustments])
 
   // Schedule retry after a sync attempt completes (if there are still pending)
   useEffect(() => {
@@ -104,5 +171,5 @@ export function useSync() {
     }
   }, [isOnline, scheduleRetry])
 
-  return { syncPendingOrders }
+  return { syncPendingOrders, syncPendingAdjustments }
 }

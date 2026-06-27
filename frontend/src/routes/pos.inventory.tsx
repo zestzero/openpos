@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 
 import { useCallback, useState, useEffect } from 'react'
-import { ArrowLeft, ScanBarcode, Wand2, XCircle, RefreshCw, Trash2, CloudOff, AlertCircle, CheckCircle2, Search } from 'lucide-react'
+import { ArrowLeft, ScanBarcode, XCircle, RefreshCw, Trash2, CloudOff, AlertCircle, Search } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { createRoute } from '@tanstack/react-router'
 
@@ -44,14 +44,6 @@ export function PosInventoryRoute() {
   const [isSyncing, setIsSyncing] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const handleManualSearch = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault()
-    const trimmed = searchQuery.trim()
-    if (!trimmed) return
-    await handleVariantSearch(trimmed)
-    setSearchQuery('')
-  }, [searchQuery, handleVariantSearch])
-
   // Load adjustments from Dexie
   const loadAdjustments = useCallback(async () => {
     const list = await getAllQueuedAdjustments()
@@ -82,6 +74,14 @@ export function PosInventoryRoute() {
       }, 2500)
     }
   }, [])
+
+  const handleManualSearch = useCallback(async (event: React.FormEvent) => {
+    event.preventDefault()
+    const trimmed = searchQuery.trim()
+    if (!trimmed) return
+    await handleVariantSearch(trimmed)
+    setSearchQuery('')
+  }, [searchQuery, handleVariantSearch])
 
   const handleScanSuccess = useCallback((variant: SearchVariantRow) => {
     setSelectedVariant(variant)

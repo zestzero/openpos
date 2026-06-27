@@ -194,4 +194,24 @@ export const api = {
       body: JSON.stringify(orderData),
     })
   },
+  syncAdjustments(body: {
+    adjustments: Array<{
+      id: string
+      variant_id: string
+      quantity: number
+      reason: string
+      reference_id?: string | null
+      created_by?: string | null
+    }>
+  }) {
+    return requestJSON<ApiSuccess<{
+      processed: number
+      succeeded: number
+      failed: number
+      errors: Array<{ id: string; error: string }>
+    }>>('/api/inventory/sync', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
 }

@@ -75,6 +75,7 @@ type LedgerEntry struct {
 
 // AdjustStockInput represents input for manual stock adjustment
 type AdjustStockInput struct {
+	ID          *string `json:"id,omitempty"`
 	VariantID   string  `json:"variant_id"`
 	Quantity    int64   `json:"quantity"` // positive for increase, negative for decrease
 	Reason      string  `json:"reason"`
@@ -107,6 +108,13 @@ func (s *Service) AdjustStock(ctx context.Context, input AdjustStockInput) (Ledg
 	}
 
 	// Parse optional fields
+	var customID pgtype.UUID
+	if input.ID != nil && *input.ID != "" {
+		if err := customID.Scan(*input.ID); err != nil {
+			return LedgerEntry{}, fmt.Errorf("invalid id: %w", err)
+		}
+	}
+
 	var refID pgtype.UUID
 	if input.ReferenceID != nil {
 		if err := refID.Scan(*input.ReferenceID); err != nil {
@@ -133,6 +141,7 @@ func (s *Service) AdjustStock(ctx context.Context, input AdjustStockInput) (Ledg
 
 	// Create ledger entry
 	entry, err := s.db.CreateLedgerEntry(ctx, sqlc.CreateLedgerEntryParams{
+		ID:             customID,
 		VariantID:      variantUUID,
 		QuantityChange: input.Quantity,
 		Reason:         input.Reason,
@@ -140,6 +149,21 @@ func (s *Service) AdjustStock(ctx context.Context, input AdjustStockInput) (Ledg
 		CreatedBy:      createdBy,
 	})
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Idempotency case: entry already exists. Return the input as is.
+			var idStr string
+			if input.ID != nil {
+				idStr = *input.ID
+			}
+			return LedgerEntry{
+				ID:             idStr,
+				VariantID:      input.VariantID,
+				QuantityChange: input.Quantity,
+				Reason:         input.Reason,
+				ReferenceID:    input.ReferenceID,
+				CreatedBy:      input.CreatedBy,
+			}, nil
+		}
 		return LedgerEntry{}, fmt.Errorf("creating ledger entry: %w", err)
 	}
 
@@ -227,6 +251,7 @@ func (s *Service) DeductStock(ctx context.Context, variantID string, quantity in
 
 	// Create ledger entry with negative quantity for sale
 	entry, err := s.db.CreateLedgerEntry(ctx, sqlc.CreateLedgerEntryParams{
+		ID:             pgtype.UUID{},
 		VariantID:      variantUUID,
 		QuantityChange: -quantity, // Negative for deduction
 		Reason:         ReasonSale,
@@ -292,4 +317,36 @@ func (s *Service) toLedgerEntry(e sqlc.InventoryLedger) LedgerEntry {
 		CreatedAt:      e.CreatedAt,
 		CreatedBy:      createdBy,
 	}
+}
+
+// SyncResult represents the result of batch syncing adjustments
+type SyncResult struct {
+	Processed int         `json:"processed"`
+	Succeeded int         `json:"succeeded"`
+	Failed    int         `json:"failed"`
+	Errors    []SyncError `json:"errors"`
+}
+
+type SyncError struct {
+	ID    string `json:"id"`
+	Error string `json:"error"`
+}
+
+// SyncAdjustments batch processes manual stock adjustments
+func (s *Service) SyncAdjustments(ctx context.Context, inputs []AdjustStockInput) (SyncResult, error) {
+	result := SyncResult{Processed: len(inputs)}
+	for _, input := range inputs {
+		_, err := s.AdjustStock(ctx, input)
+		if err != nil {
+			result.Failed++
+			var idStr string
+			if input.ID != nil {
+				idStr = *input.ID
+			}
+			result.Errors = append(result.Errors, SyncError{ID: idStr, Error: err.Error()})
+			continue
+		}
+		result.Succeeded++
+	}
+	return result, nil
 }

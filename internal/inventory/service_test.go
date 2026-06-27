@@ -132,14 +132,22 @@ func (f *fakeInventoryQueries) QueryRow(_ context.Context, query string, args ..
 		return fakeRow{values: []any{f.stockLevel}}
 	case strings.Contains(query, "INSERT INTO inventory_ledger"):
 		f.createLedgerCalls++
-		variantID := args[0].(pgtype.UUID)
-		quantityChange := args[1].(int64)
-		reason := args[2].(string)
-		referenceID := args[3].(pgtype.UUID)
-		createdBy := args[4].(pgtype.UUID)
+		id := args[0].(pgtype.UUID)
+		variantID := args[1].(pgtype.UUID)
+		quantityChange := args[2].(int64)
+		reason := args[3].(string)
+		referenceID := args[4].(pgtype.UUID)
+		createdBy := args[5].(pgtype.UUID)
 		f.stockLevel += quantityChange
+
+		retID := id
+		var zero pgtype.UUID
+		if retID == zero {
+			retID = uuidPtr("66666666-6666-6666-6666-666666666666")
+		}
+
 		return fakeRow{values: []any{
-			uuidPtr("66666666-6666-6666-6666-666666666666"),
+			retID,
 			variantID,
 			quantityChange,
 			reason,

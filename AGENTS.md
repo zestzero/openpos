@@ -4,10 +4,14 @@ Coding conventions and guidelines for AI agents working on OpenPOS.
 
 ## Stack
 
-- **Backend**: Go 1.22+ with chi v5 router, sqlc for SQL→Go codegen, pgx v5 for PostgreSQL
-- **Frontend**: Vite + React 18/19, TanStack Query, TanStack Router, Tailwind CSS v4, shadcn/ui
+- **Backend**: Go 1.26+ (configured as `1.26.2` in `go.mod`), chi v5 router, sqlc for SQL→Go codegen, pgx v5 for PostgreSQL
+- **Frontend**: Vite + React 19 (React 19.2.5), TanStack Query, TanStack Router, Tailwind CSS v4, shadcn/ui
 - **Database**: PostgreSQL 15+, golang-migrate for schema migrations
 - **Offline**: Dexie.js (IndexedDB), hand-written service worker
+- **Tooling & Orchestration**:
+  - **mise**: Manage tool versions (Go, Node, pnpm) and run development tasks
+  - **pnpm**: Package manager for frontend dependencies (pnpm 10+)
+  - **podman compose** / **docker compose**: Run local database containers (PostgreSQL db)
 - **Deployment**: Docker multi-stage build
 
 ## Backend Conventions
@@ -35,7 +39,7 @@ db/sqlc/                      # Generated code (do NOT edit)
 
 - Write SQL in `db/queries/{domain}.sql`
 - Use sqlc annotations: `-- name: FunctionName :one`, `:many`, `:exec`, `:execresult`
-- After adding/changing queries: run `sqlc generate`
+- After adding/changing queries: run `mise run sqlc` (instead of `sqlc generate` directly)
 - Never edit files in `db/sqlc/` — they are generated
 
 ### Database Migrations
@@ -43,6 +47,7 @@ db/sqlc/                      # Generated code (do NOT edit)
 - Create new migrations with: `migrate create -ext sql -dir db/migrations -seq {name}`
 - Always create both `.up.sql` and `.down.sql`
 - Migrations are forward-only in production
+- Run migrations against local database using: `mise run migrate`
 - All monetary values stored as `BIGINT` (cents/satang) or `NUMERIC(12,2)`
 
 ### HTTP Handlers
@@ -64,12 +69,11 @@ db/sqlc/                      # Generated code (do NOT edit)
 
 ```
 frontend/src/
-├── api/          # API client functions
-├── components/   # Shared UI components
+├── components/   # Shared UI components (specifically shadcn/ui primitives under components/ui)
 ├── pos/          # POS-specific pages and components
 ├── erp/          # ERP-specific pages and components
 ├── hooks/        # Custom React hooks
-├── lib/          # Utilities (formatting, constants)
+├── lib/          # Utilities (formatting, constants) and API clients (e.g., api.ts, erp-api.ts, users-api.ts)
 └── routes/       # TanStack Router route definitions
 ```
 
@@ -80,6 +84,7 @@ frontend/src/
 - TanStack Router for routing (file-based)
 - shadcn/ui for UI components (do not import from @radix-ui directly)
 - Tailwind CSS v4 (`@theme` in CSS, not JS config)
+- Package manager: use `pnpm` (configured via `mise`) for all dependencies and scripts
 
 ### TypeScript
 
@@ -104,8 +109,9 @@ frontend/src/
 
 ## Testing
 
+- Run all tests using: `mise run test`
 - Go: `go test ./...` with table-driven tests
-- Frontend: Vitest for unit tests
+- Frontend: Vitest for unit tests (can be run via `pnpm --dir frontend test`)
 - API: httptest package for handler tests in Go
 
 ## Git
@@ -113,6 +119,7 @@ frontend/src/
 - Atomic commits per logical change
 - Commit messages: imperative mood, concise ("add auth middleware", "fix stock deduction race condition")
 - Keep temporary files and scratch artifacts inside the repository workspace; do not write them outside the repo unless there is a concrete, unavoidable reason.
+
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph

@@ -33,6 +33,9 @@ func (h *Handler) Routes() http.Handler {
 	// POST /api/inventory/adjust - Manual adjustment
 	r.Post("/adjust", h.AdjustStock)
 
+	// POST /api/inventory/sync - Batch sync adjustments
+	r.Post("/sync", h.SyncAdjustments)
+
 	return r
 }
 
@@ -162,3 +165,43 @@ func (h *Handler) ListLedgerEntries(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(successResponse{Data: entries})
 }
+
+// Handle POST /api/inventory/sync
+func (h *Handler) SyncAdjustments(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Adjustments []struct {
+			ID          *string `json:"id,omitempty"`
+			VariantID   string  `json:"variant_id"`
+			Quantity    int64   `json:"quantity"`
+			Reason      string  `json:"reason"`
+			ReferenceID *string `json:"reference_id,omitempty"`
+			CreatedBy   *string `json:"created_by,omitempty"`
+		} `json:"adjustments"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	inputs := make([]AdjustStockInput, len(input.Adjustments))
+	for i, adj := range input.Adjustments {
+		inputs[i] = AdjustStockInput{
+			ID:          adj.ID,
+			VariantID:   adj.VariantID,
+			Quantity:    adj.Quantity,
+			Reason:      adj.Reason,
+			ReferenceID: adj.ReferenceID,
+			CreatedBy:   adj.CreatedBy,
+		}
+	}
+
+	result, err := h.service.SyncAdjustments(r.Context(), inputs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(successResponse{Data: result})
+}
+

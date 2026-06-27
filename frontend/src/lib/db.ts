@@ -41,19 +41,34 @@ export interface SyncState {
   pendingCount: number
 }
 
+export interface QueuedAdjustment {
+  id: string
+  variantId: string
+  variantName: string
+  sku: string
+  quantity: number
+  reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST'
+  status: 'pending' | 'syncing' | 'failed'
+  createdAt: number
+  retryCount: number
+  lastError?: string
+}
+
 class OpenPOSDatabase extends Dexie {
   categories!: Table<CachedCategory, string>
   variants!: Table<CachedVariant, string>
   queuedOrders!: Table<QueuedOrder, string>
   syncState!: Table<SyncState, string>
+  queuedAdjustments!: Table<QueuedAdjustment, string>
 
   constructor() {
     super('OpenPOS')
-    this.version(1).stores({
+    this.version(2).stores({
       categories: 'id, updatedAt',
       variants: 'id, sku, barcode, categoryId, updatedAt',
       queuedOrders: 'id, status, createdAt',
       syncState: 'id',
+      queuedAdjustments: 'id, status, createdAt',
     })
   }
 }
