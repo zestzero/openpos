@@ -1,13 +1,12 @@
 import { type ComponentType } from 'react'
-import { LayoutGrid, ScanBarcode, ShoppingCart } from 'lucide-react'
+import { ShoppingCart, Warehouse } from 'lucide-react'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 
-export type PosTab = 'sales' | 'catalog' | 'scan'
+export type PosTab = 'sales' | 'inventory'
 
 const navItems: Array<{ tab: PosTab; label: string; icon: ComponentType<{ className?: string }>; to: string }> = [
   { tab: 'sales', label: 'Selling', icon: ShoppingCart, to: '/pos' },
-  { tab: 'catalog', label: 'Catalog', icon: LayoutGrid, to: '/pos/catalog' },
-  { tab: 'scan', label: 'Scan', icon: ScanBarcode, to: '/pos/scan' },
+  { tab: 'inventory', label: 'Inventory', icon: Warehouse, to: '/pos/inventory' },
 ]
 
 export function PosNav() {
