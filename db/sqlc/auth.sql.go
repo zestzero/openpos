@@ -102,34 +102,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	return i, err
 }
 
-const getUserByPIN = `-- name: GetUserByPIN :one
-SELECT id, email, password_hash, role, name, created_at, updated_at, pin_hash, is_active
-FROM users
-WHERE email = $1 AND pin_hash = $2
-`
-
-type GetUserByPINParams struct {
-	Email   string      `json:"email"`
-	PinHash pgtype.Text `json:"pin_hash"`
-}
-
-func (q *Queries) GetUserByPIN(ctx context.Context, arg GetUserByPINParams) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByPIN, arg.Email, arg.PinHash)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.PasswordHash,
-		&i.Role,
-		&i.Name,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.PinHash,
-		&i.IsActive,
-	)
-	return i, err
-}
-
 const listCashiers = `-- name: ListCashiers :many
 SELECT id, email, role, name, created_at, updated_at, pin_hash, is_active
 FROM users
@@ -292,39 +264,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		&i.Name,
 		&i.IsActive,
 		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateUserPin = `-- name: UpdateUserPin :one
-UPDATE users
-SET pin_hash = $2, updated_at = CURRENT_TIMESTAMP
-WHERE id = $1
-RETURNING id, email, role, name, updated_at
-`
-
-type UpdateUserPinParams struct {
-	ID      pgtype.UUID `json:"id"`
-	PinHash pgtype.Text `json:"pin_hash"`
-}
-
-type UpdateUserPinRow struct {
-	ID        pgtype.UUID        `json:"id"`
-	Email     string             `json:"email"`
-	Role      string             `json:"role"`
-	Name      string             `json:"name"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
-func (q *Queries) UpdateUserPin(ctx context.Context, arg UpdateUserPinParams) (UpdateUserPinRow, error) {
-	row := q.db.QueryRow(ctx, updateUserPin, arg.ID, arg.PinHash)
-	var i UpdateUserPinRow
-	err := row.Scan(
-		&i.ID,
-		&i.Email,
-		&i.Role,
-		&i.Name,
 		&i.UpdatedAt,
 	)
 	return i, err

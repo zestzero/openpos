@@ -10,9 +10,10 @@ import { useFavorites } from '@/pos/hooks/useFavorites'
 
 interface ProductCardProps {
   product: ProductWithVariants
+  onAdd?: (cartItem: any) => void
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, onAdd }: ProductCardProps) {
   const { addItem } = useCart()
   const { recordAdd } = useFavorites()
   const { product: p, variants } = product
@@ -26,6 +27,11 @@ export function ProductCard({ product }: ProductCardProps) {
     const cartItem = {
       ...primaryVariant,
       productName: p.name,
+    }
+
+    if (onAdd) {
+      onAdd(cartItem)
+      return
     }
 
     addItem(cartItem)

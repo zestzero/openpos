@@ -793,16 +793,3 @@ func (s *Service) UpdateVariant(ctx context.Context, id string, input CreateVari
 func (s *Service) SearchVariant(ctx context.Context, query string) (sqlc.SearchVariantRow, error) {
 	return s.db.SearchVariant(ctx, pgtype.Text{String: query, Valid: true})
 }
-
-// Ensure errors are visible to callers
-func IsSKUExists(err error) bool {
-	return errors.Is(err, ErrSKUExists)
-}
-
-func IsBarcodeExists(err error) bool {
-	return errors.Is(err, ErrBarcodeExists)
-}
-
-func IsProductNotFound(err error) bool {
-	return errors.Is(err, ErrProductNotFound)
-}

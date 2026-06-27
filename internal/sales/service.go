@@ -27,7 +27,6 @@ type orderStore interface {
 	GetOrderByID(context.Context, pgtype.UUID) (sqlc.Order, error)
 	GetPaymentByOrderID(context.Context, pgtype.UUID) (sqlc.Payment, error)
 	GetVariant(context.Context, pgtype.UUID) (sqlc.Variant, error)
-	ListOrders(context.Context, sqlc.ListOrdersParams) ([]sqlc.Order, error)
 	ListOrderItemsByOrderID(context.Context, pgtype.UUID) ([]sqlc.ListOrderItemsByOrderIDRow, error)
 }
 
@@ -90,14 +89,6 @@ func (s sqlcOrderStore) GetOrderByID(ctx context.Context, id pgtype.UUID) (sqlc.
 		return sqlc.Order{}, err
 	}
 	return row, nil
-}
-
-func (s sqlcOrderStore) ListOrders(ctx context.Context, arg sqlc.ListOrdersParams) ([]sqlc.Order, error) {
-	rows, err := s.Queries.ListOrders(ctx, arg)
-	if err != nil {
-		return nil, err
-	}
-	return rows, nil
 }
 
 type sqlcInventoryGateway struct {

@@ -19,12 +19,6 @@ SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at, d
 FROM orders
 WHERE id = $1;
 
--- name: ListOrders :many
-SELECT id, client_uuid, user_id, status, total_amount, created_at, updated_at, discount_amount
-FROM orders
-ORDER BY created_at DESC
-LIMIT $1 OFFSET $2;
-
 -- name: ListOrderItemsByOrderID :many
 SELECT id, order_id, variant_id, quantity, unit_price, subtotal, cost_at_sale, created_at
 FROM order_items

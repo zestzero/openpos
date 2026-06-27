@@ -7,9 +7,10 @@ import { ProductCard } from './ProductCard'
 
 interface CatalogGridProps {
   categoryId: string | null
+  onProductClick?: (cartItem: any) => void
 }
 
-export function CatalogGrid({ categoryId }: CatalogGridProps) {
+export function CatalogGrid({ categoryId, onProductClick }: CatalogGridProps) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['products', categoryId],
     queryFn: async () => {
@@ -58,7 +59,7 @@ export function CatalogGrid({ categoryId }: CatalogGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       {products.map((item) => (
-        <ProductCard key={item.product.id} product={item} />
+        <ProductCard key={item.product.id} product={item} onAdd={onProductClick} />
       ))}
     </div>
   )

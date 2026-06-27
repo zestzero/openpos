@@ -413,29 +413,6 @@ func (s *AuthService) ToggleUserActive(ctx context.Context, actorID, userID stri
 	}, nil
 }
 
-// ValidateToken validates a JWT token and returns the user
-func (s *AuthService) ValidateToken(ctx context.Context, tokenString string) (*User, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(s.config.JWTSecret), nil
-	})
-
-	if err != nil {
-		return nil, ErrUnauthorized
-	}
-
-	claims, ok := token.Claims.(*TokenClaims)
-	if !ok || !token.Valid {
-		return nil, ErrUnauthorized
-	}
-
-	return &User{
-		ID:    claims.UserID,
-		Email: claims.Email,
-		Role:  claims.Role,
-		Name:  "", // Name is not stored in token
-	}, nil
-}
-
 // generateToken creates a new JWT token
 func (s *AuthService) generateToken(userID, email, role string) (string, error) {
 	claims := TokenClaims{

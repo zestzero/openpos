@@ -49,27 +49,6 @@ func (q *Queries) CreateLedgerEntry(ctx context.Context, arg CreateLedgerEntryPa
 	return i, err
 }
 
-const getLedgerEntry = `-- name: GetLedgerEntry :one
-SELECT id, variant_id, quantity_change, reason, reference_id, created_at, created_by
-FROM inventory_ledger
-WHERE id = $1
-`
-
-func (q *Queries) GetLedgerEntry(ctx context.Context, id pgtype.UUID) (InventoryLedger, error) {
-	row := q.db.QueryRow(ctx, getLedgerEntry, id)
-	var i InventoryLedger
-	err := row.Scan(
-		&i.ID,
-		&i.VariantID,
-		&i.QuantityChange,
-		&i.Reason,
-		&i.ReferenceID,
-		&i.CreatedAt,
-		&i.CreatedBy,
-	)
-	return i, err
-}
-
 const getStockLevel = `-- name: GetStockLevel :one
 SELECT COALESCE(SUM(quantity_change), 0)::BIGINT as stock_level
 FROM inventory_ledger

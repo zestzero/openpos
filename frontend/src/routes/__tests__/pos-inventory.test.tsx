@@ -146,8 +146,8 @@ describe('POS Inventory Route', () => {
 
     expect(screen.getByText('Scan and Adjust Stock Level.')).toBeInTheDocument()
     expect(screen.getByPlaceholderText(/Type product name, barcode, or SKU/i)).toBeInTheDocument()
-    expect(screen.getByText('Draft Stock Adjustments')).toBeInTheDocument()
-    expect(screen.getByText('Pending adjustments')).toBeInTheDocument()
+    expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
+    expect(screen.getByText('Pending')).toBeInTheDocument()
   })
 
   it('adds adjustment to drafts and opens Dialog on scan', async () => {
@@ -161,7 +161,7 @@ describe('POS Inventory Route', () => {
 
     // Expect dialog to open
     expect(await screen.findByText('Record Stock Adjustment')).toBeInTheDocument()
-    expect(screen.getByText('Espresso Blend')).toBeInTheDocument()
+    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
 
     // Fill dialog and submit
     const qtyInput = screen.getByLabelText(/Quantity Change/i)
@@ -174,8 +174,8 @@ describe('POS Inventory Route', () => {
     await waitFor(() => {
       expect(screen.queryByText('Record Stock Adjustment')).not.toBeInTheDocument()
     })
-    expect(screen.getByText('Draft Stock Adjustments')).toBeInTheDocument()
-    expect(screen.getByText('Espresso Blend')).toBeInTheDocument()
+    expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
+    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
     expect(screen.getByText('+5')).toBeInTheDocument()
 
     expect(mockQueueAdjustment).not.toHaveBeenCalled()
@@ -190,11 +190,11 @@ describe('POS Inventory Route', () => {
 
     // Wait for the suggestion item to appear
     await waitFor(() => {
-      expect(screen.getByText('Espresso Blend')).toBeInTheDocument()
+      expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
     })
 
     // Click suggestion to open adjustment dialog
-    const suggestBtn = screen.getByRole('button', { name: /Espresso Blend/i })
+    const suggestBtn = screen.getByRole('button', { name: /Espresso Blend.*885001/i })
     fireEvent.click(suggestBtn)
 
     expect(await screen.findByText('Record Stock Adjustment')).toBeInTheDocument()
@@ -219,7 +219,7 @@ describe('POS Inventory Route', () => {
     })
 
     // 2. Open confirmation modal
-    const reviewBtn = screen.getByRole('button', { name: /Review & Commit/i })
+    const reviewBtn = screen.getByRole('button', { name: /^Commit$/i })
     fireEvent.click(reviewBtn)
 
     expect(await screen.findByText('Confirm Stock Adjustments')).toBeInTheDocument()
@@ -242,7 +242,7 @@ describe('POS Inventory Route', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Confirm Stock Adjustments')).not.toBeInTheDocument()
-      expect(screen.getByText(/No draft adjustments in this session/i)).toBeInTheDocument()
+      expect(screen.getByText(/No draft adjustments/i)).toBeInTheDocument()
       expect(mockSyncPendingAdjustments).toHaveBeenCalled()
     })
   })

@@ -229,84 +229,6 @@ func (q *Queries) GetProduct(ctx context.Context, id pgtype.UUID) (Product, erro
 	return i, err
 }
 
-const getProductWithCategory = `-- name: GetProductWithCategory :one
-SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.created_at, p.updated_at,
-       c.id as category_id, c.name as category_name
-FROM products p
-LEFT JOIN categories c ON p.category_id = c.id
-WHERE p.id = $1
-`
-
-type GetProductWithCategoryRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Name         string             `json:"name"`
-	Description  pgtype.Text        `json:"description"`
-	CategoryID   pgtype.UUID        `json:"category_id"`
-	ImageUrl     pgtype.Text        `json:"image_url"`
-	IsActive     pgtype.Bool        `json:"is_active"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	CategoryID_2 pgtype.UUID        `json:"category_id_2"`
-	CategoryName pgtype.Text        `json:"category_name"`
-}
-
-func (q *Queries) GetProductWithCategory(ctx context.Context, id pgtype.UUID) (GetProductWithCategoryRow, error) {
-	row := q.db.QueryRow(ctx, getProductWithCategory, id)
-	var i GetProductWithCategoryRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.CategoryID,
-		&i.ImageUrl,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.CategoryID_2,
-		&i.CategoryName,
-	)
-	return i, err
-}
-
-const getProductWithVariants = `-- name: GetProductWithVariants :one
-SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.created_at, p.updated_at,
-       c.id as category_id, c.name as category_name
-FROM products p
-LEFT JOIN categories c ON p.category_id = c.id
-WHERE p.id = $1
-`
-
-type GetProductWithVariantsRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	Name         string             `json:"name"`
-	Description  pgtype.Text        `json:"description"`
-	CategoryID   pgtype.UUID        `json:"category_id"`
-	ImageUrl     pgtype.Text        `json:"image_url"`
-	IsActive     pgtype.Bool        `json:"is_active"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
-	CategoryID_2 pgtype.UUID        `json:"category_id_2"`
-	CategoryName pgtype.Text        `json:"category_name"`
-}
-
-func (q *Queries) GetProductWithVariants(ctx context.Context, id pgtype.UUID) (GetProductWithVariantsRow, error) {
-	row := q.db.QueryRow(ctx, getProductWithVariants, id)
-	var i GetProductWithVariantsRow
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Description,
-		&i.CategoryID,
-		&i.ImageUrl,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.CategoryID_2,
-		&i.CategoryName,
-	)
-	return i, err
-}
-
 const getVariant = `-- name: GetVariant :one
 SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
 FROM variants
@@ -315,54 +237,6 @@ WHERE id = $1
 
 func (q *Queries) GetVariant(ctx context.Context, id pgtype.UUID) (Variant, error) {
 	row := q.db.QueryRow(ctx, getVariant, id)
-	var i Variant
-	err := row.Scan(
-		&i.ID,
-		&i.ProductID,
-		&i.Sku,
-		&i.Barcode,
-		&i.Name,
-		&i.Price,
-		&i.Cost,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getVariantByBarcode = `-- name: GetVariantByBarcode :one
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE barcode = $1
-`
-
-func (q *Queries) GetVariantByBarcode(ctx context.Context, barcode pgtype.Text) (Variant, error) {
-	row := q.db.QueryRow(ctx, getVariantByBarcode, barcode)
-	var i Variant
-	err := row.Scan(
-		&i.ID,
-		&i.ProductID,
-		&i.Sku,
-		&i.Barcode,
-		&i.Name,
-		&i.Price,
-		&i.Cost,
-		&i.IsActive,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const getVariantBySKU = `-- name: GetVariantBySKU :one
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE sku = $1
-`
-
-func (q *Queries) GetVariantBySKU(ctx context.Context, sku string) (Variant, error) {
-	row := q.db.QueryRow(ctx, getVariantBySKU, sku)
 	var i Variant
 	err := row.Scan(
 		&i.ID,
@@ -428,7 +302,7 @@ SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.c
 FROM products p
 WHERE ($1::uuid IS NULL OR p.category_id = $1)
   AND ($2::boolean IS NULL OR p.is_active = $2)
-ORDER BY p.name
+  ORDER BY p.name
 `
 
 type ListProductsParams struct {
@@ -451,80 +325,6 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]P
 			&i.Description,
 			&i.CategoryID,
 			&i.ImageUrl,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listProductsByCategory = `-- name: ListProductsByCategory :many
-SELECT id, name, description, category_id, image_url, is_active, created_at, updated_at
-FROM products
-WHERE category_id = $1
-ORDER BY name
-`
-
-func (q *Queries) ListProductsByCategory(ctx context.Context, categoryID pgtype.UUID) ([]Product, error) {
-	rows, err := q.db.Query(ctx, listProductsByCategory, categoryID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Product
-	for rows.Next() {
-		var i Product
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Description,
-			&i.CategoryID,
-			&i.ImageUrl,
-			&i.IsActive,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listVariantsByProduct = `-- name: ListVariantsByProduct :many
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE product_id = $1
-ORDER BY name
-`
-
-func (q *Queries) ListVariantsByProduct(ctx context.Context, productID pgtype.UUID) ([]Variant, error) {
-	rows, err := q.db.Query(ctx, listVariantsByProduct, productID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Variant
-	for rows.Next() {
-		var i Variant
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProductID,
-			&i.Sku,
-			&i.Barcode,
-			&i.Name,
-			&i.Price,
-			&i.Cost,
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,

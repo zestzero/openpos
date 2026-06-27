@@ -19,6 +19,8 @@ import { useOfflineAdjustments } from '@/pos/hooks/useOfflineAdjustments'
 import { useSync } from '@/pos/hooks/useSync'
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
 import { AdjustmentDialog } from '@/pos/components/AdjustmentDialog'
+import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
+import { CatalogGrid } from '@/pos/components/CatalogGrid'
 import { Route as posRoute } from './pos'
 import { type QueuedAdjustment } from '@/lib/db'
 
@@ -51,8 +53,10 @@ export function PosInventoryRoute() {
   const [queuedAdjustments, setQueuedAdjustments] = useState<QueuedAdjustment[]>([])
   const [drafts, setDrafts] = useState<DraftAdjustment[]>([])
   const [selectedVariant, setSelectedVariant] = useState<SearchVariantRow | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [lastError, setLastError] = useState<string | null>(null)
   const [showError, setShowError] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -144,6 +148,7 @@ export function PosInventoryRoute() {
     setIsDialogOpen(true)
     setLastError(null)
     setShowError(false)
+    setIsScannerOpen(false)
   }, [])
 
   const handleScanError = useCallback((_code: string, error: string) => {
@@ -162,6 +167,20 @@ export function PosInventoryRoute() {
     setSearchQuery('')
     setShowSuggestions(false)
   }
+
+  const handleGridProductClick = useCallback((item: any) => {
+    handleSelectVariant({
+      id: item.id,
+      product_id: item.product_id,
+      sku: item.sku,
+      barcode: item.barcode ?? null,
+      name: item.name,
+      price: item.price,
+      cost: item.cost ?? null,
+      is_active: item.is_active,
+      product_name: item.productName || item.product_name,
+    })
+  }, [])
 
   const handleAdjustmentSubmit = useCallback(async (quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => {
     if (!selectedVariant) return
@@ -266,134 +285,114 @@ export function PosInventoryRoute() {
 
   return (
     <PosLayout>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(19rem,0.8fr)]">
-        <section className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm">
-          <div className="border-b border-border/60 px-4 py-4 sm:px-5 sm:py-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Inventory Adjustments
-                </p>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                  Scan and Adjust Stock Level.
-                </h1>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
-                  Use the camera or wedge scanner to record manual counts. Adjustments are queued offline and sync automatically.
-                </p>
-              </div>
-
-              <div className="inline-flex items-center gap-2 rounded-pill border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-card">
-                <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
-                Inventory mode
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Camera
-                </p>
-                <p className="mt-1 text-sm font-medium text-foreground">Ready to scan</p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Wedge
-                </p>
-                <p className="mt-1 text-sm font-medium text-foreground">
-                  {isKeyboardWedgeEnabled ? (isKeyboardScanning ? 'Listening now' : 'Armed') : 'Paused'}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Queue size
-                </p>
-                <p className="mt-1 text-sm font-medium text-foreground">{queuedAdjustments.length} items</p>
-              </div>
-            </div>
-
-            <div className="mt-4 relative" onClick={(e) => e.stopPropagation()}>
-              <form onSubmit={handleManualSearch} className="relative w-full">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Type product name, barcode, or SKU to adjust stock..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value)
-                    setShowSuggestions(true)
-                  }}
-                  onFocus={() => setShowSuggestions(true)}
-                  className="h-11 rounded-pill border-border/70 bg-background pl-12 pr-4 text-sm focus-visible:ring-brand shadow-card"
-                  aria-label="Search variant to adjust"
-                />
-              </form>
-
-              {showSuggestions && searchQuery.trim().length >= 2 && (
-                <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-border/80 bg-popover p-2 shadow-lg">
-                  {filteredVariants.length === 0 ? (
-                    <div className="px-4 py-2.5 text-sm text-muted-foreground">
-                      No matching products found
-                    </div>
-                  ) : (
-                    filteredVariants.map((v) => (
-                      <button
-                        key={v.id}
-                        type="button"
-                        onClick={() => handleSelectVariant(v as SearchVariantRow)}
-                        className="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors"
-                      >
-                        <div className="min-w-0 pr-4">
-                          <p className="font-semibold text-foreground truncate">
-                            {v.product_name} {v.name !== 'Default' ? `(${v.name})` : ''}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            SKU: {v.sku} {v.barcode ? `| Barcode: ${v.barcode}` : ''}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="grid gap-4 px-4 py-4 sm:px-5 sm:py-5 lg:grid-cols-[minmax(0,1.12fr)_minmax(17.5rem,0.72fr)]">
-            <BarcodeScanner onScanSuccess={handleScanSuccess} onScanError={handleScanError} />
-
-            <div className="space-y-4 rounded-[1.5rem] border border-border/70 bg-muted/25 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)] pb-20">
+        <section className="space-y-4">
+          <div className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm">
+            <div className="border-b border-border/60 px-4 py-4 sm:px-5 sm:py-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="max-w-2xl">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Scanner control
+                    Inventory Adjustments
                   </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    {isKeyboardWedgeEnabled ? 'Keyboard wedge active' : 'Keyboard wedge paused'}
+                  <h1 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                    Scan and Adjust Stock Level.
+                  </h1>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground sm:text-base">
+                    Use the camera, wedge scanner, or catalog to record manual counts.
                   </p>
                 </div>
+
+                <div className="inline-flex items-center gap-2 rounded-pill border border-border bg-background px-3 py-1 text-xs font-medium text-foreground shadow-card">
+                  <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                  Inventory mode
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      Wedge
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
+                      {isKeyboardWedgeEnabled ? (isKeyboardScanning ? 'Listening' : 'Armed') : 'Paused'}
+                    </p>
+                  </div>
+                  <Button
+                    variant={isKeyboardWedgeEnabled ? 'default' : 'outline'}
+                    size="icon"
+                    className="h-7 w-7 rounded-lg"
+                    onClick={toggleKeyboardWedge}
+                  >
+                    <ScanBarcode className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Queue size
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">{queuedAdjustments.length} items</p>
+                </div>
+              </div>
+
+              <div className="mt-4 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                <form onSubmit={handleManualSearch} className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Type product name, barcode, or SKU to adjust stock..."
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value)
+                      setShowSuggestions(true)
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    className="h-11 rounded-pill border-border/70 bg-background pl-12 pr-4 text-sm focus-visible:ring-brand shadow-card"
+                    aria-label="Search variant to adjust"
+                  />
+                  {showSuggestions && searchQuery.trim().length >= 2 && (
+                    <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-border/80 bg-popover p-2 shadow-lg">
+                      {filteredVariants.length === 0 ? (
+                        <div className="px-4 py-2.5 text-sm text-muted-foreground">
+                          No matching products found
+                        </div>
+                      ) : (
+                        filteredVariants.map((v) => (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => handleSelectVariant(v as SearchVariantRow)}
+                            className="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left text-sm hover:bg-muted transition-colors"
+                          >
+                            <div className="min-w-0 pr-4">
+                              <p className="font-semibold text-foreground truncate">
+                                {v.product_name} {v.name !== 'Default' ? `(${v.name})` : ''}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                SKU: {v.sku} {v.barcode ? `| Barcode: ${v.barcode}` : ''}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </form>
                 <Button
-                  variant={isKeyboardWedgeEnabled ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={toggleKeyboardWedge}
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 rounded-full border-border/70 bg-background shadow-card text-muted-foreground hover:text-foreground shrink-0"
+                  onClick={() => setIsScannerOpen(true)}
+                  aria-label="Scan barcode with camera"
                 >
-                  {isKeyboardWedgeEnabled ? 'Wedge on' : 'Wedge off'}
+                  <ScanBarcode className="h-5 w-5" />
                 </Button>
               </div>
+            </div>
 
-              <div className="rounded-2xl border border-border/70 bg-background p-4">
-                <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <ScanBarcode className="h-4 w-4 text-muted-foreground" />
-                  How it works
-                </p>
-                <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-                  <li>1. Scan barcode or search for items to add to draft.</li>
-                  <li>2. Select quantity (+ to add, - to subtract) and reason.</li>
-                  <li>3. Review the current session list below.</li>
-                  <li>4. Click "Review & Commit" to save the batch.</li>
-                </ul>
-              </div>
-
-              {showError && lastError && (
+            {showError && lastError && (
+              <div className="px-4 py-3 sm:px-5">
                 <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-50 px-4 py-3 text-red-900 dark:border-red-400/20 dark:bg-red-950/60 dark:text-red-100">
                   <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-300" />
                   <div>
@@ -401,19 +400,29 @@ export function PosInventoryRoute() {
                     <p className="text-sm leading-6 text-red-800 dark:text-red-200">{lastError}</p>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
-          {/* DRAFT ADJUSTMENTS SECTION */}
-          <div className="border-t border-border/60 px-4 py-5 sm:px-5">
+          <div className="flex gap-3 overflow-x-auto pb-1 hide-scrollbar">
+            <CatalogCategoryNav
+              selectedCategory={selectedCategory}
+              onSelectCategory={setSelectedCategory}
+            />
+          </div>
+
+          <CatalogGrid categoryId={selectedCategory} onProductClick={handleGridProductClick} />
+        </section>
+
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <section className="rounded-[1.75rem] border border-border/70 bg-card p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3 mb-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                   Current Session
                 </p>
                 <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  Draft Stock Adjustments
+                  Draft Adjustments
                   {drafts.length > 0 && (
                     <Badge variant="secondary" className="rounded-full px-2 py-0.5 text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
                       {drafts.length}
@@ -427,17 +436,17 @@ export function PosInventoryRoute() {
                   className="gap-2 rounded-xl bg-primary text-primary-foreground font-semibold px-4"
                 >
                   <CheckCircle2 className="h-4 w-4" />
-                  Review & Commit
+                  Commit
                 </Button>
               )}
             </div>
 
             {drafts.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-border/70 bg-muted/10 px-4 py-8 text-center text-sm leading-6 text-muted-foreground">
-                No draft adjustments in this session. Scan barcodes or search above to add items.
+                No draft adjustments. Click a product or scan a barcode to add.
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3">
                 {drafts.map((item) => (
                   <div
                     key={item.variantId}
@@ -487,17 +496,15 @@ export function PosInventoryRoute() {
                 ))}
               </div>
             )}
-          </div>
-        </section>
+          </section>
 
-        <aside className="space-y-4">
           <section className="rounded-[1.75rem] border border-border/70 bg-card p-4 shadow-sm sm:p-5 space-y-4">
             <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
                   Sync Queue
                 </p>
-                <h2 className="mt-1 text-lg font-semibold text-foreground">Pending adjustments</h2>
+                <h2 className="mt-1 text-lg font-semibold text-foreground">Pending</h2>
               </div>
               <Button
                 variant={isOnline ? 'default' : 'outline'}
@@ -518,16 +525,16 @@ export function PosInventoryRoute() {
               </div>
             )}
 
-            <div className="space-y-2.5 max-h-[400px] overflow-y-auto pr-1 hide-scrollbar">
+            <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
               {queuedAdjustments.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-border/70 bg-background px-4 py-8 text-center text-sm leading-6 text-muted-foreground">
-                  No adjustments pending. Scan items to record.
+                  No adjustments pending.
                 </div>
               ) : (
                 queuedAdjustments.map((adj) => (
                   <div
                     key={adj.id}
-                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background p-4 shadow-xs"
+                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background p-3 shadow-xs"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -610,6 +617,21 @@ export function PosInventoryRoute() {
         initialQuantity={currentDraft?.quantity}
         initialReason={currentDraft?.reason}
       />
+
+      <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
+        <DialogContent className="max-w-md rounded-[1.75rem]">
+          <DialogHeader>
+            <DialogTitle>Scan Barcode</DialogTitle>
+            <DialogDescription>
+              Scan a product barcode using your device camera.
+            </DialogDescription>
+          </DialogHeader>
+          <BarcodeScanner
+            onScanSuccess={handleScanSuccess}
+            onScanError={handleScanError}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <DialogContent className="sm:max-w-[480px] rounded-[1.75rem] border border-border/80 bg-card p-6 shadow-2xl backdrop-blur-md">

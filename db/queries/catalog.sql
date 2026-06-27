@@ -38,25 +38,12 @@ SELECT id, name, description, category_id, image_url, is_active, created_at, upd
 FROM products
 WHERE id = $1;
 
--- name: GetProductWithCategory :one
-SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.created_at, p.updated_at,
-       c.id as category_id, c.name as category_name
-FROM products p
-LEFT JOIN categories c ON p.category_id = c.id
-WHERE p.id = $1;
-
 -- name: ListProducts :many
 SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.created_at, p.updated_at
 FROM products p
 WHERE ($1::uuid IS NULL OR p.category_id = $1)
   AND ($2::boolean IS NULL OR p.is_active = $2)
-ORDER BY p.name;
-
--- name: ListProductsByCategory :many
-SELECT id, name, description, category_id, image_url, is_active, created_at, updated_at
-FROM products
-WHERE category_id = $1
-ORDER BY name;
+  ORDER BY p.name;
 
 -- name: UpdateProduct :one
 UPDATE products
@@ -74,22 +61,6 @@ SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, u
 FROM variants
 WHERE id = $1;
 
--- name: GetVariantBySKU :one
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE sku = $1;
-
--- name: GetVariantByBarcode :one
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE barcode = $1;
-
--- name: ListVariantsByProduct :many
-SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at
-FROM variants
-WHERE product_id = $1
-ORDER BY name;
-
 -- name: SearchVariant :one
 SELECT v.id, v.product_id, v.sku, v.barcode, v.name, v.price, v.cost, v.is_active, v.created_at, v.updated_at,
        p.name as product_name
@@ -102,13 +73,6 @@ UPDATE variants
 SET sku = $2, barcode = $3, name = $4, price = $5, cost = $6, is_active = $7, updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at;
-
--- name: GetProductWithVariants :one
-SELECT p.id, p.name, p.description, p.category_id, p.image_url, p.is_active, p.created_at, p.updated_at,
-       c.id as category_id, c.name as category_name
-FROM products p
-LEFT JOIN categories c ON p.category_id = c.id
-WHERE p.id = $1;
 
 -- name: ListVariantsByProductID :many
 SELECT id, product_id, sku, barcode, name, price, cost, is_active, created_at, updated_at

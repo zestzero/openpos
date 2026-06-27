@@ -365,10 +365,6 @@ func (f *fakeOrderStore) ListOrderItemsByOrderID(_ context.Context, id pgtype.UU
 	return []sqlc.ListOrderItemsByOrderIDRow{}, nil
 }
 
-func (f *fakeOrderStore) ListOrders(_ context.Context, _ sqlc.ListOrdersParams) ([]sqlc.Order, error) {
-	return nil, nil
-}
-
 func (f *fakeOrderStore) WithTx(pgx.Tx) orderStore { return f }
 
 type fakeInventory struct {
