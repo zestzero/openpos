@@ -21,12 +21,12 @@ import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
 import { AdjustmentDialog } from '@/pos/components/AdjustmentDialog'
 import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
 import { CatalogGrid } from '@/pos/components/CatalogGrid'
-import { Route as posRoute } from './pos'
+import { Route as rootRoute } from './__root'
 import { type QueuedAdjustment } from '@/lib/db'
 
 export const Route = createRoute({
-  getParentRoute: () => posRoute,
-  path: 'inventory',
+  getParentRoute: () => rootRoute,
+  path: 'pos/inventory',
   component: PosInventoryRoute,
 })
 

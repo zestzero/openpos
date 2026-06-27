@@ -13,6 +13,7 @@ import { Route as erpReportsRoute } from './routes/erp.reports'
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
-  posRoute.addChildren([posInventoryRoute]),
+  posRoute,
+  posInventoryRoute,
   erpRoute.addChildren([erpIndexRoute, erpInventoryRoute, erpProductsRoute, erpCategoriesRoute, erpReportsRoute]),
 ])
