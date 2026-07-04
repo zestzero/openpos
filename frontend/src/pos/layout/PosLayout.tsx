@@ -34,7 +34,7 @@ export function PosLayout({ children }: PosLayoutProps) {
 
       <PosNav />
 
-      <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 xl:hidden">
+      <div className="safe-area-bottom fixed bottom-24 left-1/2 z-40 w-full max-w-[500px] -translate-x-1/2 px-6 md:hidden">
         <Button
           type="button"
           className="flex h-14 w-full items-center justify-between rounded-full bg-brand px-6 py-4 text-brand-foreground shadow-lg transition-transform active:scale-95"

@@ -118,12 +118,12 @@ export function PosRoute() {
           </div>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)]">
+        <section className="grid gap-5 md:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)]">
           <div className="space-y-3">
             <CatalogGrid categoryId={selectedCategory} />
           </div>
 
-          <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
+          <aside className="hidden md:block md:sticky md:top-24 md:self-start">
             <CartPanel />
           </aside>
         </section>
