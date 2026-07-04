@@ -18,9 +18,8 @@ import { useKeyboardWedge } from '@/pos/hooks/useKeyboardWedge'
 import { useOfflineAdjustments } from '@/pos/hooks/useOfflineAdjustments'
 import { useSync } from '@/pos/hooks/useSync'
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
-import { AdjustmentDialog } from '@/pos/components/AdjustmentDialog'
 import { CatalogCategoryNav } from '@/pos/components/CatalogCategoryNav'
-import { CatalogGrid } from '@/pos/components/CatalogGrid'
+import { InventoryProductCard } from '@/pos/components/InventoryProductCard'
 import { Route as rootRoute } from './__root'
 import { type QueuedAdjustment } from '@/lib/db'
 
@@ -52,9 +51,7 @@ export function PosInventoryRoute() {
 
   const [queuedAdjustments, setQueuedAdjustments] = useState<QueuedAdjustment[]>([])
   const [drafts, setDrafts] = useState<DraftAdjustment[]>([])
-  const [selectedVariant, setSelectedVariant] = useState<SearchVariantRow | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [lastError, setLastError] = useState<string | null>(null)
@@ -71,6 +68,16 @@ export function PosInventoryRoute() {
       return res.data
     },
     staleTime: 60 * 1000,
+  })
+
+  // Fetch products for the grid, filtered by selected category
+  const { data: gridProducts, isLoading: isGridLoading, error: gridError, refetch: refetchGrid } = useQuery({
+    queryKey: ['products', selectedCategory],
+    queryFn: async () => {
+      const result = await api.getProducts(selectedCategory ?? undefined)
+      return result.data
+    },
+    staleTime: 30 * 1000,
   })
 
   const allVariants = useMemo(() => {
@@ -115,11 +122,73 @@ export function PosInventoryRoute() {
     return () => document.removeEventListener('click', handleDocumentClick)
   }, [])
 
+  const handleBarcodeScanned = useCallback((variant: SearchVariantRow) => {
+    setDrafts((prev) => {
+      const existingIndex = prev.findIndex((d) => d.variantId === variant.id)
+      if (existingIndex > -1) {
+        const updated = [...prev]
+        const currentQty = updated[existingIndex].quantity
+        const nextQty = currentQty + 1
+        
+        if (nextQty === 0) {
+          toast.success(`Removed ${variant.product_name || variant.name} from drafts`)
+          return prev.filter((d) => d.variantId !== variant.id)
+        }
+
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          quantity: nextQty,
+        }
+        toast.success(`Incremented ${variant.product_name || variant.name} quantity to ${nextQty > 0 ? `+${nextQty}` : nextQty}`)
+        return updated
+      } else {
+        const newDraft: DraftAdjustment = {
+          variantId: variant.id,
+          variantName: variant.product_name || variant.name,
+          sku: variant.sku,
+          barcode: variant.barcode || undefined,
+          quantity: 1,
+          reason: 'ADJUSTMENT',
+        }
+        toast.success(`Added ${variant.product_name || variant.name} to drafts (+1)`)
+        return [...prev, newDraft]
+      }
+    })
+  }, [])
+
+  const handleAdjustmentChange = useCallback((variantId: string, quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => {
+    const originalVariant = allVariants.find((v) => v.id === variantId)
+    if (!originalVariant) return
+
+    setDrafts((prev) => {
+      if (quantity === 0) {
+        return prev.filter((d) => d.variantId !== variantId)
+      }
+
+      const existingIndex = prev.findIndex((d) => d.variantId === variantId)
+      const newDraft: DraftAdjustment = {
+        variantId,
+        variantName: originalVariant.product_name || originalVariant.name,
+        sku: originalVariant.sku,
+        barcode: originalVariant.barcode || undefined,
+        quantity,
+        reason,
+      }
+
+      if (existingIndex > -1) {
+        const updated = [...prev]
+        updated[existingIndex] = newDraft
+        return updated
+      } else {
+        return [...prev, newDraft]
+      }
+    })
+  }, [allVariants])
+
   const handleVariantSearch = useCallback(async (code: string) => {
     try {
       const response = await api.searchVariant(code)
-      setSelectedVariant(response.data)
-      setIsDialogOpen(true)
+      handleBarcodeScanned(response.data)
       setLastError(null)
       setShowError(false)
     } catch (err) {
@@ -132,7 +201,7 @@ export function PosInventoryRoute() {
         setLastError(null)
       }, 2500)
     }
-  }, [])
+  }, [handleBarcodeScanned])
 
   const handleManualSearch = useCallback(async (event: React.FormEvent) => {
     event.preventDefault()
@@ -144,12 +213,11 @@ export function PosInventoryRoute() {
   }, [searchQuery, handleVariantSearch])
 
   const handleScanSuccess = useCallback((variant: SearchVariantRow) => {
-    setSelectedVariant(variant)
-    setIsDialogOpen(true)
+    handleBarcodeScanned(variant)
     setLastError(null)
     setShowError(false)
     setIsScannerOpen(false)
-  }, [])
+  }, [handleBarcodeScanned])
 
   const handleScanError = useCallback((_code: string, error: string) => {
     setLastError(error)
@@ -161,71 +229,11 @@ export function PosInventoryRoute() {
     }, 2500)
   }, [])
 
-  const handleSelectVariant = (variant: SearchVariantRow) => {
-    setSelectedVariant(variant)
-    setIsDialogOpen(true)
+  const handleSelectVariant = useCallback((variant: SearchVariantRow) => {
+    handleBarcodeScanned(variant)
     setSearchQuery('')
     setShowSuggestions(false)
-  }
-
-  const handleGridProductClick = useCallback((item: any) => {
-    handleSelectVariant({
-      id: item.id,
-      product_id: item.product_id,
-      sku: item.sku,
-      barcode: item.barcode ?? null,
-      name: item.name,
-      price: item.price,
-      cost: item.cost ?? null,
-      is_active: item.is_active,
-      product_name: item.productName || item.product_name,
-    })
-  }, [])
-
-  const handleAdjustmentSubmit = useCallback(async (quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => {
-    if (!selectedVariant) return
-    
-    setDrafts((prev) => {
-      const existingIndex = prev.findIndex((d) => d.variantId === selectedVariant.id)
-      const newDraft: DraftAdjustment = {
-        variantId: selectedVariant.id,
-        variantName: selectedVariant.product_name || selectedVariant.name,
-        sku: selectedVariant.sku,
-        barcode: selectedVariant.barcode || undefined,
-        quantity,
-        reason,
-      }
-      if (existingIndex > -1) {
-        const updated = [...prev]
-        updated[existingIndex] = newDraft
-        return updated
-      } else {
-        return [...prev, newDraft]
-      }
-    })
-
-    setSelectedVariant(null)
-  }, [selectedVariant])
-
-  const handleEditDraft = (draft: DraftAdjustment) => {
-    const originalVariant = allVariants.find((v) => v.id === draft.variantId)
-    if (originalVariant) {
-      setSelectedVariant(originalVariant)
-    } else {
-      setSelectedVariant({
-        id: draft.variantId,
-        product_id: '',
-        sku: draft.sku,
-        barcode: draft.barcode || null,
-        name: '',
-        price: 0,
-        cost: null,
-        is_active: true,
-        product_name: draft.variantName,
-      })
-    }
-    setIsDialogOpen(true)
-  }
+  }, [handleBarcodeScanned])
 
   const handleDeleteDraft = (variantId: string) => {
     setDrafts((prev) => prev.filter((d) => d.variantId !== variantId))
@@ -278,10 +286,7 @@ export function PosInventoryRoute() {
     onScan: handleVariantSearch,
   })
 
-  const currentDraft = useMemo(() => {
-    if (!selectedVariant) return undefined
-    return drafts.find((d) => d.variantId === selectedVariant.id)
-  }, [selectedVariant, drafts])
+
 
   return (
     <PosLayout>
@@ -411,7 +416,45 @@ export function PosInventoryRoute() {
             />
           </div>
 
-          <CatalogGrid categoryId={selectedCategory} onProductClick={handleGridProductClick} />
+          {isGridLoading ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="min-h-[17rem] animate-pulse rounded-[1.75rem] border border-border bg-card shadow-card"
+                />
+              ))}
+            </div>
+          ) : gridError ? (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-card border border-border bg-card px-6 py-10 text-center shadow-card">
+              <p className="text-sm font-medium text-foreground">Failed to load products</p>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">Try again.</p>
+              <Button variant="outline" onClick={() => refetchGrid()}>
+                Retry
+              </Button>
+            </div>
+          ) : (gridProducts ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-card px-6 py-10 text-center text-muted-foreground shadow-card">
+              <p className="font-medium text-foreground">No products in this category</p>
+              <p className="max-w-sm text-sm leading-6">Pick a different category, or clear the filter to bring the full shelf back into view.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {(gridProducts ?? []).map((item) => {
+                const primaryVariant = item.variants[0]
+                const draft = drafts.find((d) => d.variantId === primaryVariant?.id)
+                return (
+                  <InventoryProductCard
+                    key={item.product.id}
+                    product={item}
+                    draftQuantity={draft?.quantity ?? 0}
+                    draftReason={draft?.reason ?? 'RESTOCK'}
+                    onChange={handleAdjustmentChange}
+                  />
+                )
+              })}
+            </div>
+          )}
         </section>
 
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
@@ -472,15 +515,6 @@ export function PosInventoryRoute() {
                       </div>
                       
                       <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditDraft(item)}
-                          className="h-7 w-7 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-                          title="Edit Adjustment"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -606,17 +640,7 @@ export function PosInventoryRoute() {
         </aside>
       </div>
 
-      <AdjustmentDialog
-        variant={selectedVariant}
-        isOpen={isDialogOpen}
-        onClose={() => {
-          setIsDialogOpen(false)
-          setSelectedVariant(null)
-        }}
-        onSubmit={handleAdjustmentSubmit}
-        initialQuantity={currentDraft?.quantity}
-        initialReason={currentDraft?.reason}
-      />
+
 
       <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
         <DialogContent className="max-w-md rounded-[1.75rem]">

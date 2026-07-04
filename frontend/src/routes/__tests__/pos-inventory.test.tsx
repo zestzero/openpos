@@ -150,7 +150,7 @@ describe('POS Inventory Route', () => {
     expect(screen.getByText('Pending')).toBeInTheDocument()
   })
 
-  it('adds adjustment to drafts and opens Dialog on scan', async () => {
+  it('adds adjustment directly to drafts on scan', async () => {
     renderWithProviders(<PosInventoryRoute />)
 
     // Simulate Keyboard Wedge scan
@@ -159,30 +159,29 @@ describe('POS Inventory Route', () => {
 
     await onScan('885001')
 
-    // Expect dialog to open
-    expect(await screen.findByText('Record Stock Adjustment')).toBeInTheDocument()
-    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
-
-    // Fill dialog and submit
-    const qtyInput = screen.getByLabelText(/Quantity Change/i)
-    fireEvent.change(qtyInput, { target: { value: '5' } })
-
-    const saveBtn = screen.getByRole('button', { name: /Save Adjustment/i })
-    fireEvent.click(saveBtn)
-
-    // Verify it is added to the drafts list and not queued/synced immediately
+    // Verify it is added to the drafts list as +1 and displayed in UI
     await waitFor(() => {
-      expect(screen.queryByText('Record Stock Adjustment')).not.toBeInTheDocument()
+      expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
     })
-    expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
+    
+    // It should be in the sidebar as +1
+    expect(screen.getByText('+1')).toBeInTheDocument()
     expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
-    expect(screen.getByText('+5')).toBeInTheDocument()
+
+    // Test inline increment stepper
+    const incBtn = screen.getByRole('button', { name: /Increase quantity/i })
+    fireEvent.click(incBtn)
+
+    // Verify the value goes to +2
+    await waitFor(() => {
+      expect(screen.getByText('+2')).toBeInTheDocument()
+    })
 
     expect(mockQueueAdjustment).not.toHaveBeenCalled()
     expect(mockSyncPendingAdjustments).not.toHaveBeenCalled()
   })
 
-  it('allows manual product search and select from suggestions', async () => {
+  it('allows manual product search and select from suggestions to add draft', async () => {
     renderWithProviders(<PosInventoryRoute />)
 
     const searchInput = screen.getByPlaceholderText(/Type product name, barcode, or SKU/i)
@@ -193,11 +192,15 @@ describe('POS Inventory Route', () => {
       expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
     })
 
-    // Click suggestion to open adjustment dialog
+    // Click suggestion
     const suggestBtn = screen.getByRole('button', { name: /Espresso Blend.*885001/i })
     fireEvent.click(suggestBtn)
 
-    expect(await screen.findByText('Record Stock Adjustment')).toBeInTheDocument()
+    // Verify it is added immediately to the drafts list as +1
+    await waitFor(() => {
+      expect(screen.getByText('+1')).toBeInTheDocument()
+    })
+    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
   })
 
   it('commits draft adjustments and triggers sync', async () => {
@@ -207,15 +210,9 @@ describe('POS Inventory Route', () => {
     const onScan = mocks.useKeyboardWedge.mock.calls[0][0].onScan
     await onScan('885001')
 
-    // Wait for dialog to open
-    expect(await screen.findByText('Record Stock Adjustment')).toBeInTheDocument()
-
-    const saveBtn = screen.getByRole('button', { name: /Save Adjustment/i })
-    fireEvent.click(saveBtn)
-
-    // Wait for dialog to close
+    // Wait for it to appear in draft
     await waitFor(() => {
-      expect(screen.queryByText('Record Stock Adjustment')).not.toBeInTheDocument()
+      expect(screen.getByText('+1')).toBeInTheDocument()
     })
 
     // 2. Open confirmation modal
