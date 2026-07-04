@@ -493,7 +493,7 @@ export function PosInventoryRoute() {
                 {drafts.map((item) => (
                   <div
                     key={item.variantId}
-                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background p-4 shadow-xs"
+                    className="flex flex-col gap-2 bg-transparent py-3 border-b border-gray-100 last:border-0"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -568,7 +568,7 @@ export function PosInventoryRoute() {
                 queuedAdjustments.map((adj) => (
                   <div
                     key={adj.id}
-                    className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-background p-3 shadow-xs"
+                    className="flex flex-col gap-2 bg-transparent py-3 border-b border-gray-100 last:border-0"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
