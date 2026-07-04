@@ -49,17 +49,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   const paymentAmount = paymentMethod === 'promptpay' ? grandTotal : tenderedAmount
   const canCompletePayment = paymentMethod === 'promptpay' ? paymentAmount === grandTotal : paymentAmount >= grandTotal
 
-  const [isCheckoutInitiated, setIsCheckoutInitiated] = useState(() => session !== null && session.stage !== 'building')
-
-  useEffect(() => {
-    if (session) {
-      if (session.stage !== 'building') {
-        setIsCheckoutInitiated(true)
-      }
-    } else {
-      setIsCheckoutInitiated(false)
-    }
-  }, [session])
+  const isCheckoutInitiated = session !== null && session.stage !== 'building'
 
   useEffect(() => {
     if (isCheckoutInitiated && paymentMethod === 'promptpay') {
@@ -88,7 +78,6 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   const startCheckout = () => {
     const orderId = session?.orderId ?? crypto.randomUUID()
     startReview(orderId)
-    setIsCheckoutInitiated(true)
     setDiscountInput('0')
     setTenderedInput(satangToCurrencyInput(total))
     setSubmitError(null)
@@ -96,7 +85,6 @@ export function CartPanel({ compact = false }: CartPanelProps) {
 
   const abandonCheckout = () => {
     clearSession()
-    setIsCheckoutInitiated(false)
     setDiscountInput('0')
     setPaymentMethod('cash')
     setTenderedInput(satangToCurrencyInput(total))
@@ -327,7 +315,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
               <Button
                 variant="outline"
                 onClick={abandonCheckout}
-                className="h-14 gap-2 rounded-full border-gray-200"
+                className="h-14 gap-2 rounded-full border-gray-200 active:scale-95 transition-transform"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back

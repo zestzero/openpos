@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { PosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 
 const mocks = vi.hoisted(() => ({
   useCart: vi.fn(),
   useNetworkStatus: vi.fn(),
-  usePosCheckoutSession: vi.fn(),
 }))
 
 let updateSessionMock: ReturnType<typeof vi.fn>
@@ -22,8 +23,41 @@ vi.mock('@/pos/hooks/useNetworkStatus', () => ({
   useNetworkStatus: mocks.useNetworkStatus,
 }))
 
+let mockSession: PosCheckoutSession | null = null
+let setMockSession: (s: PosCheckoutSession | null) => void = () => {}
+
 vi.mock('@/pos/hooks/usePosCheckoutSession', () => ({
-  usePosCheckoutSession: mocks.usePosCheckoutSession,
+  usePosCheckoutSession: () => {
+    const [session, setSession] = useState(mockSession)
+    setMockSession = setSession
+    return {
+      session,
+      startReview: (orderId: string) => {
+        const newSession = {
+          orderId,
+          stage: 'review' as const,
+          discountAmount: 0,
+          paymentMethod: 'cash' as const,
+          tenderedAmount: 0,
+          updatedAt: Date.now(),
+        }
+        mockSession = newSession
+        setSession(newSession)
+      },
+      updateSession: (patch: any) => {
+        updateSessionMock(patch)
+        if (mockSession) {
+          const newSession = { ...mockSession, ...patch }
+          mockSession = newSession
+          setSession(newSession)
+        }
+      },
+      clearSession: () => {
+        mockSession = null
+        setSession(null)
+      },
+    }
+  },
 }))
 
 vi.mock('../SyncStatus', () => ({
@@ -60,19 +94,16 @@ describe('CartPanel', () => {
       clearCart: vi.fn(),
       isEmpty: false,
     })
-    mocks.usePosCheckoutSession.mockReturnValue({
-      session: {
-        orderId: 'order-1',
-        stage: 'building',
-        discountAmount: 0,
-        paymentMethod: 'cash',
-        tenderedAmount: 0,
-        updatedAt: 0,
-      },
-      startReview: vi.fn(),
-      updateSession: updateSessionMock,
-      clearSession: vi.fn(),
-    })
+
+    mockSession = {
+      orderId: 'order-1',
+      stage: 'building',
+      discountAmount: 0,
+      paymentMethod: 'cash',
+      tenderedAmount: 0,
+      updatedAt: 0,
+    }
+    setMockSession(mockSession)
   })
 
   it('treats discount input as THB and keeps confirm order button height consistent', () => {
