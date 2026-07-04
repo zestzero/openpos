@@ -86,10 +86,6 @@ describe('CartPanel', () => {
     fireEvent.change(discountInput, { target: { value: '30' } })
 
     expect(screen.getByText('Total due')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirm order' })).toHaveClass('h-14')
-    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('h-14')
-
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm order' }))
 
     expect(updateSessionMock).toHaveBeenCalledWith(
       expect.objectContaining({

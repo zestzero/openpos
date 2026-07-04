@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Banknote, QrCode, ReceiptText, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, Banknote, QrCode, ReceiptText, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,8 +16,6 @@ import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 import { CartItemRow } from './CartItemRow'
 import { SyncStatus } from './SyncStatus'
 import { toast } from 'sonner'
-
-type CheckoutStep = 'cart' | 'review' | 'payment'
 
 type CartPanelProps = {
   compact?: boolean
@@ -38,7 +36,6 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   const { session, startReview, updateSession, clearSession } = usePosCheckoutSession()
   const { rememberLatestReceipt } = useLatestReceipt()
 
-  const [step, setStep] = useState<CheckoutStep>(() => (session?.stage === 'building' ? 'cart' : session?.stage ?? 'cart'))
   const [discountInput, setDiscountInput] = useState(satangToCurrencyInput(session?.discountAmount ?? 0))
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(session?.paymentMethod ?? 'cash')
   const [tenderedInput, setTenderedInput] = useState(satangToCurrencyInput(session?.tenderedAmount || total))
@@ -51,10 +48,21 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   const tenderedAmount = useMemo(() => parseCurrencyInputToSatang(tenderedInput), [tenderedInput])
   const paymentAmount = paymentMethod === 'promptpay' ? grandTotal : tenderedAmount
   const canCompletePayment = paymentMethod === 'promptpay' ? paymentAmount === grandTotal : paymentAmount >= grandTotal
-  const hasDraft = session !== null
+
+  const [isCheckoutInitiated, setIsCheckoutInitiated] = useState(() => session !== null && session.stage !== 'building')
 
   useEffect(() => {
-    if (step === 'payment' && paymentMethod === 'promptpay') {
+    if (session) {
+      if (session.stage !== 'building') {
+        setIsCheckoutInitiated(true)
+      }
+    } else {
+      setIsCheckoutInitiated(false)
+    }
+  }, [session])
+
+  useEffect(() => {
+    if (isCheckoutInitiated && paymentMethod === 'promptpay') {
       let cancelled = false
 
       buildPromptPayQrDataUrl(import.meta.env.VITE_PROMPTPAY_MERCHANT_ID ?? '0000000000000', grandTotal)
@@ -75,28 +83,20 @@ export function CartPanel({ compact = false }: CartPanelProps) {
     }
 
     return undefined
-  }, [step, paymentMethod, grandTotal])
+  }, [isCheckoutInitiated, paymentMethod, grandTotal])
 
   const startCheckout = () => {
     const orderId = session?.orderId ?? crypto.randomUUID()
     startReview(orderId)
-    setStep('review')
+    setIsCheckoutInitiated(true)
     setDiscountInput('0')
-    setSubmitError(null)
-  }
-
-  const resumeCheckout = () => {
-    if (!session) return
-    setStep(session.stage === 'building' ? 'cart' : session.stage)
-    setDiscountInput(satangToCurrencyInput(session.discountAmount))
-    setPaymentMethod(session.paymentMethod)
-    setTenderedInput(satangToCurrencyInput(session.tenderedAmount || grandTotal))
+    setTenderedInput(satangToCurrencyInput(total))
     setSubmitError(null)
   }
 
   const abandonCheckout = () => {
     clearSession()
-    setStep('cart')
+    setIsCheckoutInitiated(false)
     setDiscountInput('0')
     setPaymentMethod('cash')
     setTenderedInput(satangToCurrencyInput(total))
@@ -104,13 +104,18 @@ export function CartPanel({ compact = false }: CartPanelProps) {
     setSubmitError(null)
   }
 
-  const continueToPayment = () => {
-    if (!session) return
-    const nextMethod: PaymentMethod = 'cash'
-    updateSession({ stage: 'payment', discountAmount, paymentMethod: nextMethod, tenderedAmount: grandTotal })
-    setPaymentMethod(nextMethod)
-    setTenderedInput(satangToCurrencyInput(grandTotal))
-    setStep('payment')
+  const handleDiscountChange = (val: string) => {
+    setDiscountInput(val)
+    const amount = Math.min(parseCurrencyInputToSatang(val), total)
+    const newGrandTotal = Math.max(total - amount, 0)
+    setTenderedInput(satangToCurrencyInput(newGrandTotal))
+    updateSession({ discountAmount: amount, tenderedAmount: newGrandTotal })
+  }
+
+  const handleTenderedChange = (val: string) => {
+    setTenderedInput(val)
+    const amount = parseCurrencyInputToSatang(val)
+    updateSession({ tenderedAmount: amount })
   }
 
   const selectPaymentMethod = (method: PaymentMethod) => {
@@ -145,7 +150,6 @@ export function CartPanel({ compact = false }: CartPanelProps) {
       rememberLatestReceipt(created.data.id)
       clearCart()
       clearSession()
-      setStep('cart')
       setDiscountInput('0')
       setPaymentMethod('cash')
       setTenderedInput('0')
@@ -160,7 +164,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
     }
   }
 
-  if (isEmpty && !hasDraft) {
+  if (isEmpty) {
     return (
       <div className={`text-center ${compact ? 'py-6' : 'rounded-card border border-dashed border-border bg-card p-8 shadow-card'}`}>
         <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground ${compact ? 'h-12 w-12' : ''}`}>
@@ -175,14 +179,14 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   }
 
   return (
-    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-white shadow-sm'}>
-      <div className={`flex items-start justify-between gap-3 ${compact ? '' : 'border-b border-gray-100 p-6'}`}>
+    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-white p-6 shadow-sm flex flex-col min-h-0'}>
+      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             {compact ? 'Cart' : 'Order workspace'}
           </p>
           <h2 className={`${compact ? 'mt-1 text-base' : 'mt-1 text-lg'} font-semibold text-foreground`}>
-            {step === 'cart' ? 'Items ready' : step === 'review' ? 'Review and discount' : 'Choose payment'}
+            {isCheckoutInitiated ? 'Checkout' : 'Items ready'}
           </h2>
           {compact ? <p className="mt-1 text-sm text-muted-foreground">{itemCount} items, {formatCurrency(total)} total</p> : null}
         </div>
@@ -196,38 +200,22 @@ export function CartPanel({ compact = false }: CartPanelProps) {
         </div>
       </div>
 
-      {hasDraft && step === 'cart' && (
-        <div className={`flex items-center justify-between gap-3 text-sm ${compact ? 'rounded-card bg-muted/30 px-3 py-2' : 'border-b border-border/70 bg-muted/25 px-4 py-3'}`}>
-          <div>
-            <p className="font-medium text-foreground">Saved checkout session</p>
-            {!compact ? <p className="text-muted-foreground">Resume or abandon the held order.</p> : null}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={resumeCheckout}>
-              Resume
-            </Button>
-            <Button variant="ghost" size="sm" onClick={abandonCheckout}>
-              Abandon
-            </Button>
-          </div>
+      <div className="flex flex-col min-h-0 flex-1">
+        {/* Cart items list */}
+        <div className={`${compact ? 'min-h-0 flex-1 overflow-y-auto space-y-2 px-0 py-3' : 'max-h-[16rem] overflow-y-auto p-2 border-b border-gray-100'}`}>
+          {items.map((item) => (
+            <CartItemRow
+              key={item.variantId}
+              item={item}
+              onUpdateQuantity={updateQuantity}
+              onRemove={removeItem}
+              compact={compact}
+            />
+          ))}
         </div>
-      )}
 
-      {step === 'cart' && (
-        <div className={compact ? 'flex min-h-0 flex-1 flex-col' : ''}>
-          <div className={`${compact ? 'min-h-0 flex-1 overflow-y-auto space-y-2 px-0 py-3' : 'max-h-[24rem] overflow-y-auto p-2 sm:p-3'}`}>
-            {items.map((item) => (
-              <CartItemRow
-                key={item.variantId}
-                item={item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeItem}
-                compact={compact}
-              />
-            ))}
-          </div>
-
-          <div className={`${compact ? 'shrink-0 bg-white px-0 pt-3' : 'border-t border-gray-100 p-6'}`}>
+        {!isCheckoutInitiated ? (
+          <div className={`${compact ? 'shrink-0 bg-white px-0 pt-3' : 'border-t border-gray-100 pt-6'}`}>
             <div className={`${compact ? 'rounded-3xl bg-white p-3 shadow-sm' : ''}`}>
               <div className="mb-3 flex items-center justify-between text-sm">
                 <span className="text-gray-500 font-medium">Item count</span>
@@ -237,7 +225,11 @@ export function CartPanel({ compact = false }: CartPanelProps) {
                 <span className="text-gray-900">Subtotal</span>
                 <span className="text-brand">{formatCurrency(total)}</span>
               </div>
-              <Button className="h-14 w-full rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95" onClick={startCheckout} disabled={items.length === 0}>
+              <Button
+                className="h-14 w-full rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95"
+                onClick={startCheckout}
+                disabled={items.length === 0}
+              >
                 Complete order
               </Button>
               {!compact ? (
@@ -247,12 +239,8 @@ export function CartPanel({ compact = false }: CartPanelProps) {
               ) : null}
             </div>
           </div>
-        </div>
-      )}
-
-      {step === 'review' && (
-        <div className={compact ? 'flex min-h-0 flex-1 flex-col' : 'space-y-4 p-4'}>
-          <div className={`${compact ? 'min-h-0 flex-1 overflow-y-auto px-0 py-3' : ''}`}>
+        ) : (
+          <div className="mt-4 space-y-4">
             <div className={`${compact ? 'rounded-card border border-border/70 bg-background p-3 shadow-card' : 'rounded-card border border-border/70 bg-background p-4 shadow-card'}`}>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
@@ -269,7 +257,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
                     max={total / 100}
                     step="0.01"
                     value={discountInput}
-                    onChange={(event) => setDiscountInput(event.target.value)}
+                    onChange={(e) => handleDiscountChange(e.target.value)}
                     className="h-10 w-32 text-right"
                   />
                 </div>
@@ -279,108 +267,82 @@ export function CartPanel({ compact = false }: CartPanelProps) {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className={`${compact ? 'shrink-0 bg-white pt-3' : 'flex gap-3'}`}>
-            <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep('cart')} className="h-14 gap-2 rounded-full border-gray-200">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button className="h-14 flex-1 rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95 gap-2" onClick={continueToPayment}>
-              <Sparkles className="h-4 w-4" />
-              Confirm order
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                className="h-12 gap-2"
+                onClick={() => selectPaymentMethod('cash')}
+              >
+                <Banknote className="h-4 w-4" />
+                Cash
+              </Button>
+              <Button
+                variant={paymentMethod === 'promptpay' ? 'default' : 'outline'}
+                className="h-12 gap-2"
+                onClick={() => selectPaymentMethod('promptpay')}
+              >
+                <QrCode className="h-4 w-4" />
+                QR payment
+              </Button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {step === 'payment' && (
-        <div className={compact ? 'flex min-h-0 flex-1 flex-col' : 'space-y-4 p-4'}>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Button
-              variant={paymentMethod === 'cash' ? 'default' : 'outline'}
-              className="h-12 gap-2"
-              onClick={() => selectPaymentMethod('cash')}
-            >
-              <Banknote className="h-4 w-4" />
-              Cash
-            </Button>
-            <Button
-              variant={paymentMethod === 'promptpay' ? 'default' : 'outline'}
-              className="h-12 gap-2"
-              onClick={() => selectPaymentMethod('promptpay')}
-            >
-              <QrCode className="h-4 w-4" />
-              QR payment
-            </Button>
-          </div>
-
-          <div className={`${compact ? 'min-h-0 flex-1 overflow-y-auto px-0 py-3' : ''}`}>
-            <div className={`${compact ? 'rounded-card border border-border/70 bg-background p-3 shadow-card' : 'rounded-card border border-border/70 bg-background p-4 shadow-card'}`}>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Amount due</span>
-                  <span className="font-semibold">{formatCurrency(grandTotal)}</span>
-                </div>
-
-                {paymentMethod === 'cash' ? (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Tendered amount</label>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      aria-label="Tendered amount (THB)"
-                      min={grandTotal / 100}
-                      step="0.01"
-                      value={tenderedInput}
-                      onChange={(event) => setTenderedInput(event.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Change due: {formatCurrency(Math.max(tenderedAmount - grandTotal, 0))}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">PromptPay</p>
-                    {!compact ? <p className="text-sm text-muted-foreground">Customer scans the QR and pays the exact amount due.</p> : null}
-                    {promptPayQr && (
-                      <img
-                        alt="PromptPay QR"
-                        src={promptPayQr}
-                        className="mx-auto h-48 w-48 rounded-card border border-border/70 bg-background p-2"
-                      />
-                    )}
-                  </div>
-                )}
-
-                {submitError && (
-                  <div className="rounded-card border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
-                    {submitError}
-                  </div>
+            {paymentMethod === 'cash' ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Tendered amount</label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  aria-label="Tendered amount (THB)"
+                  min={grandTotal / 100}
+                  step="0.01"
+                  value={tenderedInput}
+                  onChange={(e) => handleTenderedChange(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Change due: {formatCurrency(Math.max(tenderedAmount - grandTotal, 0))}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 text-center">
+                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">PromptPay</p>
+                {!compact ? <p className="text-sm text-muted-foreground">Customer scans the QR and pays the exact amount due.</p> : null}
+                {promptPayQr && (
+                  <img
+                    alt="PromptPay QR"
+                    src={promptPayQr}
+                    className="mx-auto h-48 w-48 rounded-card border border-border/70 bg-background p-2"
+                  />
                 )}
               </div>
-            </div>
-          </div>
+            )}
 
-          <div className={`${compact ? 'shrink-0 border-t border-border/70 bg-background/95 pt-3' : 'flex gap-2'}`}>
+            {submitError && (
+              <div className="rounded-card border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
+                {submitError}
+              </div>
+            )}
+
             <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setStep('review')} className="h-14 gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-            <Button
-              className="h-14 flex-1 rounded-card bg-emerald-600 text-lg font-semibold text-white shadow-card hover:bg-emerald-700"
-              onClick={finalizeOrder}
-              disabled={!canCompletePayment || isSubmitting}
-            >
-              {isSubmitting ? 'Completing...' : isOnline ? 'Confirm payment' : 'Save locally'}
-            </Button>
+              <Button
+                variant="outline"
+                onClick={abandonCheckout}
+                className="h-14 gap-2 rounded-full border-gray-200"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </Button>
+              <Button
+                className="h-14 flex-1 rounded-full bg-emerald-600 text-lg font-semibold text-white shadow-card hover:bg-emerald-700 active:scale-95 transition-transform"
+                onClick={finalizeOrder}
+                disabled={!canCompletePayment || isSubmitting}
+              >
+                {isSubmitting ? 'Completing...' : isOnline ? 'Confirm payment' : 'Save locally'}
+              </Button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }
