@@ -489,11 +489,11 @@ export function PosInventoryRoute() {
                 No draft adjustments. Click a product or scan a barcode to add.
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="divide-y divide-border/40">
                 {drafts.map((item) => (
                   <div
                     key={item.variantId}
-                    className="flex flex-col gap-2 bg-transparent py-3 border-b border-gray-100 last:border-0"
+                    className="flex flex-col gap-2 bg-transparent py-3"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -559,7 +559,7 @@ export function PosInventoryRoute() {
               </div>
             )}
 
-            <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
+            <div className="divide-y divide-border/40 max-h-[300px] overflow-y-auto pr-1 hide-scrollbar">
               {queuedAdjustments.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-border/70 bg-background px-4 py-8 text-center text-sm leading-6 text-muted-foreground">
                   No adjustments pending.
@@ -568,7 +568,7 @@ export function PosInventoryRoute() {
                 queuedAdjustments.map((adj) => (
                   <div
                     key={adj.id}
-                    className="flex flex-col gap-2 bg-transparent py-3 border-b border-gray-100 last:border-0"
+                    className="flex flex-col gap-2 bg-transparent py-3"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

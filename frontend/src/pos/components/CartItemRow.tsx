@@ -19,7 +19,7 @@ export function CartItemRow({
   compact = false,
 }: CartItemRowProps) {
   return (
-    <div className="flex items-center gap-3 bg-transparent px-2 py-3 border-b border-gray-100 last:border-0">
+    <div className="flex items-center gap-3 bg-transparent px-2 py-3 border-b border-border/40 last:border-0">
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-foreground">{item.productName}</div>
         {!compact ? <div className="truncate text-sm text-muted-foreground">{item.variantName}</div> : null}
