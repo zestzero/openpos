@@ -90,6 +90,7 @@ describe('POS Inventory Route', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    queryClient.clear()
 
     mocks.getStoredSession.mockReturnValue({
       token: 'cashier-token',

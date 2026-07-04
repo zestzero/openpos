@@ -50,7 +50,7 @@ export function InventoryProductCard({ product, draftQuantity, draftReason, onCh
   const hasActiveDraft = draftQuantity !== 0
 
   return (
-    <div className={`group rounded-3xl border bg-white overflow-hidden flex flex-col justify-between transition-all duration-300 ${hasActiveDraft ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500/20' : 'border-border/60 shadow-xs hover:shadow-md'}`}>
+    <div className={`group rounded-3xl border bg-card text-foreground overflow-hidden flex flex-col justify-between transition-all duration-300 ${hasActiveDraft ? 'border-indigo-500 shadow-md ring-1 ring-indigo-500/20' : 'border-border/60 shadow-xs hover:shadow-md'}`}>
       {/* Product Image / Placeholder */}
       <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
         {p.image_url ? (
@@ -92,7 +92,7 @@ export function InventoryProductCard({ product, draftQuantity, draftReason, onCh
       {/* Card Info and Inputs */}
       <div className="p-4 flex-1 flex flex-col justify-between gap-3">
         <div>
-          <p className="line-clamp-2 text-sm font-bold text-gray-900 leading-tight min-h-[2.5rem]">{p.name}</p>
+          <p className="line-clamp-2 text-sm font-bold text-foreground leading-tight min-h-[2.5rem]">{p.name}</p>
           <p className="mt-1 text-xs text-muted-foreground">SKU: {skuLabel}</p>
         </div>
 
@@ -104,7 +104,7 @@ export function InventoryProductCard({ product, draftQuantity, draftReason, onCh
               <button
                 type="button"
                 onClick={handleDecrement}
-                className="h-7 w-7 rounded-lg border border-border bg-gray-50 hover:bg-gray-100 active:scale-90 flex items-center justify-center text-sm font-bold transition-all text-gray-600"
+                className="h-7 w-7 rounded-lg border border-border bg-muted hover:bg-muted/80 text-foreground active:scale-90 flex items-center justify-center text-sm font-bold transition-all"
                 aria-label="Decrease quantity"
               >
                 <Minus className="h-3 w-3 stroke-[2.5]" />
@@ -114,13 +114,13 @@ export function InventoryProductCard({ product, draftQuantity, draftReason, onCh
                 value={inputValue}
                 onChange={(e) => handleQuantityChange(e.target.value)}
                 onBlur={handleBlur}
-                className="w-12 text-center text-xs font-bold border rounded-lg py-1 bg-white focus-visible:ring-indigo-500 focus:outline-none"
+                className="w-12 text-center text-xs font-bold border border-border rounded-lg py-1 bg-background text-foreground focus-visible:ring-indigo-500 focus:outline-none"
                 aria-label="Adjustment quantity"
               />
               <button
                 type="button"
                 onClick={handleIncrement}
-                className="h-7 w-7 rounded-lg border border-border bg-gray-50 hover:bg-gray-100 active:scale-90 flex items-center justify-center text-sm font-bold transition-all text-gray-600"
+                className="h-7 w-7 rounded-lg border border-border bg-muted hover:bg-muted/80 text-foreground active:scale-90 flex items-center justify-center text-sm font-bold transition-all"
                 aria-label="Increase quantity"
               >
                 <Plus className="h-3 w-3 stroke-[2.5]" />
@@ -133,7 +133,7 @@ export function InventoryProductCard({ product, draftQuantity, draftReason, onCh
             value={draftReason}
             onChange={(e) => onChange(primaryVariant.id, draftQuantity, e.target.value)}
             disabled={!hasActiveDraft}
-            className={`mt-2.5 w-full text-xs border rounded-lg p-2 bg-white transition-all focus:outline-none focus:ring-1 ${hasActiveDraft ? 'border-indigo-300 focus:ring-indigo-500 text-gray-900 font-semibold cursor-pointer' : 'border-gray-200 text-gray-400 cursor-not-allowed'}`}
+            className={`mt-2.5 w-full text-xs border border-border rounded-lg p-2 bg-background text-foreground transition-all focus:outline-none focus:ring-1 ${hasActiveDraft ? 'border-indigo-300 focus:ring-indigo-500 font-semibold cursor-pointer' : 'text-muted-foreground cursor-not-allowed'}`}
           >
             <option value="RESTOCK">RESTOCK (Add)</option>
             <option value="ADJUSTMENT">ADJUSTMENT (Count)</option>

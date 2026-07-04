@@ -167,7 +167,7 @@ export function CartPanel({ compact = false }: CartPanelProps) {
   }
 
   return (
-    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-white p-6 shadow-sm flex flex-col min-h-0'}>
+    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-card text-foreground p-6 shadow-sm flex flex-col min-h-0'}>
       <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">

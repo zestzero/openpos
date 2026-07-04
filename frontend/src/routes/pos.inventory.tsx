@@ -157,8 +157,11 @@ export function PosInventoryRoute() {
   }, [])
 
   const handleAdjustmentChange = useCallback((variantId: string, quantity: number, reason: 'RESTOCK' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE' | 'LOST') => {
-    const originalVariant = allVariants.find((v) => v.id === variantId)
-    if (!originalVariant) return
+    const variant = allVariants.find((v) => v.id === variantId) ??
+      (gridProducts ?? [])
+        .flatMap((p) => p.variants.map((v) => ({ ...v, product_name: p.product.name })))
+        .find((v) => v.id === variantId)
+    if (!variant) return
 
     setDrafts((prev) => {
       if (quantity === 0) {
@@ -168,9 +171,9 @@ export function PosInventoryRoute() {
       const existingIndex = prev.findIndex((d) => d.variantId === variantId)
       const newDraft: DraftAdjustment = {
         variantId,
-        variantName: originalVariant.product_name || originalVariant.name,
-        sku: originalVariant.sku,
-        barcode: originalVariant.barcode || undefined,
+        variantName: variant.product_name || variant.name,
+        sku: variant.sku,
+        barcode: variant.barcode || undefined,
         quantity,
         reason,
       }
@@ -183,7 +186,7 @@ export function PosInventoryRoute() {
         return [...prev, newDraft]
       }
     })
-  }, [allVariants])
+  }, [allVariants, gridProducts])
 
   const handleVariantSearch = useCallback(async (code: string) => {
     try {
@@ -290,7 +293,7 @@ export function PosInventoryRoute() {
 
   return (
     <PosLayout>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,0.85fr)] pb-20">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)] pb-20">
         <section className="space-y-4">
           <div className="overflow-hidden rounded-[1.75rem] border border-border/70 bg-card shadow-sm">
             <div className="border-b border-border/60 px-4 py-4 sm:px-5 sm:py-5">
@@ -457,7 +460,7 @@ export function PosInventoryRoute() {
           )}
         </section>
 
-        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+        <aside className="space-y-4 md:sticky md:top-24 md:self-start">
           <section className="rounded-[1.75rem] border border-border/70 bg-card p-4 shadow-sm sm:p-5">
             <div className="flex items-center justify-between gap-3 border-b border-border/50 pb-3 mb-4">
               <div>
