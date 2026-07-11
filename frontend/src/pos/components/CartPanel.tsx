@@ -1,336 +1,349 @@
-'use client'
-
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Banknote, QrCode, ReceiptText, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { ArrowLeft, Banknote, CheckCircle2, QrCode, ReceiptText, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { api, type PaymentMethod } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
+import { api, type PaymentMethod, type ReceiptSnapshot } from '@/lib/api'
 import { formatCurrency } from '@/lib/formatCurrency'
 import { buildPromptPayQrDataUrl } from '@/lib/promptpay'
 import { printReceipt } from '@/lib/receipt'
 import { useCart } from '@/pos/hooks/useCart'
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
-import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
+import { useOfflineOrders } from '@/pos/hooks/useOfflineOrders'
 import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
+import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
+import { PosLayout } from '@/pos/layout/PosLayout'
+import { posCopy } from '@/pos/lib/copy'
 import { CartItemRow } from './CartItemRow'
-import { SyncStatus } from './SyncStatus'
-import { toast } from 'sonner'
 
-type CartPanelProps = {
-  compact?: boolean
-}
-
-function parseCurrencyInputToSatang(value: string) {
+function parseTHB(value: string) {
   const parsed = Number(value)
   return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 100)) : 0
 }
 
-function satangToCurrencyInput(value: number) {
+function toTHBInput(value: number) {
   return String(value / 100)
 }
 
-export function CartPanel({ compact = false }: CartPanelProps) {
-  const { isOnline } = useNetworkStatus()
-  const { items, itemCount, total, updateQuantity, removeItem, clearCart, isEmpty } = useCart()
-  const { session, startReview, updateSession, clearSession } = usePosCheckoutSession()
-  const { rememberLatestReceipt } = useLatestReceipt()
+function cashShortcuts(total: number) {
+  const denominations = [2000, 5000, 10000, 50000, 100000]
+  const values = [total]
+  for (const denomination of denominations) {
+    const rounded = Math.ceil(total / denomination) * denomination
+    if (rounded >= total && !values.includes(rounded)) values.push(rounded)
+    if (values.length === 4) break
+  }
+  return values
+}
 
-  const [discountInput, setDiscountInput] = useState(satangToCurrencyInput(session?.discountAmount ?? 0))
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(session?.paymentMethod ?? 'cash')
-  const [tenderedInput, setTenderedInput] = useState(satangToCurrencyInput(session?.tenderedAmount || total))
-  const [promptPayQr, setPromptPayQr] = useState<string | null>(null)
+function localReceipt(
+  orderId: string,
+  items: ReturnType<typeof useCart>['items'],
+  discountAmount: number,
+  totalAmount: number,
+  paymentMethod: PaymentMethod,
+  tenderedAmount: number,
+): ReceiptSnapshot {
+  return {
+    store_name: import.meta.env.VITE_STORE_NAME ?? 'OpenPOS',
+    paid_at: new Date().toISOString(),
+    order_id: orderId,
+    items: items.map((item) => ({
+      name: item.variantName === 'Default' ? item.productName : `${item.productName} · ${item.variantName}`,
+      quantity: item.quantity,
+      unit_price: item.price,
+      subtotal: item.subtotal,
+    })),
+    discount_amount: discountAmount,
+    total_amount: totalAmount,
+    payment_method: paymentMethod,
+    tendered_amount: tenderedAmount,
+    change_due: paymentMethod === 'cash' ? Math.max(tenderedAmount - totalAmount, 0) : 0,
+  }
+}
+
+export function CartPanel() {
+  const { user } = useAuth()
+  const { isOnline } = useNetworkStatus()
+  const { queueOrder } = useOfflineOrders()
+  const { rememberLatestReceipt } = useLatestReceipt()
+  const { items, itemCount, total, updateQuantity, removeItem, clearCart, isEmpty } = useCart()
+  const { session, updateSession, resetSale } = usePosCheckoutSession()
+  const [discountInput, setDiscountInput] = useState(toTHBInput(session.discountAmount))
+  const [tenderedInput, setTenderedInput] = useState(toTHBInput(session.tenderedAmount || total))
+  const [qrState, setQrState] = useState<{ key: string; url: string | null; error: boolean }>({ key: '', url: null, error: false })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const submissionLock = useRef(false)
 
-  const discountAmount = useMemo(() => Math.min(parseCurrencyInputToSatang(discountInput), total), [discountInput, total])
-  const grandTotal = useMemo(() => Math.max(total - discountAmount, 0), [total, discountAmount])
-  const tenderedAmount = useMemo(() => parseCurrencyInputToSatang(tenderedInput), [tenderedInput])
-  const paymentAmount = paymentMethod === 'promptpay' ? grandTotal : tenderedAmount
-  const canCompletePayment = paymentMethod === 'promptpay' ? paymentAmount === grandTotal : paymentAmount >= grandTotal
-
-  const isCheckoutInitiated = session !== null && session.stage !== 'building'
+  const discountAmount = Math.min(parseTHB(discountInput), total)
+  const grandTotal = Math.max(total - discountAmount, 0)
+  const tenderedAmount = parseTHB(tenderedInput)
+  const canComplete = session.paymentMethod === 'promptpay' || tenderedAmount >= grandTotal
+  const shortcuts = useMemo(() => cashShortcuts(grandTotal), [grandTotal])
+  const qrKey = `${import.meta.env.VITE_PROMPTPAY_MERCHANT_ID ?? '0000000000000'}:${grandTotal}`
+  const qrDataUrl = qrState.key === qrKey ? qrState.url : null
+  const qrError = qrState.key === qrKey && qrState.error
 
   useEffect(() => {
-    if (isCheckoutInitiated && paymentMethod === 'promptpay') {
-      let cancelled = false
+    if (session.stage !== 'payment' || session.paymentMethod !== 'promptpay') return
+    let cancelled = false
+    void buildPromptPayQrDataUrl(import.meta.env.VITE_PROMPTPAY_MERCHANT_ID ?? '0000000000000', grandTotal)
+      .then((url) => { if (!cancelled) setQrState({ key: qrKey, url, error: false }) })
+      .catch(() => { if (!cancelled) setQrState({ key: qrKey, url: null, error: true }) })
+    return () => { cancelled = true }
+  }, [grandTotal, qrKey, session.paymentMethod, session.stage])
 
-      buildPromptPayQrDataUrl(import.meta.env.VITE_PROMPTPAY_MERCHANT_ID ?? '0000000000000', grandTotal)
-        .then((dataUrl) => {
-          if (!cancelled) {
-            setPromptPayQr(dataUrl)
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setPromptPayQr(null)
-          }
-        })
+  const setPaymentMethod = (method: PaymentMethod) => {
+    const amount = grandTotal
+    setTenderedInput(toTHBInput(amount))
+    updateSession({ paymentMethod: method, tenderedAmount: amount })
+  }
 
-      return () => {
-        cancelled = true
-      }
-    }
+  const changeDiscount = (value: string) => {
+    setDiscountInput(value)
+    const nextDiscount = Math.min(parseTHB(value), total)
+    const nextTotal = Math.max(total - nextDiscount, 0)
+    setTenderedInput(toTHBInput(nextTotal))
+    updateSession({ discountAmount: nextDiscount, tenderedAmount: nextTotal })
+  }
 
-    return undefined
-  }, [isCheckoutInitiated, paymentMethod, grandTotal])
+  const goToPayment = () => {
+    const amount = grandTotal
+    setTenderedInput(toTHBInput(amount))
+    updateSession({ stage: 'payment', tenderedAmount: amount })
+  }
 
-  const startCheckout = () => {
-    const orderId = session?.orderId ?? crypto.randomUUID()
-    startReview(orderId)
-    setDiscountInput('0')
-    setTenderedInput(satangToCurrencyInput(total))
+  const completeSale = async () => {
+    if (submissionLock.current || isEmpty || !canComplete) return
+    submissionLock.current = true
+    setIsSubmitting(true)
     setSubmitError(null)
-  }
 
-  const abandonCheckout = () => {
-    clearSession()
-    setDiscountInput('0')
-    setPaymentMethod('cash')
-    setTenderedInput(satangToCurrencyInput(total))
-    setPromptPayQr(null)
-    setSubmitError(null)
-  }
-
-  const handleDiscountChange = (val: string) => {
-    setDiscountInput(val)
-    const amount = Math.min(parseCurrencyInputToSatang(val), total)
-    const newGrandTotal = Math.max(total - amount, 0)
-    setTenderedInput(satangToCurrencyInput(newGrandTotal))
-    updateSession({ discountAmount: amount, tenderedAmount: newGrandTotal })
-  }
-
-  const handleTenderedChange = (val: string) => {
-    setTenderedInput(val)
-    const amount = parseCurrencyInputToSatang(val)
-    updateSession({ tenderedAmount: amount })
-  }
-
-  const selectPaymentMethod = (method: PaymentMethod) => {
-    setPaymentMethod(method)
-    setTenderedInput(satangToCurrencyInput(grandTotal))
-    updateSession({ paymentMethod: method, tenderedAmount: grandTotal })
-  }
-
-  const finalizeOrder = async () => {
-    if (!session) return
+    const paidAmount = session.paymentMethod === 'promptpay' ? grandTotal : tenderedAmount
+    const receiptFallback = localReceipt(session.orderId, items, discountAmount, grandTotal, session.paymentMethod, paidAmount)
 
     try {
-      setIsSubmitting(true)
-      setSubmitError(null)
-
-      const orderPayload = {
-        client_uuid: session.orderId,
-        discount_amount: discountAmount,
-        items: items.map((item) => ({
-          variant_id: item.variantId,
-          quantity: item.quantity,
-          unit_price: item.price,
-        })),
+      let receipt: ReceiptSnapshot
+      let savedOffline = false
+      if (isOnline) {
+        const order = await api.createOrder({
+          client_uuid: session.orderId,
+          discount_amount: discountAmount,
+          items: items.map((item) => ({ variant_id: item.variantId, quantity: item.quantity, unit_price: item.price })),
+        })
+        const payment = await api.completePayment(order.data.id, {
+          method: session.paymentMethod,
+          tendered_amount: paidAmount,
+        })
+        receipt = payment.data
+        rememberLatestReceipt(order.data.id)
+      } else {
+        if (!user?.id) throw new Error('Signed-in user is missing')
+        await queueOrder({
+          id: session.orderId,
+          userId: user.id,
+          items: items.map((item) => ({ variantId: item.variantId, quantity: item.quantity, priceSnapshot: item.price })),
+          total: grandTotal,
+          discountAmount,
+          paymentMethod: session.paymentMethod,
+          tenderedAmount: paidAmount,
+          localReceipt: receiptFallback,
+        })
+        receipt = receiptFallback
+        savedOffline = true
       }
 
-      const created = await api.createOrder(orderPayload)
-      const paymentResult = await api.completePayment(created.data.id, {
-        method: paymentMethod,
-        tendered_amount: paymentMethod === 'promptpay' ? grandTotal : tenderedAmount,
-      })
-
-      rememberLatestReceipt(created.data.id)
       clearCart()
-      clearSession()
-      setDiscountInput('0')
-      setPaymentMethod('cash')
-      setTenderedInput('0')
-      setPromptPayQr(null)
-      toast.success('Order completed')
-      await printReceipt(paymentResult.data)
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Checkout failed')
-      toast.error('Checkout saved locally. Retry when the service is back.')
+      updateSession({ stage: 'complete', receipt, savedOffline, tenderedAmount: paidAmount, discountAmount })
+      await printReceipt(receipt)
+    } catch {
+      setSubmitError(posCopy.paymentError)
     } finally {
+      submissionLock.current = false
       setIsSubmitting(false)
     }
   }
 
-  if (isEmpty) {
+  const startNextSale = () => {
+    clearCart()
+    resetSale()
+  }
+
+  if (session.stage === 'complete' && session.receipt) {
     return (
-      <div className={`text-center ${compact ? 'py-6' : 'rounded-card border border-dashed border-border bg-card p-8 shadow-card'}`}>
-        <div className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground ${compact ? 'h-12 w-12' : ''}`}>
-          <ReceiptText className="h-6 w-6" />
+      <PosLayout>
+        <section className="flex min-h-[calc(100dvh-8rem)] flex-col items-center justify-center gap-6 text-center">
+          <CheckCircle2 aria-hidden="true" className="size-16 text-success" />
+          <div className="flex flex-col gap-2">
+            <h2 className="text-3xl font-bold">{posCopy.done}</h2>
+            {session.savedOffline ? (
+              <p className="max-w-sm text-lg text-muted-foreground">{posCopy.savedOnPhone}. {posCopy.savedOnPhoneHelp}</p>
+            ) : null}
+          </div>
+          {session.receipt.payment_method === 'cash' ? (
+            <div className="w-full border-y border-border py-6">
+              <p className="text-lg font-semibold text-muted-foreground">{posCopy.changeDue}</p>
+              <p className="mt-2 text-5xl font-black tabular-nums text-foreground">{formatCurrency(session.receipt.change_due)}</p>
+            </div>
+          ) : (
+            <p className="text-4xl font-black tabular-nums">{formatCurrency(session.receipt.total_amount)}</p>
+          )}
+          <div className="flex w-full flex-col gap-3">
+            <Button className="h-16 w-full rounded-xl text-lg font-bold" onClick={startNextSale}>{posCopy.nextSale}</Button>
+            <Button variant="outline" className="h-14 w-full rounded-xl text-lg" onClick={() => void printReceipt(session.receipt!)}>
+              <ReceiptText data-icon="inline-start" />
+              {posCopy.printAgain}
+            </Button>
+          </div>
+        </section>
+      </PosLayout>
+    )
+  }
+
+  if (session.stage === 'payment') {
+    return (
+      <PosLayout>
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" className="min-h-12 px-2 text-base" onClick={() => updateSession({ stage: 'reviewing' })}>
+              <ArrowLeft data-icon="inline-start" />{posCopy.back}
+            </Button>
+            <h2 className="text-2xl font-bold">{posCopy.payment}</h2>
+          </div>
+
+          <div className="border-y border-border py-5 text-center">
+            <p className="text-lg font-semibold text-muted-foreground">{posCopy.totalDue}</p>
+            <p className="mt-2 text-5xl font-black tabular-nums">{formatCurrency(grandTotal)}</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3" aria-label={posCopy.payment}>
+            <Button variant={session.paymentMethod === 'cash' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg" onClick={() => setPaymentMethod('cash')}>
+              <Banknote data-icon="inline-start" />{posCopy.cash}
+            </Button>
+            <Button variant={session.paymentMethod === 'promptpay' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg" onClick={() => setPaymentMethod('promptpay')}>
+              <QrCode data-icon="inline-start" />{posCopy.qr}
+            </Button>
+          </div>
+
+          {session.paymentMethod === 'cash' ? (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-2">
+                {shortcuts.map((amount, index) => (
+                  <Button key={amount} variant="outline" className="h-14 rounded-xl text-lg font-bold" onClick={() => {
+                    setTenderedInput(toTHBInput(amount))
+                    updateSession({ tenderedAmount: amount })
+                  }}>
+                    {index === 0 ? posCopy.exact : formatCurrency(amount)}
+                  </Button>
+                ))}
+              </div>
+              <label className="flex flex-col gap-2 text-lg font-semibold">
+                {posCopy.amountReceived}
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  min={grandTotal / 100}
+                  step="0.01"
+                  value={tenderedInput}
+                  onChange={(event) => {
+                    setTenderedInput(event.target.value)
+                    updateSession({ tenderedAmount: parseTHB(event.target.value) })
+                  }}
+                  className="h-14 rounded-xl text-right text-xl font-bold"
+                />
+              </label>
+              <div className="rounded-xl bg-success-soft p-4 text-success-foreground">
+                <p className="text-lg font-semibold">{posCopy.changeDue}</p>
+                <p className="mt-1 text-4xl font-black tabular-nums">{formatCurrency(Math.max(tenderedAmount - grandTotal, 0))}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex min-h-72 flex-col items-center justify-center gap-4 text-center">
+              {qrDataUrl ? <img src={qrDataUrl} alt="PromptPay QR" className="size-64 border border-border bg-card p-3" /> : null}
+              {!qrDataUrl && !qrError ? <p className="text-lg text-muted-foreground">Loading QR…</p> : null}
+              {qrError ? <p className="text-lg text-destructive">QR could not be created. Choose cash or try again.</p> : null}
+            </div>
+          )}
+
+          {submitError ? <p role="alert" className="rounded-xl bg-destructive-soft p-4 text-base font-semibold text-destructive-foreground">{submitError}</p> : null}
+          <Button
+            className="h-16 w-full rounded-xl text-lg font-bold"
+            disabled={!canComplete || isSubmitting || (session.paymentMethod === 'promptpay' && !qrDataUrl)}
+            onClick={() => void completeSale()}
+          >
+            {isSubmitting ? posCopy.completing : isOnline ? posCopy.confirmPayment : posCopy.saveOffline}
+          </Button>
         </div>
-        <p className={`${compact ? 'mt-3 text-base' : 'mt-4 text-lg'} font-semibold text-foreground`}>Cart is empty</p>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-          Add items from selling or catalog to start checkout.
-        </p>
-      </div>
+      </PosLayout>
     )
   }
 
   return (
-    <div className={compact ? 'relative flex h-full min-h-0 flex-col' : 'rounded-3xl border-none bg-card text-foreground p-6 shadow-sm flex flex-col min-h-0'}>
-      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            {compact ? 'Cart' : 'Order workspace'}
-          </p>
-          <h2 className={`${compact ? 'mt-1 text-base' : 'mt-1 text-lg'} font-semibold text-foreground`}>
-            {isCheckoutInitiated ? 'Checkout' : 'Items ready'}
-          </h2>
-          {compact ? <p className="mt-1 text-sm text-muted-foreground">{itemCount} items, {formatCurrency(total)} total</p> : null}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <SyncStatus />
-          <Button variant="ghost" size="sm" onClick={clearCart}>
-            <Trash2 className="mr-1 h-4 w-4" />
-            Clear
+    <PosLayout bottomAction={!isEmpty ? (
+      <Button className="h-16 w-full rounded-xl text-lg font-bold" onClick={goToPayment}>{posCopy.continuePayment}</Button>
+    ) : null}>
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <Button variant="ghost" className="min-h-12 px-2 text-base" onClick={() => updateSession({ stage: 'selling' })}>
+            <ArrowLeft data-icon="inline-start" />{posCopy.back}
+          </Button>
+          <h2 className="text-2xl font-bold">{posCopy.order}</h2>
+          <Button variant="ghost" className="min-h-12 px-2 text-base text-destructive" onClick={() => setClearDialogOpen(true)}>
+            <Trash2 data-icon="inline-start" />{posCopy.clearOrder}
           </Button>
         </div>
-      </div>
 
-      <div className="flex flex-col min-h-0 flex-1">
-        {/* Cart items list */}
-        <div className={`${compact ? 'min-h-0 flex-1 overflow-y-auto space-y-2 px-0 py-3' : 'max-h-[16rem] overflow-y-auto p-2 border-b border-gray-100'}`}>
-          {items.map((item) => (
-            <CartItemRow
-              key={item.variantId}
-              item={item}
-              onUpdateQuantity={updateQuantity}
-              onRemove={removeItem}
-              compact={compact}
-            />
-          ))}
-        </div>
-
-        {!isCheckoutInitiated ? (
-          <div className={`${compact ? 'shrink-0 bg-white px-0 pt-3' : 'border-t border-gray-100 pt-6'}`}>
-            <div className={`${compact ? 'rounded-3xl bg-white p-3 shadow-sm' : ''}`}>
-              <div className="mb-3 flex items-center justify-between text-sm">
-                <span className="text-gray-500 font-medium">Item count</span>
-                <span className="font-bold text-gray-900">{itemCount}</span>
-              </div>
-              <div className="mb-6 flex items-center justify-between text-xl font-bold">
-                <span className="text-gray-900">Subtotal</span>
-                <span className="text-brand">{formatCurrency(total)}</span>
-              </div>
-              <Button
-                className="h-14 w-full rounded-full bg-brand text-lg font-bold text-white shadow-md transition-transform active:scale-95"
-                onClick={startCheckout}
-                disabled={items.length === 0}
-              >
-                Complete order
-              </Button>
-              {!compact ? (
-                <p className="mt-2 text-center text-xs text-muted-foreground">
-                  Adjust quantities now, then review discount and payment.
-                </p>
-              ) : null}
-            </div>
+        {isEmpty ? (
+          <div className="py-16 text-center">
+            <p className="text-xl font-bold">{posCopy.emptyOrder}</p>
+            <p className="mt-2 text-base text-muted-foreground">{posCopy.emptyOrderHelp}</p>
           </div>
         ) : (
-          <div className="mt-4 space-y-4">
-            <div className={`${compact ? 'rounded-card border border-border/70 bg-background p-3 shadow-card' : 'rounded-card border border-border/70 bg-background p-4 shadow-card'}`}>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">{formatCurrency(total)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-muted-foreground">Discount (THB)</span>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    aria-label="Discount (THB)"
-                    min="0"
-                    max={total / 100}
-                    step="0.01"
-                    value={discountInput}
-                    onChange={(e) => handleDiscountChange(e.target.value)}
-                    className="h-10 w-32 text-right"
-                  />
-                </div>
-                <div className="flex items-center justify-between border-t border-border/70 pt-3 text-base font-semibold">
-                  <span>Total due</span>
-                  <span className="text-primary">{formatCurrency(grandTotal)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant={paymentMethod === 'cash' ? 'default' : 'outline'}
-                className="h-12 gap-2"
-                onClick={() => selectPaymentMethod('cash')}
-              >
-                <Banknote className="h-4 w-4" />
-                Cash
-              </Button>
-              <Button
-                variant={paymentMethod === 'promptpay' ? 'default' : 'outline'}
-                className="h-12 gap-2"
-                onClick={() => selectPaymentMethod('promptpay')}
-              >
-                <QrCode className="h-4 w-4" />
-                QR payment
-              </Button>
-            </div>
-
-            {paymentMethod === 'cash' ? (
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Tendered amount</label>
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  aria-label="Tendered amount (THB)"
-                  min={grandTotal / 100}
-                  step="0.01"
-                  value={tenderedInput}
-                  onChange={(e) => handleTenderedChange(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Change due: {formatCurrency(Math.max(tenderedAmount - grandTotal, 0))}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3 text-center">
-                <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">PromptPay</p>
-                {!compact ? <p className="text-sm text-muted-foreground">Customer scans the QR and pays the exact amount due.</p> : null}
-                {promptPayQr && (
-                  <img
-                    alt="PromptPay QR"
-                    src={promptPayQr}
-                    className="mx-auto h-48 w-48 rounded-card border border-border/70 bg-background p-2"
-                  />
-                )}
-              </div>
-            )}
-
-            {submitError && (
-              <div className="rounded-card border border-red-500/20 bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-200">
-                {submitError}
-              </div>
-            )}
-
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={abandonCheckout}
-                className="h-14 gap-2 rounded-full border-gray-200 active:scale-95 transition-transform"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <Button
-                className="h-14 flex-1 rounded-full bg-emerald-600 text-lg font-semibold text-white shadow-card hover:bg-emerald-700 active:scale-95 transition-transform"
-                onClick={finalizeOrder}
-                disabled={!canCompletePayment || isSubmitting}
-              >
-                {isSubmitting ? 'Completing...' : isOnline ? 'Confirm payment' : 'Save locally'}
-              </Button>
-            </div>
+          <div className="divide-y divide-border border-y border-border">
+            {items.map((item) => (
+              <CartItemRow key={item.variantId} item={item} onUpdateQuantity={updateQuantity} onRemove={removeItem} compact />
+            ))}
           </div>
         )}
+
+        {!isEmpty ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between text-lg">
+              <span>{posCopy.itemCount}</span><strong className="tabular-nums">{itemCount}</strong>
+            </div>
+            <div className="flex items-center justify-between text-xl font-bold">
+              <span>{posCopy.subtotal}</span><span className="tabular-nums">{formatCurrency(total)}</span>
+            </div>
+            <details className="border-y border-border py-3">
+              <summary className="flex min-h-12 cursor-pointer items-center text-base font-semibold text-primary">{posCopy.addDiscount}</summary>
+              <label className="mt-2 flex items-center justify-between gap-4 text-base">
+                {posCopy.discount}
+                <Input type="number" inputMode="decimal" min="0" max={total / 100} step="0.01" value={discountInput} onChange={(event) => changeDiscount(event.target.value)} className="h-12 w-36 text-right text-lg" />
+              </label>
+            </details>
+            <div className="flex items-center justify-between border-b border-border pb-4 text-2xl font-black">
+              <span>{posCopy.totalDue}</span><span className="tabular-nums text-primary">{formatCurrency(grandTotal)}</span>
+            </div>
+          </div>
+        ) : null}
       </div>
-    </div>
+
+      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <DialogContent className="w-[calc(100%-2rem)] rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">{posCopy.clearOrderQuestion}</DialogTitle>
+            <DialogDescription className="text-base">{posCopy.emptyOrderHelp}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" className="h-12 text-base" onClick={() => setClearDialogOpen(false)}>{posCopy.keepOrder}</Button>
+            <Button variant="destructive" className="h-12 text-base" onClick={() => { clearCart(); resetSale(); setClearDialogOpen(false) }}>{posCopy.clearOrder}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PosLayout>
   )
 }

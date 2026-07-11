@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie'
+import type { PaymentMethod, ReceiptSnapshot } from '@/lib/api'
 
 export interface CachedCategory {
   id: string
@@ -29,6 +30,10 @@ export interface QueuedOrder {
     priceSnapshot: number
   }>
   total: number
+  discountAmount: number
+  paymentMethod: PaymentMethod
+  tenderedAmount: number
+  localReceipt: ReceiptSnapshot
   createdAt: number
   retryCount: number
   lastError?: string

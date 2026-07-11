@@ -1,132 +1,91 @@
-import { useState } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 
 const mocks = vi.hoisted(() => ({
   useCart: vi.fn(),
   useNetworkStatus: vi.fn(),
+  queueOrder: vi.fn(),
+  createOrder: vi.fn(),
+  completePayment: vi.fn(),
+  printReceipt: vi.fn(),
 }))
 
-let updateSessionMock: ReturnType<typeof vi.fn>
-
-vi.mock('@/pos/hooks/useCart', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/pos/hooks/useCart')>()
-
-  return {
-    ...actual,
-    useCart: mocks.useCart,
-  }
+vi.mock('@/pos/hooks/useCart', () => ({ useCart: mocks.useCart }))
+vi.mock('@/pos/hooks/useNetworkStatus', () => ({ useNetworkStatus: mocks.useNetworkStatus }))
+vi.mock('@/pos/hooks/useOfflineOrders', () => ({ useOfflineOrders: () => ({ queueOrder: mocks.queueOrder }) }))
+vi.mock('@/hooks/useAuth', () => ({ useAuth: () => ({ user: { id: 'user-1', name: 'Cashier' } }) }))
+vi.mock('@/lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/api')>()
+  return { ...actual, api: { ...actual.api, createOrder: mocks.createOrder, completePayment: mocks.completePayment } }
 })
-
-vi.mock('@/pos/hooks/useNetworkStatus', () => ({
-  useNetworkStatus: mocks.useNetworkStatus,
+vi.mock('@/lib/receipt', () => ({ printReceipt: mocks.printReceipt }))
+vi.mock('@/lib/promptpay', () => ({ buildPromptPayQrDataUrl: vi.fn().mockResolvedValue('data:image/png;base64,qr') }))
+vi.mock('@/pos/layout/PosLayout', () => ({
+  PosLayout: ({ children, bottomAction }: { children: React.ReactNode; bottomAction?: React.ReactNode }) => <div>{children}{bottomAction}</div>,
 }))
 
-let mockSession: PosCheckoutSession | null = null
-let setMockSession: (s: PosCheckoutSession | null) => void = () => {}
-
-vi.mock('@/pos/hooks/usePosCheckoutSession', () => ({
-  usePosCheckoutSession: () => {
-    const [session, setSession] = useState(mockSession)
-    setMockSession = setSession
-    return {
-      session,
-      startReview: (orderId: string) => {
-        const newSession = {
-          orderId,
-          stage: 'review' as const,
-          discountAmount: 0,
-          paymentMethod: 'cash' as const,
-          tenderedAmount: 0,
-          updatedAt: Date.now(),
-        }
-        mockSession = newSession
-        setSession(newSession)
-      },
-      updateSession: (patch: any) => {
-        updateSessionMock(patch)
-        if (mockSession) {
-          const newSession = { ...mockSession, ...patch }
-          mockSession = newSession
-          setSession(newSession)
-        }
-      },
-      clearSession: () => {
-        mockSession = null
-        setSession(null)
-      },
-    }
-  },
-}))
-
-vi.mock('../SyncStatus', () => ({
-  SyncStatus: () => <div>Synced</div>,
-}))
-
-import { __resetCartStoreForTests } from '@/pos/hooks/useCart'
+import { __resetCheckoutSessionForTests } from '@/pos/hooks/usePosCheckoutSession'
 import { CartPanel } from '../CartPanel'
 
-describe('CartPanel', () => {
+const receipt = {
+  store_name: 'OpenPOS', paid_at: '2026-07-10T10:00:00Z', order_id: 'server-order-1',
+  items: [{ name: 'Americano', quantity: 1, unit_price: 12000, subtotal: 12000 }],
+  discount_amount: 3000, total_amount: 9000, payment_method: 'cash' as const, tendered_amount: 10000, change_due: 1000,
+}
+
+function setReviewSession() {
+  localStorage.setItem('openpos_pos_checkout', JSON.stringify({
+    version: 2, orderId: 'client-order-1', stage: 'reviewing', discountAmount: 0,
+    paymentMethod: 'cash', tenderedAmount: 12000, receipt: null, savedOffline: false, updatedAt: 0,
+  }))
+  __resetCheckoutSessionForTests()
+}
+
+describe('guided checkout', () => {
+  const clearCart = vi.fn()
+
   beforeEach(() => {
+    vi.clearAllMocks()
     localStorage.clear()
-    __resetCartStoreForTests()
-
-    updateSessionMock = vi.fn()
-
+    setReviewSession()
     mocks.useNetworkStatus.mockReturnValue({ isOnline: true })
     mocks.useCart.mockReturnValue({
-      items: [
-        {
-          variantId: 'variant-1',
-          productName: 'Americano',
-          variantName: 'Americano',
-          sku: 'AM-001',
-          price: 12000,
-          quantity: 1,
-          subtotal: 12000,
-        },
-      ],
-      itemCount: 1,
-      total: 12000,
-      updateQuantity: vi.fn(),
-      removeItem: vi.fn(),
-      clearCart: vi.fn(),
-      isEmpty: false,
+      items: [{ variantId: 'variant-1', productName: 'Americano', variantName: 'Default', sku: 'AM-001', price: 12000, quantity: 1, subtotal: 12000 }],
+      itemCount: 1, total: 12000, updateQuantity: vi.fn(), removeItem: vi.fn(), clearCart, isEmpty: false,
     })
-
-    mockSession = {
-      orderId: 'order-1',
-      stage: 'building',
-      discountAmount: 0,
-      paymentMethod: 'cash',
-      tenderedAmount: 0,
-      updatedAt: 0,
-    }
-    setMockSession(mockSession)
+    mocks.createOrder.mockResolvedValue({ data: { id: 'server-order-1' } })
+    mocks.completePayment.mockResolvedValue({ data: receipt })
+    mocks.printReceipt.mockResolvedValue(undefined)
   })
 
-  it('treats discount input as THB and keeps confirm order button height consistent', () => {
+  it('applies a THB discount and moves through payment to the completion screen', async () => {
     render(<CartPanel />)
 
-    expect(screen.getByRole('button', { name: 'Complete order' })).toHaveClass('h-14')
+    fireEvent.click(screen.getByText('Add discount'))
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Discount' }), { target: { value: '30' } })
+    expect(screen.getByText('฿90.00')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Complete order' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to payment' }))
+    expect(screen.getByRole('heading', { name: 'Take payment' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '฿100.00' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm payment' }))
 
-    const discountInput = screen.getByRole('spinbutton', { name: 'Discount (THB)' })
-    fireEvent.change(discountInput, { target: { value: '30' } })
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Sale complete' })).toBeInTheDocument())
+    expect(mocks.createOrder).toHaveBeenCalledTimes(1)
+    expect(mocks.completePayment).toHaveBeenCalledWith('server-order-1', { method: 'cash', tendered_amount: 10000 })
+    expect(clearCart).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('฿10.00')).toBeInTheDocument()
+  })
 
-    expect(screen.getByText('Total due')).toBeInTheDocument()
+  it('keeps the cart when an offline sale cannot be written to IndexedDB', async () => {
+    mocks.useNetworkStatus.mockReturnValue({ isOnline: false })
+    mocks.queueOrder.mockRejectedValue(new Error('storage full'))
+    render(<CartPanel />)
 
-    expect(updateSessionMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        discountAmount: 3000,
-        tenderedAmount: 9000,
-      }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to payment' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save sale on this phone' }))
 
-    expect(screen.getByRole('button', { name: 'Confirm payment' })).toHaveClass('h-14')
-    expect(screen.getByRole('button', { name: 'Confirm payment' })).toHaveClass('bg-emerald-600')
-    expect(screen.getByRole('button', { name: 'Back' })).toHaveClass('h-14')
+    expect(await screen.findByRole('alert')).toHaveTextContent('The sale was not saved')
+    expect(clearCart).not.toHaveBeenCalled()
   })
 })

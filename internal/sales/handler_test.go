@@ -1,6 +1,7 @@
 package sales
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -47,6 +48,36 @@ func TestHandler(t *testing.T) {
 		}
 		if envelope.Data.StoreName != "Test Store" || envelope.Data.ChangeDue != 300 || envelope.Data.PaymentMethod != "cash" {
 			t.Fatalf("unexpected receipt payload: %+v", envelope.Data)
+		}
+	})
+
+	t.Run("offline sync accepts payment details and persists a paid sale", func(t *testing.T) {
+		orderID := uuidPtr("11111111-1111-1111-1111-111111111111")
+		userID := "22222222-2222-2222-2222-222222222222"
+		variantID := "33333333-3333-3333-3333-333333333333"
+		queries := &fakeOrderStore{
+			ordersByClientUUID: map[string]sqlc.Order{},
+			ordersByID:         map[string]sqlc.Order{},
+			itemsByOrderID:     map[string][]sqlc.ListOrderItemsByOrderIDRow{},
+			variantsByID:       map[string]sqlc.Variant{variantID: {ID: uuidPtr(variantID), Name: "Tea"}},
+			paymentByOrderID:   map[string]sqlc.Payment{},
+			createOrderResult: sqlc.Order{
+				ID: orderID, ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr(userID), Status: "completed", TotalAmount: 900, DiscountAmount: 100,
+			},
+		}
+		h := NewHandler(NewService(queries, newFakeInventory(map[string]int64{variantID: 10})))
+		body := `{"orders":[{"client_uuid":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","discount_amount":100,"items":[{"variant_id":"33333333-3333-3333-3333-333333333333","quantity":1,"unit_price":1000}],"payment":{"method":"cash","tendered_amount":1000}}]}`
+		req := httptest.NewRequest(http.MethodPost, "/sync", strings.NewReader(body))
+		req = req.WithContext(context.WithValue(req.Context(), "user_id", userID))
+		rec := httptest.NewRecorder()
+
+		h.Routes().ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+		}
+		if queries.createOrderCalls != 1 || queries.createPaymentCalls != 1 {
+			t.Fatalf("expected paid order writes, got orders=%d payments=%d", queries.createOrderCalls, queries.createPaymentCalls)
 		}
 	})
 

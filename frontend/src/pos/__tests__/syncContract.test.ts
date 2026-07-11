@@ -18,6 +18,13 @@ describe('syncContract', () => {
             { variantId: 'variant-2', quantity: 1, priceSnapshot: 900 },
           ],
           total: 3900,
+          discountAmount: 300,
+          paymentMethod: 'cash',
+          tenderedAmount: 4000,
+          localReceipt: {
+            store_name: 'OpenPOS', paid_at: '2026-07-10T10:00:00Z', order_id: 'client-a', items: [],
+            discount_amount: 300, total_amount: 3900, payment_method: 'cash', tendered_amount: 4000, change_due: 100,
+          },
           createdAt: 123,
           retryCount: 0,
         },
@@ -26,11 +33,12 @@ describe('syncContract', () => {
       orders: [
         {
           client_uuid: 'client-a',
-          discount_amount: 0,
+          discount_amount: 300,
           items: [
             { variant_id: 'variant-1', quantity: 2, unit_price: 1500 },
             { variant_id: 'variant-2', quantity: 1, unit_price: 900 },
           ],
+          payment: { method: 'cash', tendered_amount: 4000 },
         },
       ],
     })

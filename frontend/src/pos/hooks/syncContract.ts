@@ -10,6 +10,10 @@ export type SyncOrderPayload = {
   client_uuid: string
   discount_amount: number
   items: SyncOrderItemPayload[]
+  payment: {
+    method: QueuedOrder['paymentMethod']
+    tendered_amount: number
+  }
 }
 
 export type SyncOrdersRequest = {
@@ -35,12 +39,16 @@ export function buildSyncOrdersRequest(orders: QueuedOrder[]): SyncOrdersRequest
   return {
     orders: orders.map(order => ({
       client_uuid: order.id,
-      discount_amount: 0,
+      discount_amount: order.discountAmount,
       items: order.items.map(item => ({
         variant_id: item.variantId,
         quantity: item.quantity,
         unit_price: item.priceSnapshot,
       })),
+      payment: {
+        method: order.paymentMethod,
+        tendered_amount: order.tenderedAmount,
+      },
     })),
   }
 }
