@@ -1,16 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { Barcode, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 
 import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { useCart } from '@/pos/hooks/useCart'
 import { useFavorites } from '@/pos/hooks/useFavorites'
-import { toast } from 'sonner'
+import { posCopy } from '@/pos/lib/copy'
 
-export function SearchBar() {
+interface SearchBarProps {
+  onAdded?: (variantId: string, productName: string) => void
+}
+
+export function SearchBar({ onAdded }: SearchBarProps) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const { addItem } = useCart()
@@ -36,12 +40,12 @@ export function SearchBar() {
 
       addItem(cartItem)
       recordAdd(cartItem)
-      setStatus(`Added ${variant.product_name}`)
-      toast.success(`Added ${variant.product_name}`)
+      setStatus(null)
+      onAdded?.(variant.id, variant.product_name)
       setQuery('')
     },
     onError: (error) => {
-      setStatus(error instanceof Error ? error.message : 'Product not found')
+      setStatus(error instanceof Error ? error.message : posCopy.searchNotFound)
     },
   })
 
@@ -53,32 +57,25 @@ export function SearchBar() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col gap-2">
       <form onSubmit={handleSearch} className="relative">
-        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="search"
-          placeholder="Search products or scan barcode..."
+          placeholder={posCopy.searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-[3.25rem] rounded-pill border-border/70 bg-background pl-12 pr-12 text-base shadow-card placeholder:text-muted-foreground/70 focus-visible:ring-brand"
+          className="h-14 rounded-xl border-border bg-card pl-12 pr-4 text-lg placeholder:text-muted-foreground focus-visible:ring-ring"
           aria-label="Search products"
         />
-        <button
-          type="submit"
-          aria-label="Search products"
-          className="absolute right-4 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <Barcode className="h-4 w-4" />
-        </button>
       </form>
 
       {searchMutation.isPending ? (
-        <p className="text-sm text-muted-foreground">Searching catalog...</p>
+        <p className="text-base text-muted-foreground">Searching…</p>
       ) : null}
 
       {status ? (
-        <p className="text-sm text-muted-foreground">{status}</p>
+        <p className="text-base text-destructive">{status}</p>
       ) : null}
     </div>
   )

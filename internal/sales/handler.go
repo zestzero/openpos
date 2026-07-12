@@ -51,7 +51,17 @@ type orderItemInput struct {
 }
 
 type syncOrdersRequest struct {
-	Orders []createOrderRequest `json:"orders"`
+	Orders []syncOrderRequest `json:"orders"`
+}
+
+type syncOrderRequest struct {
+	ClientUUID     string           `json:"client_uuid"`
+	DiscountAmount int64            `json:"discount_amount"`
+	Items          []orderItemInput `json:"items"`
+	Payment        *struct {
+		Method         string `json:"method"`
+		TenderedAmount int64  `json:"tendered_amount"`
+	} `json:"payment,omitempty"`
 }
 
 func (h *Handler) CompletePayment(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +208,7 @@ func (h *Handler) SyncOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert request orders to service input
-	inputs := make([]CreateOrderInput, len(req.Orders))
+	inputs := make([]SyncOrderInput, len(req.Orders))
 	for i, order := range req.Orders {
 		items := make([]OrderItemInput, len(order.Items))
 		for j, item := range order.Items {
@@ -208,15 +218,21 @@ func (h *Handler) SyncOrders(w http.ResponseWriter, r *http.Request) {
 				UnitPrice: item.UnitPrice,
 			}
 		}
-		inputs[i] = CreateOrderInput{
-			ClientUUID:     order.ClientUUID,
-			UserID:         userID,
-			DiscountAmount: order.DiscountAmount,
-			Items:          items,
+		inputs[i] = SyncOrderInput{
+			Order: CreateOrderInput{
+				ClientUUID:     order.ClientUUID,
+				UserID:         userID,
+				DiscountAmount: order.DiscountAmount,
+				Items:          items,
+			},
+			StoreName: h.storeName,
+		}
+		if order.Payment != nil {
+			inputs[i].Payment = &SyncPaymentInput{Method: order.Payment.Method, TenderedAmount: order.Payment.TenderedAmount}
 		}
 	}
 
-	result, err := h.service.SyncOrders(r.Context(), inputs)
+	result, err := h.service.SyncPaidOrders(r.Context(), inputs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

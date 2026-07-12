@@ -180,6 +180,48 @@ func TestSyncOrdersProcessesSequentially(t *testing.T) {
 	}
 }
 
+func TestSyncPaidOrdersPersistsPaymentIdempotently(t *testing.T) {
+	orderID := uuidPtr("11111111-1111-1111-1111-111111111111")
+	clientID := "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+	userID := "22222222-2222-2222-2222-222222222222"
+	variantID := "33333333-3333-3333-3333-333333333333"
+	queries := &fakeOrderStore{
+		ordersByClientUUID: map[string]sqlc.Order{},
+		ordersByID:         map[string]sqlc.Order{},
+		itemsByOrderID:     map[string][]sqlc.ListOrderItemsByOrderIDRow{},
+		variantsByID:       map[string]sqlc.Variant{variantID: {ID: uuidPtr(variantID), Name: "Tea", Cost: int8Ptr(100)}},
+		paymentByOrderID:   map[string]sqlc.Payment{},
+		createOrderResult: sqlc.Order{
+			ID: orderID, ClientUuid: clientID, UserID: uuidPtr(userID), Status: "completed", TotalAmount: 900, DiscountAmount: 100,
+		},
+	}
+	inv := newFakeInventory(map[string]int64{variantID: 10})
+	svc := NewService(queries, inv)
+	input := SyncOrderInput{
+		Order: CreateOrderInput{
+			ClientUUID: clientID, UserID: userID, DiscountAmount: 100,
+			Items: []OrderItemInput{{VariantID: variantID, Quantity: 1, UnitPrice: 1000}},
+		},
+		Payment:   &SyncPaymentInput{Method: "cash", TenderedAmount: 1000},
+		StoreName: "OpenPOS Store",
+	}
+
+	first, err := svc.SyncPaidOrders(context.Background(), []SyncOrderInput{input})
+	if err != nil || first.Succeeded != 1 || first.Failed != 0 {
+		t.Fatalf("unexpected first sync result: result=%+v err=%v", first, err)
+	}
+	second, err := svc.SyncPaidOrders(context.Background(), []SyncOrderInput{input})
+	if err != nil || second.Succeeded != 1 || second.Failed != 0 {
+		t.Fatalf("unexpected repeat sync result: result=%+v err=%v", second, err)
+	}
+	if queries.createOrderCalls != 1 || queries.createPaymentCalls != 1 {
+		t.Fatalf("expected one order and payment write, got orders=%d payments=%d", queries.createOrderCalls, queries.createPaymentCalls)
+	}
+	if len(inv.deductCalls) != 1 {
+		t.Fatalf("expected stock deduction once, got %d", len(inv.deductCalls))
+	}
+}
+
 func TestGetOrder(t *testing.T) {
 	order := sqlc.Order{ID: uuidPtr("11111111-1111-1111-1111-111111111111"), ClientUuid: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", UserID: uuidPtr("22222222-2222-2222-2222-222222222222"), Status: "completed", TotalAmount: 500}
 	queries := &fakeOrderStore{

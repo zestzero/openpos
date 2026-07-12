@@ -4,13 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { api, type ProductWithVariants } from '@/lib/api'
 import { ProductCard } from './ProductCard'
+import { posCopy } from '@/pos/lib/copy'
 
 interface CatalogGridProps {
   categoryId: string | null
-  onProductClick?: (cartItem: any) => void
+  onProductAdded?: (variantId: string, productName: string) => void
 }
 
-export function CatalogGrid({ categoryId, onProductClick }: CatalogGridProps) {
+export function CatalogGrid({ categoryId, onProductAdded }: CatalogGridProps) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['products', categoryId],
     queryFn: async () => {
@@ -24,11 +25,11 @@ export function CatalogGrid({ categoryId, onProductClick }: CatalogGridProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <div
             key={i}
-            className="min-h-[17rem] animate-pulse rounded-card border border-border bg-card shadow-card"
+            className="min-h-36 animate-pulse rounded-xl border border-border bg-card"
           />
         ))}
       </div>
@@ -37,11 +38,10 @@ export function CatalogGrid({ categoryId, onProductClick }: CatalogGridProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-card border border-border bg-card px-6 py-10 text-center shadow-card">
-        <p className="text-sm font-medium text-foreground">Failed to load products</p>
-        <p className="max-w-sm text-sm leading-6 text-muted-foreground">Try again. If the network is unstable, the catalog will recover automatically once the connection returns.</p>
+      <div className="flex flex-col items-center justify-center gap-4 border-y border-border px-6 py-10 text-center">
+        <p className="text-lg font-bold text-foreground">{posCopy.productLoadError}</p>
         <Button variant="outline" onClick={() => refetch()}>
-          Retry
+          {posCopy.retry}
         </Button>
       </div>
     )
@@ -49,17 +49,16 @@ export function CatalogGrid({ categoryId, onProductClick }: CatalogGridProps) {
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-card border border-dashed border-border bg-card px-6 py-10 text-center text-muted-foreground shadow-card">
-        <p className="font-medium text-foreground">No products in this category</p>
-        <p className="max-w-sm text-sm leading-6">Pick a different category, or clear the filter to bring the full shelf back into view.</p>
+      <div className="flex flex-col items-center justify-center gap-2 border-y border-border px-6 py-10 text-center text-muted-foreground">
+        <p className="text-lg font-bold text-foreground">{posCopy.noProducts}</p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {products.map((item) => (
-        <ProductCard key={item.product.id} product={item} onAdd={onProductClick} />
+        <ProductCard key={item.product.id} product={item} onAdded={onProductAdded} />
       ))}
     </div>
   )

@@ -134,7 +134,7 @@ describe('pos receipt replay', () => {
     localStorage.setItem(STORAGE_KEY_LATEST_RECEIPT, 'order-404')
     mocks.getReceipt.mockRejectedValueOnce(new Error('receipt missing'))
 
-    render(<PosRoute />)
+    const view = render(<LatestReceiptReprint />)
 
     await screen.findByRole('button', { name: 'Reprint receipt' })
     await act(async () => {
@@ -144,6 +144,7 @@ describe('pos receipt replay', () => {
     await waitFor(() => {
       expect(screen.getByText(/receipt unavailable/i)).toBeInTheDocument()
     })
+    view.rerender(<PosRoute />)
     expect(screen.getByText('Search bar')).toBeInTheDocument()
     expect(screen.queryByText(/reopen sale/i)).not.toBeInTheDocument()
   })

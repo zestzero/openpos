@@ -183,6 +183,17 @@ type CompletePaymentInput struct {
 	StoreName      string
 }
 
+type SyncOrderInput struct {
+	Order     CreateOrderInput
+	Payment   *SyncPaymentInput
+	StoreName string
+}
+
+type SyncPaymentInput struct {
+	Method         string
+	TenderedAmount int64
+}
+
 type SyncResult struct {
 	Processed int         `json:"processed"`
 	Succeeded int         `json:"succeeded"`
@@ -273,6 +284,93 @@ func (s *Service) SyncOrders(ctx context.Context, inputs []CreateOrderInput) (Sy
 	return result, nil
 }
 
+func (s *Service) SyncPaidOrders(ctx context.Context, inputs []SyncOrderInput) (SyncResult, error) {
+	result := SyncResult{Processed: len(inputs)}
+	for _, input := range inputs {
+		if err := s.syncPaidOrder(ctx, input); err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, SyncError{ClientUUID: input.Order.ClientUUID, Error: err.Error()})
+			continue
+		}
+		result.Succeeded++
+	}
+	return result, nil
+}
+
+func (s *Service) syncPaidOrder(ctx context.Context, input SyncOrderInput) error {
+	if input.Payment == nil {
+		_, err := s.CreateOrder(ctx, input.Order)
+		return err
+	}
+	if err := validateCreateOrderInput(input.Order); err != nil {
+		return err
+	}
+
+	if s.pool == nil {
+		order, err := s.CreateOrder(ctx, input.Order)
+		if err != nil {
+			return err
+		}
+		_, err = s.completePaymentWithStore(ctx, s.queries, order.ID, CompletePaymentInput{
+			OrderID: order.ID, Method: input.Payment.Method, TenderedAmount: input.Payment.TenderedAmount, StoreName: input.StoreName,
+		})
+		return err
+	}
+
+	tx, err := s.pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin paid order transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	txQueries, ok := s.queries.(txOrderStore)
+	if !ok {
+		return fmt.Errorf("order store does not support transactions")
+	}
+	txInventory, ok := s.inventory.(txInventoryGateway)
+	if !ok {
+		return fmt.Errorf("inventory store does not support transactions")
+	}
+	store := txQueries.WithTx(tx)
+	stock := txInventory.WithTx(tx)
+
+	var order *Order
+	existing, lookupErr := store.GetOrderByClientUUID(ctx, input.Order.ClientUUID)
+	if lookupErr == nil {
+		order, err = s.loadOrderWithStore(ctx, store, existing, false)
+	} else if !errors.Is(lookupErr, pgx.ErrNoRows) {
+		return fmt.Errorf("checking existing paid order: %w", lookupErr)
+	} else {
+		for _, item := range input.Order.Items {
+			level, stockErr := stock.GetStockLevel(ctx, item.VariantID)
+			if stockErr != nil {
+				return fmt.Errorf("checking stock for %s: %w", item.VariantID, stockErr)
+			}
+			if level.StockLevel < int64(item.Quantity) {
+				return ErrInsufficientStock
+			}
+		}
+		itemsTotal := totalFor(input.Order.Items)
+		if input.Order.DiscountAmount < 0 || input.Order.DiscountAmount > itemsTotal {
+			return ErrInvalidOrder
+		}
+		order, err = s.createOrderWithStores(ctx, store, stock, input.Order, itemsTotal-input.Order.DiscountAmount, true)
+	}
+	if err != nil {
+		return err
+	}
+
+	if _, err = s.completePaymentWithStore(ctx, store, order.ID, CompletePaymentInput{
+		OrderID: order.ID, Method: input.Payment.Method, TenderedAmount: input.Payment.TenderedAmount, StoreName: input.StoreName,
+	}); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit paid order transaction: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) GetOrder(ctx context.Context, id string) (*Order, error) {
 	orderID, err := parseUUID(id)
 	if err != nil {
@@ -286,18 +384,22 @@ func (s *Service) GetOrder(ctx context.Context, id string) (*Order, error) {
 }
 
 func (s *Service) CompletePayment(ctx context.Context, input CompletePaymentInput) (*ReceiptSnapshot, error) {
-	orderID, err := parseUUID(input.OrderID)
+	return s.completePaymentWithStore(ctx, s.queries, input.OrderID, input)
+}
+
+func (s *Service) completePaymentWithStore(ctx context.Context, store orderStore, orderIDValue string, input CompletePaymentInput) (*ReceiptSnapshot, error) {
+	orderID, err := parseUUID(orderIDValue)
 	if err != nil {
 		return nil, ErrInvalidOrder
 	}
 
-	order, err := s.queries.GetOrderByID(ctx, orderID)
+	order, err := store.GetOrderByID(ctx, orderID)
 	if err != nil {
 		return nil, ErrOrderNotFound
 	}
 
-	if payment, err := s.queries.GetPaymentByOrderID(ctx, orderID); err == nil {
-		return s.loadReceiptSnapshot(ctx, order, payment, input.StoreName)
+	if payment, err := store.GetPaymentByOrderID(ctx, orderID); err == nil {
+		return s.loadReceiptSnapshotWithStore(ctx, store, order, payment, input.StoreName)
 	}
 
 	total := order.TotalAmount
@@ -315,20 +417,20 @@ func (s *Service) CompletePayment(ctx context.Context, input CompletePaymentInpu
 		changeDue = 0
 	}
 
-	payment, err := s.queries.CreatePayment(ctx, sqlc.CreatePaymentParams{
+	payment, err := store.CreatePayment(ctx, sqlc.CreatePaymentParams{
 		OrderID:        orderID,
 		Method:         input.Method,
 		TenderedAmount: input.TenderedAmount,
 		ChangeDue:      changeDue,
 	})
 	if err != nil {
-		if existing, lookupErr := s.queries.GetPaymentByOrderID(ctx, orderID); lookupErr == nil {
-			return s.loadReceiptSnapshot(ctx, order, existing, input.StoreName)
+		if existing, lookupErr := store.GetPaymentByOrderID(ctx, orderID); lookupErr == nil {
+			return s.loadReceiptSnapshotWithStore(ctx, store, order, existing, input.StoreName)
 		}
 		return nil, fmt.Errorf("creating payment: %w", err)
 	}
 
-	return s.loadReceiptSnapshot(ctx, order, payment, input.StoreName)
+	return s.loadReceiptSnapshotWithStore(ctx, store, order, payment, input.StoreName)
 }
 
 func (s *Service) GetReceipt(ctx context.Context, id string, storeName string) (*ReceiptSnapshot, error) {
@@ -399,20 +501,22 @@ func (s *Service) createOrderWithStores(ctx context.Context, store orderStore, i
 		}
 	}
 
-	return s.loadOrder(ctx, orderRow, created)
+	return s.loadOrderWithStore(ctx, store, orderRow, created)
 }
 
-
-
 func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, payment sqlc.Payment, storeName string) (*ReceiptSnapshot, error) {
-	items, err := s.queries.ListOrderItemsByOrderID(ctx, order.ID)
+	return s.loadReceiptSnapshotWithStore(ctx, s.queries, order, payment, storeName)
+}
+
+func (s *Service) loadReceiptSnapshotWithStore(ctx context.Context, store orderStore, order sqlc.Order, payment sqlc.Payment, storeName string) (*ReceiptSnapshot, error) {
+	items, err := store.ListOrderItemsByOrderID(ctx, order.ID)
 	if err != nil {
 		return nil, fmt.Errorf("loading receipt items: %w", err)
 	}
 
 	receiptItems := make([]ReceiptItem, 0, len(items))
 	for _, item := range items {
-		variant, err := s.queries.GetVariant(ctx, item.VariantID)
+		variant, err := store.GetVariant(ctx, item.VariantID)
 		name := item.VariantID.String()
 		if err == nil {
 			name = variant.Name
@@ -439,7 +543,11 @@ func (s *Service) loadReceiptSnapshot(ctx context.Context, order sqlc.Order, pay
 }
 
 func (s *Service) loadOrder(ctx context.Context, row sqlc.Order, created bool) (*Order, error) {
-	items, err := s.queries.ListOrderItemsByOrderID(ctx, row.ID)
+	return s.loadOrderWithStore(ctx, s.queries, row, created)
+}
+
+func (s *Service) loadOrderWithStore(ctx context.Context, store orderStore, row sqlc.Order, created bool) (*Order, error) {
+	items, err := store.ListOrderItemsByOrderID(ctx, row.ID)
 	if err != nil {
 		return nil, fmt.Errorf("loading order items: %w", err)
 	}

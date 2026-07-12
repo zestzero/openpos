@@ -1,7 +1,11 @@
-import { Bell, LogOut } from 'lucide-react'
+import { ChevronDown, LogOut, PackageSearch, ReceiptText, ShoppingBasket } from 'lucide-react'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import type { AuthUser } from '@/lib/auth'
+import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
+import { posCopy } from '@/pos/lib/copy'
 
 interface PosHeaderProps {
   user: AuthUser | null
@@ -10,50 +14,57 @@ interface PosHeaderProps {
 
 export function PosHeader({ user, online }: PosHeaderProps) {
   const { logout } = useAuth()
-  const avatarLabel = (user?.name || user?.email || 'OpenPOS').slice(0, 1).toUpperCase()
+  const navigate = useNavigate()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const { latestReceiptId, isOnline, isReprinting, reprintLatestReceipt } = useLatestReceipt()
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-white">
-      <div className="flex items-center justify-between gap-4 px-6 py-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-orange-100 text-sm font-bold text-brand">
-            {avatarLabel}
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-lg font-bold text-gray-900">POS Terminal</h1>
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${online ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                {online ? 'Online' : 'Offline'}
-              </span>
+    <header className="sticky top-0 z-30 border-b border-border bg-background">
+      <div className="mx-auto flex min-h-16 w-full max-w-2xl items-center justify-between gap-3 px-4">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold text-foreground">OpenPOS</h1>
+          <p className="flex items-center gap-2 text-base text-muted-foreground">
+            <span className={`size-2.5 rounded-full ${online ? 'bg-success' : 'bg-warning'}`} aria-hidden="true" />
+            {online ? posCopy.online : posCopy.offline}
+          </p>
+        </div>
+
+        <details className="group relative">
+          <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-xl border border-border bg-card px-4 text-base font-semibold text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
+            {posCopy.tasks}
+            <ChevronDown aria-hidden="true" className="size-5 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="absolute right-0 top-14 flex w-64 flex-col gap-1 rounded-xl border border-border bg-popover p-2 shadow-dialog">
+            {pathname === '/pos' ? (
+              <Button variant="ghost" className="min-h-12 justify-start text-base" onClick={() => navigate({ to: '/pos/inventory' })}>
+                <PackageSearch data-icon="inline-start" />
+                {posCopy.inventory}
+              </Button>
+            ) : (
+              <Button variant="ghost" className="min-h-12 justify-start text-base" onClick={() => navigate({ to: '/pos' })}>
+                <ShoppingBasket data-icon="inline-start" />
+                {posCopy.selling}
+              </Button>
+            )}
+            {latestReceiptId ? (
+              <Button
+                variant="ghost"
+                className="min-h-12 justify-start text-base"
+                disabled={!isOnline || isReprinting}
+                onClick={() => void reprintLatestReceipt()}
+              >
+                <ReceiptText data-icon="inline-start" />
+                {posCopy.reprintReceipt}
+              </Button>
+            ) : null}
+            <div className="border-t border-border pt-1">
+              <Button variant="ghost" className="min-h-12 w-full justify-start text-base" onClick={logout}>
+                <LogOut data-icon="inline-start" />
+                {posCopy.signOut}{user?.name ? ` · ${user.name}` : ''}
+              </Button>
             </div>
-            <p className="truncate text-xs font-medium text-gray-500">{user?.name || user?.email || 'Signed in'}</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900"
-            aria-label="Notifications"
-            onClick={() => undefined}
-            title="Notifications"
-          >
-            <Bell className="h-5 w-5" />
-          </button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-10 w-10 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-900 sm:w-auto sm:px-4"
-            onClick={logout}
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <LogOut className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline font-semibold">Sign out</span>
-          </Button>
-        </div>
+        </details>
       </div>
     </header>
   )

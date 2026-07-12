@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   useNetworkStatus: vi.fn(),
   useKeyboardWedge: vi.fn(),
   usePosCheckoutSession: vi.fn(),
+  startReview: vi.fn(),
   useNavigate: vi.fn(),
   useRouterState: vi.fn(),
 }))
@@ -75,6 +76,10 @@ vi.mock('@/pos/components/BarcodeScanner', () => ({
   BarcodeScanner: () => <section>Barcode scanner</section>,
 }))
 
+vi.mock('@/pos/layout/PosLayout', () => ({
+  PosLayout: ({ children, bottomAction }: { children: React.ReactNode; bottomAction?: React.ReactNode }) => <div>{children}{bottomAction}</div>,
+}))
+
 vi.mock('@tanstack/react-router', async () => {
   const actual = await vi.importActual<typeof import('@tanstack/react-router')>('@tanstack/react-router')
 
@@ -137,8 +142,8 @@ describe('POS shell routes', () => {
       toggle: vi.fn(),
     })
     mocks.usePosCheckoutSession.mockReturnValue({
-      session: null,
-      startReview: vi.fn(),
+      session: { stage: 'selling' },
+      startReview: mocks.startReview,
       updateSession: vi.fn(),
       clearSession: vi.fn(),
     })
@@ -149,17 +154,13 @@ describe('POS shell routes', () => {
   it('shows the cashier selling floor shell', () => {
     render(<PosRoute />)
 
-    expect(screen.getByRole('heading', { name: 'POS Terminal' })).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'Search products' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Product categories' })).toBeInTheDocument()
     expect(screen.getByText('Quick keys bar')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /view cart/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Selling' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: 'Inventory' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /view order/i })).toHaveClass('h-16')
 
-    fireEvent.click(screen.getByRole('button', { name: /view cart/i }))
-    expect(screen.getByRole('heading', { name: 'Cart' })).toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: 'Cart' })).toHaveClass('h-[80dvh]')
+    fireEvent.click(screen.getByRole('button', { name: /view order/i }))
+    expect(mocks.startReview).toHaveBeenCalledTimes(1)
   })
 
   it('keeps the POS route open for owner and cashier roles', () => {

@@ -1,247 +1,99 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: false,
-    },
-  },
-})
-
-function renderWithProviders(ui: React.ReactElement) {
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>
-  )
-}
-
 const mocks = vi.hoisted(() => ({
-  getStoredSession: vi.fn(),
-  useAuth: vi.fn(),
-  useOfflineAdjustments: vi.fn(),
-  useSync: vi.fn(),
+  queueAdjustment: vi.fn(),
+  getAllQueuedAdjustments: vi.fn(),
+  syncPendingAdjustments: vi.fn(),
   useNetworkStatus: vi.fn(),
   useKeyboardWedge: vi.fn(),
-  useNavigate: vi.fn(),
-  useRouterState: vi.fn(),
-  api: {
-    getProducts: vi.fn(),
-    searchVariant: vi.fn(),
-  },
-}))
-
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<typeof import('@tanstack/react-router')>('@tanstack/react-router')
-  return {
-    ...actual,
-    useNavigate: mocks.useNavigate,
-    useRouterState: mocks.useRouterState,
-  }
-})
-
-vi.mock('@/lib/auth', () => ({
-  getStoredSession: mocks.getStoredSession,
-}))
-
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: mocks.useAuth,
+  getProducts: vi.fn(),
+  searchVariant: vi.fn(),
 }))
 
 vi.mock('@/pos/hooks/useOfflineAdjustments', () => ({
-  useOfflineAdjustments: mocks.useOfflineAdjustments,
+  useOfflineAdjustments: () => ({ queueAdjustment: mocks.queueAdjustment, getAllQueuedAdjustments: mocks.getAllQueuedAdjustments }),
 }))
-
-vi.mock('@/pos/hooks/useSync', () => ({
-  useSync: mocks.useSync,
-}))
-
-vi.mock('@/pos/hooks/useNetworkStatus', () => ({
-  useNetworkStatus: mocks.useNetworkStatus,
-}))
-
-vi.mock('@/pos/hooks/useKeyboardWedge', () => ({
-  useKeyboardWedge: mocks.useKeyboardWedge,
-}))
-
-vi.mock('@/lib/api', () => ({
-  api: mocks.api,
-}))
-
-// Mock BarcodeScanner to avoid canvas errors in tests
-vi.mock('@/pos/components/BarcodeScanner', () => ({
-  BarcodeScanner: () => <div data-testid="mock-barcode-scanner">Barcode Scanner</div>,
-}))
-
-// Mock PosNav to avoid router state errors in tests
-vi.mock('@/pos/components/PosNav', () => ({
-  PosNav: () => <div data-testid="mock-pos-nav">Mock Pos Nav</div>,
+vi.mock('@/pos/hooks/useSync', () => ({ useSync: () => ({ syncPendingAdjustments: mocks.syncPendingAdjustments }) }))
+vi.mock('@/pos/hooks/useNetworkStatus', () => ({ useNetworkStatus: mocks.useNetworkStatus }))
+vi.mock('@/pos/hooks/useKeyboardWedge', () => ({ useKeyboardWedge: mocks.useKeyboardWedge }))
+vi.mock('@/lib/api', () => ({ api: { getProducts: mocks.getProducts, searchVariant: mocks.searchVariant } }))
+vi.mock('@/pos/components/BarcodeScanner', () => ({ BarcodeScanner: () => <div>Barcode scanner</div> }))
+vi.mock('@/pos/layout/PosLayout', () => ({
+  PosLayout: ({ children, bottomAction }: { children: React.ReactNode; bottomAction?: React.ReactNode }) => <div>{children}{bottomAction}</div>,
 }))
 
 import { PosInventoryRoute } from '../pos.inventory'
 
-describe('POS Inventory Route', () => {
-  const mockQueueAdjustment = vi.fn()
-  const mockGetAllQueuedAdjustments = vi.fn().mockResolvedValue([])
-  const mockClearAdjustment = vi.fn()
-  const mockSyncPendingAdjustments = vi.fn()
+function renderRoute() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(<QueryClientProvider client={client}><PosInventoryRoute /></QueryClientProvider>)
+}
 
+const variant = {
+  id: 'var-1', product_id: 'prod-1', sku: 'ESP-01', name: 'Default', price: 9000,
+  cost: null, barcode: '885001', is_active: true, product_name: 'Espresso Blend',
+}
+
+describe('simplified inventory flow', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    queryClient.clear()
-
-    mocks.getStoredSession.mockReturnValue({
-      token: 'cashier-token',
-      user: { name: 'Alex Cashier', email: 'alex@example.com', role: 'cashier' },
-    })
-
-    mocks.useRouterState.mockReturnValue('/pos/inventory')
-
-    mocks.useAuth.mockReturnValue({
-      user: { name: 'Alex Cashier', email: 'alex@example.com', role: 'cashier' },
-      isLoading: false,
-      isAuthenticated: true,
-      hasRole: (role: string) => role === 'cashier',
-      redirectPath: '/pos',
-    })
-
-    mocks.useOfflineAdjustments.mockReturnValue({
-      queueAdjustment: mockQueueAdjustment,
-      getAllQueuedAdjustments: mockGetAllQueuedAdjustments,
-      clearAdjustment: mockClearAdjustment,
-    })
-
-    mocks.useSync.mockReturnValue({
-      syncPendingAdjustments: mockSyncPendingAdjustments,
-    })
-
     mocks.useNetworkStatus.mockReturnValue({ isOnline: true })
-
-    mocks.useKeyboardWedge.mockReturnValue({
-      isEnabled: true,
-      lastScan: null,
-      isScanning: false,
-      toggle: vi.fn(),
-    })
-
-    mocks.api.getProducts.mockResolvedValue({
-      data: [
-        {
-          product: { id: 'prod-1', name: 'Espresso Blend', is_active: true },
-          variants: [
-            { id: 'var-1', product_id: 'prod-1', sku: 'ESP-01', name: 'Default', price: 9000, barcode: '885001' },
-          ],
-        },
-      ],
-    })
-
-    mocks.api.searchVariant.mockResolvedValue({
-      data: { id: 'var-1', product_id: 'prod-1', sku: 'ESP-01', name: 'Default', price: 9000, barcode: '885001', product_name: 'Espresso Blend' },
-    })
+    mocks.getAllQueuedAdjustments.mockResolvedValue([])
+    mocks.queueAdjustment.mockResolvedValue(undefined)
+    mocks.syncPendingAdjustments.mockResolvedValue(undefined)
+    mocks.getProducts.mockResolvedValue({ data: [{
+      product: { id: 'prod-1', name: 'Espresso Blend', image_url: null, is_active: true },
+      variants: [variant],
+    }] })
+    mocks.searchVariant.mockResolvedValue({ data: variant })
+    mocks.useKeyboardWedge.mockReturnValue({ isEnabled: true, isScanning: false, toggle: vi.fn() })
   })
 
-  it('renders the inventory page structure', async () => {
-    renderWithProviders(<PosInventoryRoute />)
-
-    expect(screen.getByText('Scan and Adjust Stock Level.')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/Type product name, barcode, or SKU/i)).toBeInTheDocument()
-    expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
-    expect(screen.getByText('Pending')).toBeInTheDocument()
+  it('shows only the find-or-scan starting task', async () => {
+    renderRoute()
+    expect(screen.getByRole('heading', { name: 'Adjust stock' })).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Product name, SKU, or barcode')).toBeInTheDocument()
+    expect(screen.queryByText(/queue size/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/wedge/i)).not.toBeInTheDocument()
   })
 
-  it('adds adjustment directly to drafts on scan', async () => {
-    renderWithProviders(<PosInventoryRoute />)
+  it('finds an item, edits quantity, reviews, and saves with the API reason code', async () => {
+    renderRoute()
+    fireEvent.change(screen.getByPlaceholderText('Product name, SKU, or barcode'), { target: { value: 'espr' } })
+    fireEvent.click(await screen.findByRole('button', { name: /Espresso Blend/ }))
 
-    // Simulate Keyboard Wedge scan
+    fireEvent.click(screen.getByRole('button', { name: 'Increase quantity' }))
+    expect(screen.getByRole('spinbutton', { name: 'Quantity change' })).toHaveValue(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Review before saving' }))
+    expect(screen.getByText('+2')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Save stock adjustment' }))
+
+    await waitFor(() => expect(mocks.queueAdjustment).toHaveBeenCalledWith(expect.objectContaining({
+      variantId: 'var-1', quantity: 2, reason: 'RESTOCK',
+    })))
+    expect(await screen.findByRole('heading', { name: 'Adjustment saved' })).toBeInTheDocument()
+    await waitFor(() => expect(mocks.syncPendingAdjustments).toHaveBeenCalledTimes(1))
+  })
+
+  it('moves directly to the same editor after a wedge scan', async () => {
+    renderRoute()
     const onScan = mocks.useKeyboardWedge.mock.calls[0][0].onScan
-    expect(onScan).toBeTypeOf('function')
-
-    await onScan('885001')
-
-    // Verify it is added to the drafts list as +1 and displayed in UI
-    await waitFor(() => {
-      expect(screen.getByText('Draft Adjustments')).toBeInTheDocument()
-    })
-    
-    // It should be in the sidebar as +1
-    expect(screen.getByText('+1')).toBeInTheDocument()
-    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
-
-    // Test inline increment stepper
-    const incBtn = screen.getByRole('button', { name: /Increase quantity/i })
-    fireEvent.click(incBtn)
-
-    // Verify the value goes to +2
-    await waitFor(() => {
-      expect(screen.getByText('+2')).toBeInTheDocument()
-    })
-
-    expect(mockQueueAdjustment).not.toHaveBeenCalled()
-    expect(mockSyncPendingAdjustments).not.toHaveBeenCalled()
+    await act(async () => onScan('885001'))
+    expect(await screen.findByRole('heading', { name: 'Espresso Blend' })).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton', { name: 'Quantity change' })).toHaveValue(1)
   })
 
-  it('allows manual product search and select from suggestions to add draft', async () => {
-    renderWithProviders(<PosInventoryRoute />)
+  it('saves offline without exposing synchronization terminology', async () => {
+    mocks.useNetworkStatus.mockReturnValue({ isOnline: false })
+    renderRoute()
+    fireEvent.change(screen.getByPlaceholderText('Product name, SKU, or barcode'), { target: { value: 'espr' } })
+    fireEvent.click(await screen.findByRole('button', { name: /Espresso Blend/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Review before saving' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save stock adjustment' }))
 
-    const searchInput = screen.getByPlaceholderText(/Type product name, barcode, or SKU/i)
-    fireEvent.change(searchInput, { target: { value: 'espr' } })
-
-    // Wait for the suggestion item to appear
-    await waitFor(() => {
-      expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
-    })
-
-    // Click suggestion
-    const suggestBtn = screen.getByRole('button', { name: /Espresso Blend.*885001/i })
-    fireEvent.click(suggestBtn)
-
-    // Verify it is added immediately to the drafts list as +1
-    await waitFor(() => {
-      expect(screen.getByText('+1')).toBeInTheDocument()
-    })
-    expect(screen.getAllByText('Espresso Blend').length).toBeGreaterThan(0)
-  })
-
-  it('commits draft adjustments and triggers sync', async () => {
-    renderWithProviders(<PosInventoryRoute />)
-
-    // 1. Trigger Wedge scan to add a draft
-    const onScan = mocks.useKeyboardWedge.mock.calls[0][0].onScan
-    await onScan('885001')
-
-    // Wait for it to appear in draft
-    await waitFor(() => {
-      expect(screen.getByText('+1')).toBeInTheDocument()
-    })
-
-    // 2. Open confirmation modal
-    const reviewBtn = screen.getByRole('button', { name: /^Commit$/i })
-    fireEvent.click(reviewBtn)
-
-    expect(await screen.findByText('Confirm Stock Adjustments')).toBeInTheDocument()
-    expect(screen.getByText('Commit & Sync (1)')).toBeInTheDocument()
-
-    // 3. Confirm adjustments
-    const commitBtn = screen.getByRole('button', { name: /Commit & Sync/i })
-    fireEvent.click(commitBtn)
-
-    // Verify Dexie queue adjustment was called and drafts cleared
-    await waitFor(() => {
-      expect(mockQueueAdjustment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variantId: 'var-1',
-          quantity: 1, // default quantity is 1
-          reason: 'ADJUSTMENT',
-        })
-      )
-    })
-
-    await waitFor(() => {
-      expect(screen.queryByText('Confirm Stock Adjustments')).not.toBeInTheDocument()
-      expect(screen.getByText(/No draft adjustments/i)).toBeInTheDocument()
-      expect(mockSyncPendingAdjustments).toHaveBeenCalled()
-    })
+    expect(await screen.findByText(/Saved on this phone/)).toBeInTheDocument()
+    expect(mocks.syncPendingAdjustments).not.toHaveBeenCalled()
   })
 })

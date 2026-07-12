@@ -41,6 +41,7 @@ export interface Variant {
   price: number
   cost: number | null
   is_active: boolean
+  stockLevel?: number
 }
 
 export interface SearchVariantRow extends Variant {

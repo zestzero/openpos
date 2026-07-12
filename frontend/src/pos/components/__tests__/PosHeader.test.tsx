@@ -3,12 +3,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   logout: vi.fn(),
+  navigate: vi.fn(),
 }))
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({
     logout: mocks.logout,
   }),
+}))
+
+vi.mock('@tanstack/react-router', () => ({
+  useNavigate: () => mocks.navigate,
+  useRouterState: () => '/pos',
+}))
+
+vi.mock('@/pos/hooks/useLatestReceipt', () => ({
+  useLatestReceipt: () => ({ latestReceiptId: null, isOnline: true, isReprinting: false, reprintLatestReceipt: vi.fn() }),
 }))
 
 import { PosHeader } from '../PosHeader'
@@ -21,13 +31,13 @@ describe('PosHeader', () => {
   it('shows a sign out action in the header', () => {
     render(<PosHeader user={{ id: '1', email: 'cashier@example.com', role: 'cashier', name: 'Cashier' }} online />)
 
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Sign out/ })).toBeInTheDocument()
   })
 
   it('calls logout when sign out is clicked', () => {
     render(<PosHeader user={{ id: '1', email: 'cashier@example.com', role: 'cashier', name: 'Cashier' }} online />)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    fireEvent.click(screen.getByRole('button', { name: /Sign out/ }))
 
     expect(mocks.logout).toHaveBeenCalledTimes(1)
   })

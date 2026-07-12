@@ -1,6 +1,7 @@
 'use client'
 
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
+import { posCopy } from '@/pos/lib/copy'
 
 export function OfflineBanner() {
   const { isOnline } = useNetworkStatus()
@@ -8,10 +9,10 @@ export function OfflineBanner() {
   if (isOnline) return null
 
   return (
-    <div className="animate-fade-in-up border-b border-amber-500/20 bg-amber-500/10 px-4 py-2 text-center text-foreground">
-      <div className="flex items-center justify-center gap-2 text-sm font-medium">
-        <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-        <span>You are offline. Orders will sync when connection returns.</span>
+    <div className="border-b border-warning/30 bg-warning-soft px-4 py-2 text-center text-warning-foreground">
+      <div className="flex items-center justify-center gap-2 text-base font-semibold">
+        <span className="inline-block size-2.5 rounded-full bg-warning" aria-hidden="true" />
+        <span>{posCopy.savedOnPhoneHelp}</span>
       </div>
     </div>
   )
