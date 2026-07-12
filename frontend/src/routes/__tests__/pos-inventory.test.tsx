@@ -53,4 +53,13 @@ describe('simplified inventory flow', () => {
   it('saves offline without exposing synchronization terminology', async () => {
     mocks.useNetworkStatus.mockReturnValue({ isOnline: false }); renderRoute(); await chooseBySearch(); fireEvent.click(screen.getByRole('button', { name: 'Save adjustment' })); expect(await screen.findByText('Saved on this phone')).toBeInTheDocument(); expect(mocks.syncPendingAdjustments).not.toHaveBeenCalled()
   })
+
+  it('shows a visible result when retrying a failed adjustment', async () => {
+    mocks.getAllQueuedAdjustments.mockResolvedValue([{ id: 'adj-1', variantId: 'var-1', variantName: 'Espresso Blend', sku: 'ESP-01', quantity: -1, reason: 'DAMAGE', status: 'failed', createdAt: Date.now(), retryCount: 1 }])
+    mocks.syncPendingAdjustments.mockResolvedValue(false)
+    renderRoute()
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Still unable to sync. Try again.')
+    expect(mocks.syncPendingAdjustments).toHaveBeenCalledTimes(1)
+  })
 })
