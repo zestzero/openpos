@@ -78,7 +78,7 @@ export function useSync() {
   }, [getAllQueuedOrders, markAsSyncing, markAsSynced, markAsFailed])
 
   const syncPendingAdjustments = useCallback(async () => {
-    if (isSyncingAdjRef.current) return
+    if (isSyncingAdjRef.current) return false
     isSyncingAdjRef.current = true
 
     try {
@@ -86,7 +86,7 @@ export function useSync() {
       const retryableAdjustments = queuedAdjustments.filter(adj => adj.status !== 'syncing')
       if (retryableAdjustments.length === 0) {
         isSyncingAdjRef.current = false
-        return
+        return true
       }
 
       // Mark all as syncing
@@ -115,12 +115,14 @@ export function useSync() {
           await markAdjAsSynced(adj.id)
         }
       }
+      return result.data.failed === 0
     } catch (error) {
       // Network or server error - mark all syncing adjustments as failed for retry
       const syncing = (await getAllQueuedAdjustments()).filter(adj => adj.status === 'syncing')
       for (const adj of syncing) {
         await markAdjAsFailed(adj.id, error instanceof Error ? error.message : 'Network error')
       }
+      return false
     } finally {
       isSyncingAdjRef.current = false
     }
