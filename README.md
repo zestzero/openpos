@@ -6,6 +6,10 @@ A POS + ERP system for retail stores. Mobile-first POS for salespersons, desktop
 
 A salesperson can complete a sale end-to-end — scan items, take payment, print receipt — even without internet.
 
+## For AI agents
+
+Start with **[docs/agents/start-coding.md](docs/agents/start-coding.md)** (boot, mise tasks, change recipes, landmines). Conventions live in [AGENTS.md](AGENTS.md); domain language in [CONTEXT.md](CONTEXT.md).
+
 ## Stack
 
 | Layer | Technology |

@@ -2,6 +2,12 @@
 
 Coding conventions and guidelines for AI agents working on OpenPOS.
 
+## Start here
+
+Before writing code, follow **[docs/agents/start-coding.md](docs/agents/start-coding.md)** — reading order, local bootstrap (`mise`), change recipes, verification gates, and known landmines.
+
+Agent doc index: [docs/agents/README.md](docs/agents/README.md). Domain vocabulary: [CONTEXT.md](CONTEXT.md). Frontline POS product rules: [PRODUCT.md](PRODUCT.md).
+
 ## Stack
 
 - **Backend**: Go 1.26+ (configured as `1.26.2` in `go.mod`), chi v5 router, sqlc for SQL→Go codegen, pgx v5 for PostgreSQL

@@ -1,4 +1,10 @@
 <!-- code-review-graph MCP tools -->
+## Start coding
+
+Boot playbook for agents joining this repo: **[docs/agents/start-coding.md](docs/agents/start-coding.md)**.
+
+Doc index: [docs/agents/README.md](docs/agents/README.md). Conventions: [AGENTS.md](AGENTS.md). Domain language: [CONTEXT.md](CONTEXT.md).
+
 ## Agent skills
 
 ### Issue tracker

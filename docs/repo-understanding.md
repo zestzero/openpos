@@ -4,6 +4,8 @@
 
 Build a working mental model of the OpenPOS repository: domain concepts, runtime flows, architectural boundaries, and where to start for future changes.
 
+**Agent boot playbook:** start with [docs/agents/start-coding.md](./agents/start-coding.md) for setup, change recipes, and landmines; use this file for deeper flow maps.
+
 ## High-Level Product Shape
 
 OpenPOS is a retail POS plus ERP system. The main promise is that a cashier can complete a sale end-to-end, including scanning, payment, receipt output, offline operation, and later sync.
