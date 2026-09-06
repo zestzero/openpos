@@ -1,0 +1,20 @@
+{
+  "name": "OpenPOS",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "export PATH=\"$HOME/.local/bin:$PATH\"; eval \"$(mise env -s bash)\"; go run ./cmd/server"
+    },
+    {
+      "name": "frontend",
+      "command": "export PATH=\"$HOME/.local/bin:$PATH\"; eval \"$(mise env -s bash)\"; pnpm --dir frontend dev --host 0.0.0.0"
+    }
+  ],
+  "ports": [
+    { "name": "api", "port": 8080 },
+    { "name": "frontend", "port": 5173 }
+  ]
+}
