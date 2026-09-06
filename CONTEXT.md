@@ -162,12 +162,16 @@ OpenPOS is in the late polishing stage of the Products/Inventory split. The rema
 
 ## Development Commands
 
+Prefer `mise` tasks from `mise.toml` (see `docs/agents/start-coding.md`):
+
+- Full local stack: `mise run db` then `mise run migrate` then `mise run dev`
+- Backend only: `mise run backend` (`go run ./cmd/server`)
+- Frontend only: `mise run frontend` (pnpm + Vite)
 - Backend tests: `go test ./...`
+- Full tests: `mise run test`
 - Backend build: `go build -o openpos ./cmd/server`
-- Regenerate sqlc after query/schema contract changes: `sqlc generate`
-- Frontend dev: `npm run dev` from `frontend/`
-- Frontend tests: `npm run test` from `frontend/`
-- Frontend build: `npm run build` from `frontend/`
+- Regenerate sqlc: `mise run sqlc` (after editing `db/queries/*.sql`)
+- Frontend tests/build: `pnpm --dir frontend test -- --run` / `pnpm --dir frontend build`
 - Docker local stack: `docker compose up -d`
 
 ## Coding Conventions
