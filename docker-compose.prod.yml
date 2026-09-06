@@ -1,0 +1,50 @@
+# Production compose example. Do not commit real secrets.
+#   export POSTGRES_PASSWORD=...
+#   export JWT_SECRET=...          # at least 32 characters
+#   export FRONTEND_ORIGIN=https://pos.example.com
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# This file is an example, not a complete hosting choice. TLS, backups,
+# and a reverse proxy still need a human decision. See PRODUCTION_READINESS.md.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: openpos
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: openpos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openpos -d openpos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgres://openpos:${POSTGRES_PASSWORD}@db:5432/openpos?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:?FRONTEND_ORIGIN is required}
+      ALLOW_PUBLIC_REGISTRATION: ${ALLOW_PUBLIC_REGISTRATION:-false}
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

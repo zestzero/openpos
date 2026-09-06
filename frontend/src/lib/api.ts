@@ -161,6 +161,9 @@ export const api = {
       body: JSON.stringify({ email, pin }),
     })
   },
+  getAuthConfig() {
+    return requestJSON<{ publicRegistration: boolean }>('/api/auth/config')
+  },
   registerOwner(email: string, password: string, name: string) {
     return requestJSON<{ ID: string; Email: string; Role: 'owner'; Name: string }>('/api/auth/register', {
       method: 'POST',

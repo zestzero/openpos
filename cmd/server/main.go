@@ -8,35 +8,37 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/zestzero/openpos/internal/config"
 )
 
 func main() {
-	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL == "" {
-		databaseURL = "postgres://openpos:openpos@localhost:5432/openpos?sslmode=disable"
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("invalid configuration: %v", err)
+	}
+	if cfg.UsingDevJWTSecret {
+		log.Println("WARNING: using a known development JWT secret; set JWT_SECRET before any shared deploy")
 	}
 
 	ctx := context.Background()
 	log.Println("Bootstrapping application...")
-	pool, err := bootstrapApp(ctx, databaseURL)
+	pool, err := bootstrapApp(ctx, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("bootstrap failed: %v", err)
 	}
 	defer pool.Close()
 
-	r := buildRouter(pool)
+	r := buildRouter(cfg, pool)
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log.Printf("Starting server on port %s", port)
+	log.Printf("Starting server on %s (APP_ENV=%s)", cfg.ListenAddr, cfg.AppEnv)
 	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:              cfg.ListenAddr,
+		Handler:           r,
+		ReadTimeout:       10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      10 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {
@@ -45,8 +47,9 @@ func main() {
 		}
 	}()
 
-	log.Printf("Server started at http://localhost:%s", port)
-	log.Printf("Health check: curl http://localhost:%s/health", port)
+	log.Printf("Server started at http://localhost:%s", cfg.Port)
+	log.Printf("Health check: curl http://localhost:%s/health", cfg.Port)
+	log.Printf("Readiness check: curl http://localhost:%s/ready", cfg.Port)
 
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -58,11 +61,4 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Printf("Server shutdown error: %v", err)
 	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

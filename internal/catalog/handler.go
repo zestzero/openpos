@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/zestzero/openpos/db/sqlc"
+	appmiddleware "github.com/zestzero/openpos/internal/middleware"
 )
 
 type catalogService interface {
@@ -45,39 +46,29 @@ func NewHandler(service catalogService) *Handler {
 	return &Handler{service: service}
 }
 
-// Routes returns the catalog routes
+// Routes returns the catalog routes. Reads are available to any
+// authenticated user; writes require an owner role.
 func (h *Handler) Routes() http.Handler {
 	r := chi.NewRouter()
 
-	// Categories
-	r.Group(func(r chi.Router) {
-		r.Get("/categories", h.ListCategories)
-		r.Post("/categories", h.CreateCategory)
-		r.Get("/categories/{id}", h.GetCategory)
-		r.Put("/categories/{id}", h.UpdateCategory)
-		r.Put("/categories/reorder", h.ReorderCategories)
-	})
+	r.Get("/categories", h.ListCategories)
+	r.Get("/categories/{id}", h.GetCategory)
+	r.Get("/products", h.ListProducts)
+	r.Get("/products/{id}", h.GetProduct)
+	r.Get("/variants/search", h.SearchVariant)
 
-	// Products
 	r.Group(func(r chi.Router) {
-		r.Get("/products", h.ListProducts)
+		r.Use(appmiddleware.RequireRole("owner"))
+		r.Post("/categories", h.CreateCategory)
+		r.Put("/categories/reorder", h.ReorderCategories)
+		r.Put("/categories/{id}", h.UpdateCategory)
 		r.Post("/products", h.CreateProduct)
 		r.Post("/import", h.ImportProducts)
-		r.Get("/products/{id}", h.GetProduct)
 		r.Put("/products/{id}", h.UpdateProduct)
-	})
-
-	// Image upload
-	r.Post("/images", h.UploadImage)
-
-	// Variants
-	r.Group(func(r chi.Router) {
+		r.Post("/images", h.UploadImage)
 		r.Post("/products/{productID}/variants", h.CreateVariant)
+		r.Put("/variants/{id}", h.UpdateVariant)
 	})
-	r.Put("/variants/{id}", h.UpdateVariant)
-
-	// Search
-	r.Get("/variants/search", h.SearchVariant)
 
 	return r
 }

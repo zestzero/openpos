@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,14 +21,12 @@ type AuthConfig struct {
 func AuthMiddleware(config *AuthConfig) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Extract token from Authorization header
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				http.Error(w, "missing authorization header", http.StatusUnauthorized)
 				return
 			}
 
-			// Bearer token format
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
 				http.Error(w, "invalid authorization header", http.StatusUnauthorized)
@@ -36,8 +35,10 @@ func AuthMiddleware(config *AuthConfig) func(http.Handler) http.Handler {
 
 			tokenString := parts[1]
 
-			// Parse and validate token
 			token, err := jwt.ParseWithClaims(tokenString, &auth.TokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+				if token.Method != jwt.SigningMethodHS256 {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
 				return []byte(config.JWTSecret), nil
 			})
 
@@ -52,10 +53,9 @@ func AuthMiddleware(config *AuthConfig) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Add user info to request context
-			ctx := context.WithValue(r.Context(), "user_id", claims.UserID)
-			ctx = context.WithValue(ctx, "user_email", claims.Email)
-			ctx = context.WithValue(ctx, "user_role", claims.Role)
+			ctx := context.WithValue(r.Context(), auth.UserIDKey, claims.UserID)
+			ctx = context.WithValue(ctx, auth.UserEmailKey, claims.Email)
+			ctx = context.WithValue(ctx, auth.UserRoleKey, claims.Role)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
@@ -66,13 +66,12 @@ func AuthMiddleware(config *AuthConfig) func(http.Handler) http.Handler {
 func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			role, ok := r.Context().Value("user_role").(string)
-			if !ok {
+			role := auth.UserRoleFromContext(r.Context())
+			if role == "" {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
 
-			// Check if user's role is allowed
 			for _, allowedRole := range allowedRoles {
 				if role == allowedRole {
 					next.ServeHTTP(w, r)
@@ -87,26 +86,17 @@ func RequireRole(allowedRoles ...string) func(http.Handler) http.Handler {
 
 // GetUserID extracts user ID from context
 func GetUserID(ctx context.Context) string {
-	if userID, ok := ctx.Value("user_id").(string); ok {
-		return userID
-	}
-	return ""
+	return auth.UserIDFromContext(ctx)
 }
 
 // GetUserRole extracts user role from context
 func GetUserRole(ctx context.Context) string {
-	if role, ok := ctx.Value("user_role").(string); ok {
-		return role
-	}
-	return ""
+	return auth.UserRoleFromContext(ctx)
 }
 
 // GetUserEmail extracts user email from context
 func GetUserEmail(ctx context.Context) string {
-	if email, ok := ctx.Value("user_email").(string); ok {
-		return email
-	}
-	return ""
+	return auth.UserEmailFromContext(ctx)
 }
 
 // RouterParam helper to extract path parameters

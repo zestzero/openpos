@@ -13,13 +13,24 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/zestzero/openpos/db/sqlc"
+	"github.com/zestzero/openpos/internal/auth"
 )
+
+func TestCatalogWritesRequireOwnerRole(t *testing.T) {
+	h := NewHandler(&fakeReorderService{})
+	req := httptest.NewRequest(http.MethodPost, "/import", strings.NewReader(`{"products":[{"name":"Tea","variants":[{"sku":"T1","name":"Cup","price":1}]}]}`))
+	rr := httptest.NewRecorder()
+	h.Routes().ServeHTTP(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without owner role, got %d", rr.Code)
+	}
+}
 
 func TestReorderCategories(t *testing.T) {
 	svc := &fakeReorderService{}
 	h := NewHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPut, "/categories/reorder", strings.NewReader(`{"ids":["11111111-1111-1111-1111-111111111111","22222222-2222-2222-2222-222222222222"]}`))
+	req := withOwnerRole(httptest.NewRequest(http.MethodPut, "/categories/reorder", strings.NewReader(`{"ids":["11111111-1111-1111-1111-111111111111","22222222-2222-2222-2222-222222222222"]}`)))
 	rr := httptest.NewRecorder()
 
 	h.Routes().ServeHTTP(rr, req)
@@ -37,7 +48,7 @@ func TestReorderCategoriesRejectsInvalidPayload(t *testing.T) {
 	svc := &fakeReorderService{}
 	h := NewHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPut, "/categories/reorder", bytes.NewBufferString(`{"ids":[]}`))
+	req := withOwnerRole(httptest.NewRequest(http.MethodPut, "/categories/reorder", bytes.NewBufferString(`{"ids":[]}`)))
 	rr := httptest.NewRecorder()
 
 	h.Routes().ServeHTTP(rr, req)
@@ -54,7 +65,7 @@ func TestImportProducts(t *testing.T) {
 	svc := &fakeReorderService{}
 	h := NewHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/import", strings.NewReader(`{"products":[{"name":"Green Tea","description":"","category_id":null,"image_url":null,"is_active":true,"variants":[{"sku":"GT-LARGE","barcode":"ERP-GREEN-TEA-LARGE-CUP","name":"Large Cup","price":12900,"cost":null,"is_active":true}]}]}`))
+	req := withOwnerRole(httptest.NewRequest(http.MethodPost, "/import", strings.NewReader(`{"products":[{"name":"Green Tea","description":"","category_id":null,"image_url":null,"is_active":true,"variants":[{"sku":"GT-LARGE","barcode":"ERP-GREEN-TEA-LARGE-CUP","name":"Large Cup","price":12900,"cost":null,"is_active":true}]}]}`)))
 	rr := httptest.NewRecorder()
 
 	h.Routes().ServeHTTP(rr, req)
@@ -77,7 +88,7 @@ func TestImportProductsRejectsEmptyPayload(t *testing.T) {
 	svc := &fakeReorderService{}
 	h := NewHandler(svc)
 
-	req := httptest.NewRequest(http.MethodPost, "/import", strings.NewReader(`{"products":[]}`))
+	req := withOwnerRole(httptest.NewRequest(http.MethodPost, "/import", strings.NewReader(`{"products":[]}`)))
 	rr := httptest.NewRecorder()
 
 	h.Routes().ServeHTTP(rr, req)
@@ -160,7 +171,7 @@ func TestUploadImageReturnsAbsolutePublicURL(t *testing.T) {
 		t.Fatalf("failed to close multipart writer: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "http://api.example.test/images", &body)
+	req := withOwnerRole(httptest.NewRequest(http.MethodPost, "http://api.example.test/images", &body))
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	rr := httptest.NewRecorder()
 
@@ -227,6 +238,10 @@ func (f *fakeReorderService) SearchVariant(context.Context, string) (sqlc.Search
 func (f *fakeReorderService) ReorderCategories(_ context.Context, orderedIDs []string) error {
 	f.reorderedIDs = append([]string(nil), orderedIDs...)
 	return nil
+}
+
+func withOwnerRole(req *http.Request) *http.Request {
+	return req.WithContext(context.WithValue(req.Context(), auth.UserRoleKey, "owner"))
 }
 
 func mustParseUUID(t *testing.T, value string) pgtype.UUID {
