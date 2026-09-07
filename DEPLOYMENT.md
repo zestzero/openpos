@@ -1,8 +1,10 @@
 # OpenPOS Deployment Strategy
 
-**Version:** 1.0  
-**Last Updated:** 2026-04-25  
-**Status:** Draft - Pending Review
+**Version:** 1.1  
+**Last Updated:** 2026-09-06  
+**Status:** Draft - see [PRODUCTION_READINESS.md](PRODUCTION_READINESS.md) for the current go-live gap list
+
+Use `docker-compose.prod.yml` plus `.env.example` for the concrete env contract. This document remains the longer hosting discussion.
 
 ---
 
@@ -111,11 +113,14 @@ CMD ["./server"]
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | - | PostgreSQL connection string |
-| `JWT_SECRET` | Yes | - | Secret for JWT signing |
-| `PORT` | No | 8080 | HTTP server port |
-| `ENV` | No | production | Environment name |
-| `LOG_LEVEL` | No | info | Logging level |
+| `DATABASE_URL` | Yes in production | local default in development | PostgreSQL connection string |
+| `JWT_SECRET` | Yes in production | development default (rejected in production) | Secret for JWT signing; min 32 chars in production |
+| `PORT` | No | 8080 | HTTP server port (process binds `0.0.0.0:$PORT`) |
+| `APP_ENV` | No | development | `development`, `production`, or `test` |
+| `FRONTEND_ORIGIN` | Yes in production | `http://localhost:5173` | CORS allow-list; comma-separate via `FRONTEND_ORIGINS` |
+| `ALLOW_PUBLIC_REGISTRATION` | No | true in development, false in production | Owner self-registration |
+| `UPLOADS_DIR` | No | uploads | Local image upload directory (ephemeral on most hosts) |
+| `STORE_NAME` | No | OpenPOS | Receipt store name |
 
 ### Database Connection String Format
 ```
@@ -253,8 +258,8 @@ volumes:
 ## 9. Monitoring & Logging (Future)
 
 ### Health Checks
-- HTTP `/health` endpoint (database connectivity check)
-- Container healthcheck
+- HTTP `/health` — process liveness (`{"status":"ok"}`)
+- HTTP `/ready` — PostgreSQL ping; container HEALTHCHECK uses this
 - Uptime monitoring (Pingdom/UptimeRobot)
 
 ### Logging

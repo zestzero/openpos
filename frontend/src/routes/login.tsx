@@ -1,5 +1,5 @@
 import { useMemo, useState, type ComponentType } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { createRoute, useRouter } from '@tanstack/react-router'
 import { CheckCircle2, KeyRound, Mail } from 'lucide-react'
 
@@ -27,14 +27,22 @@ export function LoginRoute() {
   const [secret, setSecret] = useState('')
   const [name, setName] = useState('')
 
+  const { data: authConfig } = useQuery({
+    queryKey: ['auth-config'],
+    queryFn: api.getAuthConfig,
+    staleTime: 60_000,
+  })
+  const showRegister = authConfig?.publicRegistration !== false
+  const activeMode = showRegister ? mode : mode === 'register' ? 'password' : mode
+
   const mutation = useMutation({
     mutationFn: async () => {
-      if (mode === 'register') {
+      if (activeMode === 'register') {
         await api.registerOwner(email, secret, name)
         return api.login(email, secret)
       }
 
-      return mode === 'password' ? api.login(email, secret) : api.loginPIN(email, secret)
+      return activeMode === 'password' ? api.login(email, secret) : api.loginPIN(email, secret)
     },
     onSuccess: (response: AuthResponse) => {
       login(response)
@@ -43,9 +51,9 @@ export function LoginRoute() {
   })
 
   const buttonLabel = useMemo(() => {
-    if (mode === 'register') return 'Create owner account'
-    return mode === 'password' ? 'Sign in with password' : 'Sign in with PIN'
-  }, [mode])
+    if (activeMode === 'register') return 'Create owner account'
+    return activeMode === 'password' ? 'Sign in with password' : 'Sign in with PIN'
+  }, [activeMode])
 
   return (
     <div className="hero-wash relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-8">
@@ -58,10 +66,12 @@ export function LoginRoute() {
           <CardDescription>Cashiers use PIN login; owners can use email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-2 rounded-pill border border-border bg-muted p-1">
-            <TabButton active={mode === 'password'} onClick={() => setMode('password')} label="Password" />
-            <TabButton active={mode === 'pin'} onClick={() => setMode('pin')} label="PIN" />
-            <TabButton active={mode === 'register'} onClick={() => setMode('register')} label="Register owner" />
+          <div className={`grid gap-2 rounded-pill border border-border bg-muted p-1 ${showRegister ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <TabButton active={activeMode === 'password'} onClick={() => setMode('password')} label="Password" />
+            <TabButton active={activeMode === 'pin'} onClick={() => setMode('pin')} label="PIN" />
+            {showRegister ? (
+              <TabButton active={activeMode === 'register'} onClick={() => setMode('register')} label="Register owner" />
+            ) : null}
           </div>
 
           <form
@@ -81,7 +91,7 @@ export function LoginRoute() {
               autoComplete="email"
             />
 
-            {mode === 'register' ? (
+            {activeMode === 'register' ? (
               <Field
                 label="Name"
                 icon={CheckCircle2}
@@ -94,14 +104,14 @@ export function LoginRoute() {
             ) : null}
 
             <Field
-              label={mode === 'pin' ? 'PIN' : 'Password'}
+              label={activeMode === 'pin' ? 'PIN' : 'Password'}
               icon={KeyRound}
               type="password"
               value={secret}
               onChange={(event) => setSecret(event.target.value)}
-              placeholder={mode === 'pin' ? 'Enter PIN' : 'Enter password'}
-              autoComplete={mode === 'register' ? 'new-password' : mode === 'password' ? 'current-password' : 'off'}
-              inputMode={mode === 'pin' ? 'numeric' : 'text'}
+              placeholder={activeMode === 'pin' ? 'Enter PIN' : 'Enter password'}
+              autoComplete={activeMode === 'register' ? 'new-password' : activeMode === 'password' ? 'current-password' : 'off'}
+              inputMode={activeMode === 'pin' ? 'numeric' : 'text'}
             />
 
             <Button type="submit" className="w-full" disabled={mutation.isPending}>
@@ -110,7 +120,7 @@ export function LoginRoute() {
 
             {mutation.isError ? (
               <p className="text-sm text-destructive">
-                {mode === 'register'
+                {activeMode === 'register'
                   ? 'Unable to create owner account. Check your details and try again.'
                   : 'Unable to sign in. Check your credentials and try again.'}
               </p>

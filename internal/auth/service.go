@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -39,8 +40,9 @@ type TokenClaims struct {
 
 // Config holds auth configuration
 type Config struct {
-	JWTSecret         string
-	AccessTokenExpiry time.Duration
+	JWTSecret               string
+	AccessTokenExpiry       time.Duration
+	AllowPublicRegistration bool
 }
 
 // AuthService handles authentication logic
@@ -61,6 +63,10 @@ func NewAuthService(pool *pgxpool.Pool, config *Config) *AuthService {
 
 // RegisterOwner registers a new owner with email and password
 func (s *AuthService) RegisterOwner(ctx context.Context, email, password, name string) (*User, error) {
+	if err := validateOwnerCredentials(email, password, name); err != nil {
+		return nil, err
+	}
+
 	// Hash the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -299,8 +305,8 @@ func (s *AuthService) CreateUser(ctx context.Context, actorID, email, password, 
 	}
 
 	if role == "owner" {
-		if password == "" {
-			return nil, errors.New("password is required for owner users")
+		if err := validateOwnerCredentials(email, password, name); err != nil {
+			return nil, err
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -440,4 +446,14 @@ func parseUUID(s string) (pgtype.UUID, error) {
 	var uuid pgtype.UUID
 	err := uuid.Scan(s)
 	return uuid, err
+}
+
+func validateOwnerCredentials(email, password, name string) error {
+	if strings.TrimSpace(email) == "" || strings.TrimSpace(name) == "" {
+		return errors.New("email and name are required")
+	}
+	if len(password) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
+	return nil
 }

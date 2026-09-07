@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -40,6 +41,26 @@ func TestBootstrap(t *testing.T) {
 		pool, err := bootstrapApp(context.Background(), "postgres://example")
 		if err == nil || err.Error() != "connect failed" {
 			t.Fatalf("expected connection failure, got pool=%v err=%v", pool, err)
+		}
+	})
+
+	t.Run("ready reports unavailable when ping fails", func(t *testing.T) {
+		handler := readyHandler(func(context.Context) error { return errors.New("db down") })
+		req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusServiceUnavailable {
+			t.Fatalf("expected 503, got %d", rec.Code)
+		}
+	})
+
+	t.Run("ready reports ok when ping succeeds", func(t *testing.T) {
+		handler := readyHandler(func(context.Context) error { return nil })
+		req := httptest.NewRequest(http.MethodGet, "/ready", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rec.Code)
 		}
 	})
 

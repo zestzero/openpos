@@ -17,15 +17,14 @@ func NewHandler(service *AuthService) *Handler {
 	return &Handler{service: service}
 }
 
-// Router returns the chi router for auth endpoints
+// Router returns the chi router for public auth endpoints.
 func (h *Handler) Router() *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Get("/config", h.PublicConfig)
 	r.Post("/register", h.Register)
 	r.Post("/login", h.Login)
 	r.Post("/login/pin", h.LoginPIN)
-	r.Post("/cashiers", h.CreateCashier)
-	r.Get("/cashiers", h.ListCashiers)
 
 	return r
 }
@@ -83,8 +82,23 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
+// PublicConfig reports non-sensitive auth settings for the login UI.
+func (h *Handler) PublicConfig(w http.ResponseWriter, r *http.Request) {
+	allowed := false
+	if h.service != nil && h.service.config != nil {
+		allowed = h.service.config.AllowPublicRegistration
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]bool{"publicRegistration": allowed})
+}
+
 // Register handles owner registration
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	if h.service == nil || h.service.config == nil || !h.service.config.AllowPublicRegistration {
+		http.Error(w, "public registration is disabled", http.StatusForbidden)
+		return
+	}
+
 	var req RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -146,9 +160,8 @@ func (h *Handler) LoginPIN(w http.ResponseWriter, r *http.Request) {
 
 // CreateCashier handles creating a new cashier (owner only)
 func (h *Handler) CreateCashier(w http.ResponseWriter, r *http.Request) {
-	// Get owner from context (set by auth middleware)
-	ownerID := r.Context().Value("user_id")
-	if ownerID == nil {
+	ownerID := UserIDFromContext(r.Context())
+	if ownerID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -159,7 +172,7 @@ func (h *Handler) CreateCashier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cashier, err := h.service.CreateCashier(r.Context(), ownerID.(string), req.Email, req.PIN, req.Name)
+	cashier, err := h.service.CreateCashier(r.Context(), ownerID, req.Email, req.PIN, req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -196,8 +209,8 @@ func (h *Handler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 // CreateUser handles POST /api/users (owner only)
 func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	actorID := r.Context().Value("user_id")
-	if actorID == nil {
+	actorID := UserIDFromContext(r.Context())
+	if actorID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -208,7 +221,7 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.CreateUser(r.Context(), actorID.(string), req.Email, req.Password, req.PIN, req.Name, req.Role)
+	user, err := h.service.CreateUser(r.Context(), actorID, req.Email, req.Password, req.PIN, req.Name, req.Role)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -221,8 +234,8 @@ func (h *Handler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 // UpdateUser handles PUT /api/users/{id} (owner only)
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	actorID := r.Context().Value("user_id")
-	if actorID == nil {
+	actorID := UserIDFromContext(r.Context())
+	if actorID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -239,7 +252,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.UpdateUser(r.Context(), actorID.(string), userID, req.Email, req.Name, req.Role)
+	user, err := h.service.UpdateUser(r.Context(), actorID, userID, req.Email, req.Name, req.Role)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -251,8 +264,8 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // ToggleUserActive handles PATCH /api/users/{id}/toggle-active (owner only)
 func (h *Handler) ToggleUserActive(w http.ResponseWriter, r *http.Request) {
-	actorID := r.Context().Value("user_id")
-	if actorID == nil {
+	actorID := UserIDFromContext(r.Context())
+	if actorID == "" {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -263,7 +276,7 @@ func (h *Handler) ToggleUserActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.ToggleUserActive(r.Context(), actorID.(string), userID)
+	user, err := h.service.ToggleUserActive(r.Context(), actorID, userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

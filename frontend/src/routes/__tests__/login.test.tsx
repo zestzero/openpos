@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   loginPassword: vi.fn(),
   loginPIN: vi.fn(),
   registerOwner: vi.fn(),
+  getAuthConfig: vi.fn(),
 }))
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -33,6 +34,7 @@ vi.mock('@/lib/api', () => ({
     login: mocks.loginPassword,
     loginPIN: mocks.loginPIN,
     registerOwner: mocks.registerOwner,
+    getAuthConfig: mocks.getAuthConfig,
   },
 }))
 
@@ -66,6 +68,7 @@ describe('login route', () => {
       Role: 'owner',
       Name: 'Owner',
     })
+    mocks.getAuthConfig.mockResolvedValue({ publicRegistration: true })
   })
 
   it('routes registered owners into the ERP shell', async () => {
@@ -85,6 +88,15 @@ describe('login route', () => {
         token: 'owner-token',
       })
       expect(mocks.navigate).toHaveBeenCalledWith({ to: '/erp', replace: true })
+    })
+  })
+
+  it('hides owner registration when the API disables it', async () => {
+    mocks.getAuthConfig.mockResolvedValue({ publicRegistration: false })
+    renderWithQueryClient(<LoginRoute />)
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Register owner' })).not.toBeInTheDocument()
     })
   })
 

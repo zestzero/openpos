@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/zestzero/openpos/db/sqlc"
+	"github.com/zestzero/openpos/internal/auth"
 )
 
 func TestHandler(t *testing.T) {
@@ -68,7 +69,7 @@ func TestHandler(t *testing.T) {
 		h := NewHandler(NewService(queries, newFakeInventory(map[string]int64{variantID: 10})))
 		body := `{"orders":[{"client_uuid":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","discount_amount":100,"items":[{"variant_id":"33333333-3333-3333-3333-333333333333","quantity":1,"unit_price":1000}],"payment":{"method":"cash","tendered_amount":1000}}]}`
 		req := httptest.NewRequest(http.MethodPost, "/sync", strings.NewReader(body))
-		req = req.WithContext(context.WithValue(req.Context(), "user_id", userID))
+		req = req.WithContext(context.WithValue(req.Context(), auth.UserIDKey, userID))
 		rec := httptest.NewRecorder()
 
 		h.Routes().ServeHTTP(rec, req)

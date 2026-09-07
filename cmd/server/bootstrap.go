@@ -17,6 +17,7 @@ import (
 	"github.com/zestzero/openpos/db/sqlc"
 	"github.com/zestzero/openpos/internal/auth"
 	"github.com/zestzero/openpos/internal/catalog"
+	"github.com/zestzero/openpos/internal/config"
 	"github.com/zestzero/openpos/internal/inventory"
 	appmiddleware "github.com/zestzero/openpos/internal/middleware"
 	"github.com/zestzero/openpos/internal/reporting"
@@ -62,13 +63,27 @@ func mountSalesRoutes(r chi.Router, pool *pgxpool.Pool, salesService salesPoolSe
 	r.Mount("/orders", routes)
 }
 
-func buildRouter(pool *pgxpool.Pool) chi.Router {
+func readyHandler(ping func(context.Context) error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := ping(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte(`{"status":"unavailable"}`))
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}
+}
+
+func buildRouter(cfg *config.Config, pool *pgxpool.Pool) chi.Router {
 	r := chi.NewRouter()
+	r.Use(appmiddleware.SecurityHeadersMiddleware)
 	r.Use(appmiddleware.CORSMiddleware(&appmiddleware.CORSConfig{
-		AllowedOrigins: []string{
-			getEnv("FRONTEND_ORIGIN", "http://localhost:5173"),
-			"http://localhost:4173",
-		},
+		AllowedOrigins: cfg.FrontendOrigins,
 	}))
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
@@ -76,16 +91,25 @@ func buildRouter(pool *pgxpool.Pool) chi.Router {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
+	r.Get("/ready", readyHandler(pool.Ping))
 
 	authConfig := &auth.Config{
-		JWTSecret:         getEnv("JWT_SECRET", "openpos-secret-change-in-production"),
-		AccessTokenExpiry: 24 * time.Hour,
+		JWTSecret:               cfg.JWTSecret,
+		AccessTokenExpiry:       24 * time.Hour,
+		AllowPublicRegistration: cfg.AllowPublicRegistration,
 	}
 	authService := auth.NewAuthService(pool, authConfig)
 	authHandler := auth.NewHandler(authService)
-	r.Mount("/api/auth", authHandler.Router())
+	authMux := authHandler.Router()
+	authMux.Group(func(r chi.Router) {
+		r.Use(appmiddleware.AuthMiddleware(&appmiddleware.AuthConfig{JWTSecret: authConfig.JWTSecret}))
+		r.Use(appmiddleware.RequireRole("owner"))
+		r.Post("/cashiers", authHandler.CreateCashier)
+		r.Get("/cashiers", authHandler.ListCashiers)
+	})
+	r.Mount("/api/auth", authMux)
 
 	protected := chi.NewRouter()
 	protected.Use(appmiddleware.AuthMiddleware(&appmiddleware.AuthConfig{JWTSecret: authConfig.JWTSecret}))
@@ -104,19 +128,15 @@ func buildRouter(pool *pgxpool.Pool) chi.Router {
 
 	reportingService := reporting.NewService(sqlc.New(pool))
 	reportingHandler := reporting.NewHandler(reportingService)
-	protected.Mount("/reports", reportingHandler.Routes())
-
-	// User management routes (owner-only, requires auth middleware)
-	usersRouter := authHandler.UsersRouter()
 	protected.Group(func(r chi.Router) {
 		r.Use(appmiddleware.RequireRole("owner"))
-		r.Mount("/users", usersRouter)
+		r.Mount("/reports", reportingHandler.Routes())
+		r.Mount("/users", authHandler.UsersRouter())
 	})
 
 	r.Mount("/api", protected)
 
-	// Serve uploaded images
-	uploadsDir := getEnv("UPLOADS_DIR", "uploads")
+	uploadsDir := cfg.UploadsDir
 	_ = os.MkdirAll(uploadsDir, 0755)
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadsDir))))
 
