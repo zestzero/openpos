@@ -34,7 +34,7 @@ export function ReportChart({ rows }: ReportChartProps) {
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart accessibilityLayer data={chartRows} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} stroke="rgba(0, 0, 0, 0.08)" />
+                <CartesianGrid vertical={false} stroke="oklch(0.88 0.012 120)" />
                 <XAxis
                   dataKey="month"
                   tickLine={false}
@@ -43,6 +43,7 @@ export function ReportChart({ rows }: ReportChartProps) {
                   tickFormatter={formatReportingMonth}
                 />
                 <YAxis
+                  width={96}
                   tickLine={false}
                   axisLine={false}
                   tickMargin={8}
@@ -50,9 +51,9 @@ export function ReportChart({ rows }: ReportChartProps) {
                 />
                 <Tooltip content={<MonthlyTrendTooltip />} />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 8 }} />
-                <Bar dataKey="revenue" name="Revenue" fill="#18e299" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="grossProfit" name="Gross profit" fill="#0d0d0d" radius={[8, 8, 0, 0]} />
-                <Line type="monotone" dataKey="averageOrderValue" name="AOV" stroke="#d45656" strokeWidth={2} dot={false} />
+                <Bar dataKey="revenue" name="Revenue" fill="#c8f169" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="grossProfit" name="Gross profit" fill="#1c1f16" radius={[8, 8, 0, 0]} />
+                <Line type="monotone" dataKey="averageOrderValue" name="AOV" stroke="#3d4a28" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -67,7 +68,7 @@ export function ReportChart({ rows }: ReportChartProps) {
         <CardContent className="space-y-3">
           <ul className="space-y-3">
             {chartRows.map((row) => (
-              <li key={row.month} className="rounded-card border border-border bg-background px-4 py-3">
+              <li key={row.month} className="rounded-card border border-border bg-card px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">{formatReportingMonth(row.month)}</p>

@@ -48,7 +48,7 @@ export function ProductTable({
     <Card className="overflow-hidden border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
-          <h2 className="text-xl font-semibold">Products</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
           <p className="text-sm text-muted-foreground">Parent products with nested variants, THB pricing, and archive actions.</p>
         </div>
 
@@ -115,9 +115,9 @@ export function ProductTable({
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           {record.product.image_url ? (
-                            <img src={record.product.image_url} alt={record.product.name} className="h-10 w-10 rounded-md object-cover" />
+                            <img src={record.product.image_url} alt={record.product.name} className="size-11 rounded-full object-cover" />
                           ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
+                            <div className="flex size-11 items-center justify-center rounded-full bg-foreground text-xs font-bold text-accent">
                               {record.product.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}

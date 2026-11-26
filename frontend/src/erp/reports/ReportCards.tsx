@@ -1,9 +1,7 @@
-import { ArrowUpRight, Banknote, ShoppingCart, TrendingUp } from 'lucide-react'
-
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { KpiStat } from '@/components/ui/kpi-stat'
+import { Card, CardHeader } from '@/components/ui/card'
 import { formatTHB } from '@/lib/formatCurrency'
 import { formatReportingMonth, type ReportingSummary } from '@/lib/reporting-api'
-import { cn } from '@/lib/utils'
 
 type ReportCardsProps = {
   summary: ReportingSummary | null
@@ -20,29 +18,31 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
         {
           label: 'Revenue',
           value: formatTHB(current.revenue),
-          icon: Banknote,
-          tone: 'brand' as const,
+          highlight: true,
+          delta: deltaMeta(current.revenue, previous?.revenue),
           note: buildDelta(current.revenue, previous?.revenue, previous?.month ?? null),
         },
         {
           label: 'Gross profit',
           value: formatTHB(current.grossProfit),
-          icon: TrendingUp,
-          tone: current.grossProfit >= 0 ? ('positive' as const) : ('negative' as const),
+          highlight: false,
+          delta: deltaMeta(current.grossProfit, previous?.grossProfit),
           note: buildDelta(current.grossProfit, previous?.grossProfit, previous?.month ?? null),
         },
         {
           label: 'Orders',
           value: `${current.orderCount.toLocaleString('en-US')} orders`,
-          icon: ShoppingCart,
-          tone: 'neutral' as const,
+          highlight: false,
+          delta: deltaMeta(current.orderCount, previous?.orderCount),
           note: previous ? `Compared with ${formatReportingMonth(previous.month)}` : 'Latest month snapshot',
         },
         {
           label: 'Average order value',
           value: formatTHB(current.averageOrderValue),
-          icon: ArrowUpRight,
-          tone: 'accent' as const,
+          highlight: false,
+          delta: previous?.averageOrderValue
+            ? deltaMeta(current.averageOrderValue, previous.averageOrderValue)
+            : null,
           note: previous?.averageOrderValue
             ? buildDelta(current.averageOrderValue, previous.averageOrderValue, previous.month)
             : 'Latest month snapshot',
@@ -53,27 +53,16 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
   return (
     <section className="grid gap-4 xl:grid-cols-4">
       {!showSkeleton && cards.length > 0
-        ? cards.map((card) => {
-            const Icon = card.icon
-
-            return (
-              <Card key={card.label} className="border-border/70 bg-card/95">
-                <CardHeader className="space-y-3 pb-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                      <Icon className={cn('h-4 w-4', toneClass(card.tone))} />
-                      {card.label}
-                    </div>
-                    <span className={cn('text-xs font-medium uppercase tracking-[0.2em]', toneClass(card.tone))}>
-                      {card.tone === 'positive' ? 'Healthy' : card.tone === 'negative' ? 'Watch' : 'Live'}
-                    </span>
-                  </div>
-                  <CardTitle className="text-[1.7rem] leading-none tracking-[0.01em]">{card.value}</CardTitle>
-                  <CardDescription className="min-h-10 text-sm leading-6 text-muted-foreground">{card.note}</CardDescription>
-                </CardHeader>
-              </Card>
-            )
-          })
+        ? cards.map((card) => (
+            <KpiStat
+              key={card.label}
+              label={card.label}
+              value={card.value}
+              delta={card.delta}
+              note={card.note}
+              highlight={card.highlight}
+            />
+          ))
         : Array.from({ length: 4 }, (_, index) => (
             <Card key={index} className="border-border/70 bg-card/95">
               <CardHeader className="space-y-3 pb-3">
@@ -85,6 +74,22 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
           ))}
     </section>
   )
+}
+
+function deltaMeta(current: number, previous: number | undefined) {
+  if (typeof previous !== 'number') return null
+  const difference = current - previous
+  if (difference === 0) {
+    return { direction: 'flat' as const, label: '0%' }
+  }
+  if (previous === 0) {
+    return { direction: difference > 0 ? 'up' as const : 'down' as const, label: difference > 0 ? 'Up' : 'Down' }
+  }
+  const percent = Math.abs((difference / previous) * 100).toFixed(1)
+  return {
+    direction: difference > 0 ? 'up' as const : 'down' as const,
+    label: `${difference > 0 ? '+' : '−'}${percent}%`,
+  }
 }
 
 function buildDelta(current: number, previous: number | undefined, previousMonth: string | null) {
@@ -101,20 +106,4 @@ function buildDelta(current: number, previous: number | undefined, previousMonth
   const percentLabel = percent ? ` (${prefix === '+' ? '+' : '−'}${percent}%)` : ''
 
   return `${prefix}${amount}${percentLabel}${monthLabel}`
-}
-
-function toneClass(tone: 'brand' | 'positive' | 'negative' | 'neutral' | 'accent') {
-  switch (tone) {
-    case 'brand':
-      return 'text-brand'
-    case 'positive':
-      return 'text-emerald-600'
-    case 'negative':
-      return 'text-destructive'
-    case 'accent':
-      return 'text-brand'
-    case 'neutral':
-    default:
-      return 'text-muted-foreground'
-  }
 }

@@ -5,6 +5,7 @@ import { CheckCircle2, KeyRound, Mail } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Chip } from '@/components/ui/chip'
 import { Input } from '@/components/ui/input'
 import { api, type AuthResponse } from '@/lib/api'
 import { getRedirectPath } from '@/lib/auth'
@@ -56,14 +57,14 @@ export function LoginRoute() {
   }, [activeMode])
 
   return (
-    <div className="hero-wash relative flex min-h-dvh items-center justify-center overflow-hidden bg-background px-4 py-8">
-      <Card className="relative w-full max-w-md border-border bg-background/95 shadow-dialog backdrop-blur-sm">
-        <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-card bg-accent text-accent-foreground">
-            <CheckCircle2 className="h-6 w-6" />
+    <div className="flex min-h-dvh items-center justify-center bg-background px-4 py-8">
+      <Card className="relative w-full max-w-lg">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <CheckCircle2 className="size-6" />
           </div>
-          <CardTitle>Welcome to OpenPOS</CardTitle>
-          <CardDescription>Cashiers use PIN login; owners can use email and password.</CardDescription>
+          <CardTitle className="text-3xl font-bold tracking-tight">Welcome to OpenPOS</CardTitle>
+          <CardDescription className="text-base">Cashiers use PIN login; owners can use email and password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className={`grid gap-2 rounded-pill border border-border bg-muted p-1 ${showRegister ? 'grid-cols-3' : 'grid-cols-2'}`}>
@@ -114,7 +115,7 @@ export function LoginRoute() {
               inputMode={activeMode === 'pin' ? 'numeric' : 'text'}
             />
 
-            <Button type="submit" className="w-full" disabled={mutation.isPending}>
+            <Button type="submit" size="lg" className="w-full" disabled={mutation.isPending}>
               {mutation.isPending ? 'Signing in…' : buttonLabel}
             </Button>
 
@@ -142,14 +143,9 @@ function TabButton({
   onClick: () => void
 }) {
   return (
-    <Button
-      type="button"
-      variant={active ? 'default' : 'ghost'}
-      className="h-11 rounded-pill"
-      onClick={onClick}
-    >
+    <Chip active={active} className="h-11 w-full min-h-11 whitespace-nowrap px-3 text-sm" onClick={onClick}>
       {label}
-    </Button>
+    </Chip>
   )
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
+import { Chip } from '@/components/ui/chip'
 import { Input } from '@/components/ui/input'
 import { useAdjustStockMutation, useInventoryLedgerQuery, useInventoryStockLevelQuery, useProductsQuery, type InventoryReasonCode } from '@/lib/erp-api'
 
@@ -86,44 +87,44 @@ export function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+      <section>
         <div className="space-y-2">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">Inventory</p>
-          <h1 className="text-2xl font-semibold text-foreground">Stock levels and ledger</h1>
+          <p className="text-sm font-semibold text-muted-foreground">Inventory</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Stock levels and ledger</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">Review stock by variant, inspect movement history, and record manual adjustments with a required reason code.</p>
         </div>
       </section>
 
       {productsLoading ? (
-        <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+        <section className="rounded-card border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">Loading inventory…</p>
         </section>
       ) : productsError ? (
-        <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+        <section className="rounded-card border border-border bg-card p-5">
           <p className="text-sm text-destructive">Failed to load inventory. {(productsQueryError as Error | null)?.message ?? 'Please try again.'}</p>
         </section>
       ) : variants.length === 0 ? (
-        <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+        <section className="rounded-card border border-border bg-card p-5">
           <p className="text-sm text-muted-foreground">No stocked variants are available yet.</p>
         </section>
       ) : (
         <>
           <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-            <div className="rounded-card border border-border bg-background p-5 shadow-sm">
+            <div className="rounded-card border border-border bg-card p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <h2 className="text-lg font-semibold">Variant stock</h2>
                 <p className="text-sm text-muted-foreground">{filteredVariants.length} of {variants.length} variants</p>
               </div>
               <div className="mb-4 grid gap-3 md:grid-cols-3">
                 <Input aria-label="Search variants" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder="Search variant, SKU, category" />
-                <select aria-label="Stock state filter" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={stockFilter} onChange={(event) => setStockFilter(event.target.value as typeof stockFilter)}>
+                <select aria-label="Stock state filter" className="select-field" value={stockFilter} onChange={(event) => setStockFilter(event.target.value as typeof stockFilter)}>
                   <option value="all">All stock states</option>
                   <option value="low">Low stock</option>
                   <option value="zero">Zero stock</option>
                 </select>
-                <div className="flex gap-2 text-sm">
-                  <Button type="button" variant="outline" onClick={() => setStockFilter('low')}>Low stock ({lowStockCount})</Button>
-                  <Button type="button" variant="outline" onClick={() => setStockFilter('zero')}>Zero stock ({zeroStockCount})</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Chip type="button" active={stockFilter === 'low'} onClick={() => setStockFilter('low')}>Low stock ({lowStockCount})</Chip>
+                  <Chip type="button" active={stockFilter === 'zero'} onClick={() => setStockFilter('zero')}>Zero stock ({zeroStockCount})</Chip>
                 </div>
               </div>
               <div className="space-y-3">
@@ -135,7 +136,8 @@ export function InventoryPage() {
                       key={variant.id}
                       type="button"
                       onClick={() => setSelectedVariantId(variant.id)}
-                      className={`w-full rounded-lg border px-4 py-3 text-left transition ${selectedVariantId === variant.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'}`}
+                      aria-pressed={selectedVariantId === variant.id}
+                      className={`w-full rounded-2xl px-4 py-4 text-left transition-colors ${selectedVariantId === variant.id ? 'bg-accent/40 ring-2 ring-foreground' : 'hover:bg-muted'}`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -158,7 +160,7 @@ export function InventoryPage() {
             </div>
 
             <div className="space-y-4">
-              <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+              <section className="rounded-card border border-border bg-card p-5">
                 <h2 className="text-lg font-semibold">Selected variant</h2>
                 {selectedVariant ? (
                   <div className="mt-3 space-y-2 text-sm text-muted-foreground">
@@ -177,7 +179,7 @@ export function InventoryPage() {
                 )}
               </section>
 
-              <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+              <section className="rounded-card border border-border bg-card p-5">
                 <h2 className="text-lg font-semibold">Manual adjustment</h2>
                 <div className="mt-4 space-y-4">
                   <div className="space-y-2">
@@ -186,7 +188,7 @@ export function InventoryPage() {
                   </div>
                   <div className="space-y-2">
                     <span className="text-sm font-medium">Reason code</span>
-                    <select className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={reason} onChange={(event) => setReason(event.target.value as InventoryReasonCode)} disabled={!selectedVariantId || adjustStockMutation.isPending}>
+                    <select className="select-field" value={reason} onChange={(event) => setReason(event.target.value as InventoryReasonCode)} disabled={!selectedVariantId || adjustStockMutation.isPending}>
                       {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </div>
@@ -196,16 +198,16 @@ export function InventoryPage() {
             </div>
           </section>
 
-          <section className="rounded-card border border-border bg-background p-5 shadow-sm">
+          <section className="rounded-card border border-border bg-card p-5">
             <h2 className="text-lg font-semibold">Ledger history</h2>
             {selectedVariant ? (
               <div className="mt-4 space-y-4">
                 <div className="grid gap-3 md:grid-cols-3">
-                  <select aria-label="Ledger reason filter" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={ledgerReasonFilter} onChange={(event) => setLedgerReasonFilter(event.target.value as typeof ledgerReasonFilter)}>
+                  <select aria-label="Ledger reason filter" className="select-field" value={ledgerReasonFilter} onChange={(event) => setLedgerReasonFilter(event.target.value as typeof ledgerReasonFilter)}>
                     <option value="all">All reasons</option>
                     {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
-                  <select aria-label="Ledger time range" className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm" value={ledgerTimeRange} onChange={(event) => setLedgerTimeRange(event.target.value as typeof ledgerTimeRange)}>
+                  <select aria-label="Ledger time range" className="select-field" value={ledgerTimeRange} onChange={(event) => setLedgerTimeRange(event.target.value as typeof ledgerTimeRange)}>
                     <option value="all">All time</option>
                     <option value="24h">Last 24 hours</option>
                     <option value="7d">Last 7 days</option>

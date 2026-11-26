@@ -51,7 +51,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
               <textarea
                 value={draft.description}
                 onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-                className="min-h-28 w-full rounded-card border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="min-h-28 w-full rounded-card border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </Field>
 
@@ -60,7 +60,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
                 aria-label="Parent category"
                 value={draft.parentId ?? ''}
                 onChange={(event) => setDraft((current) => ({ ...current, parentId: event.target.value || null }))}
-                className="h-11 w-full rounded-pill border border-input bg-background px-4 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                className="h-11 w-full rounded-pill border border-input bg-background px-4 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="">No parent</option>
                 {categories

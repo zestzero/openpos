@@ -16,7 +16,7 @@ export function CategoryTable({ categories, reorderBusy = false, onCreateCategor
     <Card className="overflow-hidden border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
-          <h2 className="text-xl font-semibold">Categories</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
           <p className="text-sm text-muted-foreground">Create and edit the category list used by products and POS navigation.</p>
         </div>
 

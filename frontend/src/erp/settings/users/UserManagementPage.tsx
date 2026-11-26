@@ -50,7 +50,7 @@ export function UserManagementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">User Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">Create owner and cashier accounts, then control access without leaving Settings.</p>
         </div>
         <Button onClick={handleCreate}>
@@ -77,7 +77,7 @@ export function UserManagementPage() {
           {searchQuery ? 'No users match your search.' : 'No users found.'}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-card border border-border">
+        <div className="overflow-hidden rounded-card border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -91,7 +91,14 @@ export function UserManagementPage() {
             <tbody>
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                  <td className="px-4 py-3 font-medium">{user.name}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <span className="flex items-center gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-foreground text-sm font-bold text-accent" aria-hidden="true">
+                        {initials(user.name)}
+                      </span>
+                      {user.name}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                   <td className="px-4 py-3">
                     <Badge variant={user.role === 'owner' ? 'default' : 'secondary'}>
@@ -133,4 +140,10 @@ export function UserManagementPage() {
       />
     </div>
   )
+}
+
+function initials(userName: string) {
+  const parts = userName.trim().split(/\s+/).filter(Boolean)
+  const letters = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '')
+  return letters.join('') || 'U'
 }

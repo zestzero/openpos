@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { ChevronDown, LogOut, ScanLine, Search, Sparkles } from "lucide-react";
+import { LogOut, ScanLine, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -11,54 +11,40 @@ export function ErpLayout({ children }: { children: ReactNode }) {
   const { logout } = useAuth();
 
   return (
-    <div className="flex min-h-dvh bg-background text-foreground">
+    <div className="flex min-h-dvh flex-col bg-background text-foreground md:flex-row">
       <ErpNav />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-sm">
-          <div className="flex flex-col gap-4 px-6 py-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                  <Sparkles className="h-3.5 w-3.5 text-brand" />
-                  Desktop ERP
-                </div>
-                <div className="flex items-center gap-2 text-lg font-semibold">
-                  <span>Management shell</span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
+        <header className="px-4 pb-2 pt-5 md:px-8 md:pt-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-muted-foreground">OpenPOS ERP</p>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">Management shell</h1>
+            </div>
 
-              <div className="flex items-center gap-3">
-                <div className="relative hidden min-w-72 lg:block">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    className="h-10 rounded-pill pl-9"
-                    placeholder="Search products, variants, reports"
-                  />
-                </div>
-                <a
-                  href="/pos"
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-                >
-                  <ScanLine className="h-4 w-4" />
-                  POS
-                </a>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={logout}
-                  aria-label="Log out"
-                  title="Log out"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+            <div className="flex items-center gap-2">
+              <div className="relative hidden w-96 lg:block">
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="h-12 rounded-full pl-11"
+                  placeholder="Search products, variants, reports"
+                />
               </div>
+              <a
+                href="/pos"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
+              >
+                <ScanLine className="size-4" />
+                POS
+              </a>
+              <IconButton variant="outline" onClick={logout} label="Log out">
+                <LogOut className="size-4" />
+              </IconButton>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 bg-muted/20 px-6 py-6">{children}</main>
+        <main className="flex-1 px-4 py-4 md:px-8 md:py-6">{children}</main>
       </div>
     </div>
   );

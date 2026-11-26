@@ -319,7 +319,7 @@ export function ImportDrawer() {
         <div className="flex h-full flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle className="flex items-center gap-2 text-xl">
-              <FileSpreadsheet className="h-5 w-5 text-brand" />
+              <FileSpreadsheet className="h-5 w-5 text-foreground" />
               Spreadsheet import
             </DialogTitle>
             <DialogDescription>

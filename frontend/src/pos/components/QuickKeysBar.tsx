@@ -33,11 +33,11 @@ export function QuickKeysBar({ onAdded }: QuickKeysBarProps) {
         <Button
           key={item.variantId}
           variant="outline"
-          className="min-h-16 flex-col items-start justify-center gap-1 rounded-xl px-3 text-left"
+          className="min-h-16 flex-col items-start justify-center gap-1 rounded-card px-4 text-left"
           onClick={() => handleQuickAdd(item)}
         >
           <span className="w-full truncate text-base font-semibold">{item.productName}</span>
-          <span className="text-base font-bold tabular-nums text-primary">{formatCurrency(item.price)}</span>
+          <span className="text-base font-bold tabular-nums text-foreground">{formatCurrency(item.price)}</span>
         </Button>
       ))}
     </div>
