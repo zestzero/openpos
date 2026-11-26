@@ -27,7 +27,7 @@ const emptyVariant = (): VariantFormValues => ({
 })
 
 const controlBaseClass =
-  'w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+  'w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
 const selectClassName = `${controlBaseClass} h-11`
 const textareaClassName = `${controlBaseClass} min-h-24 resize-y`
@@ -139,7 +139,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     aria-label="Upload image: click or drag and drop"
                     aria-busy={isUploading}
                     className={[
-                      'group relative flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                      'group relative flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       isDragging ? 'border-brand bg-brand/5' : 'border-border bg-muted/10 hover:bg-muted/30',
                       isUploading ? 'pointer-events-none opacity-70' : '',
                     ].join(' ')}
@@ -217,7 +217,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                       <button
                         type="button"
                         aria-label="Remove image"
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         onClick={() => setDraft((current) => ({ ...current, imageUrl: '' }))}
                       >
                         <X className="h-4 w-4" />

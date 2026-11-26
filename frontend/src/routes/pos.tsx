@@ -97,7 +97,7 @@ export function PosRoute() {
   return (
     <PosLayout
       bottomAction={itemCount > 0 ? (
-        <Button className="h-16 w-full justify-between rounded-xl px-5 text-lg font-bold" onClick={() => startReview()}>
+        <Button className="h-16 w-full justify-between rounded-full px-5 text-lg font-bold" onClick={() => startReview()}>
           <span>{posCopy.viewOrder} · {itemCount}</span>
           <span className="tabular-nums">{formatCurrency(total)}</span>
         </Button>
@@ -109,7 +109,7 @@ export function PosRoute() {
             <div className="min-w-0 flex-1"><SearchBar onAdded={showAdded} /></div>
             <Button
               variant="outline"
-              className="size-14 shrink-0 rounded-xl"
+              className="size-14 shrink-0 rounded-full"
               onClick={() => setScannerOpen(true)}
               aria-label={posCopy.scanCamera}
             >

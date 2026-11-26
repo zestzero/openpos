@@ -22,7 +22,7 @@ export function PosLayout({ children, bottomAction }: PosLayoutProps) {
         {children}
       </main>
       {bottomAction ? (
-        <div className="safe-area-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background px-4 pt-3">
+        <div className="safe-area-bottom fixed inset-x-0 bottom-0 z-20 bg-background px-4 pt-3">
           <div className="mx-auto w-full max-w-2xl">{bottomAction}</div>
         </div>
       ) : null}

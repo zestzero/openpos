@@ -185,16 +185,16 @@ export function CartPanel() {
             ) : null}
           </div>
           {session.receipt.payment_method === 'cash' ? (
-            <div className="w-full border-y border-border py-6">
-              <p className="text-lg font-semibold text-muted-foreground">{posCopy.changeDue}</p>
-              <p className="mt-2 text-5xl font-black tabular-nums text-foreground">{formatCurrency(session.receipt.change_due)}</p>
+            <div className="w-full rounded-card bg-accent px-6 py-6 text-accent-foreground">
+              <p className="text-lg font-semibold">{posCopy.changeDue}</p>
+              <p className="mt-2 text-5xl font-black tabular-nums">{formatCurrency(session.receipt.change_due)}</p>
             </div>
           ) : (
             <p className="text-4xl font-black tabular-nums">{formatCurrency(session.receipt.total_amount)}</p>
           )}
           <div className="flex w-full flex-col gap-3">
-            <Button className="h-16 w-full rounded-xl text-lg font-bold" onClick={startNextSale}>{posCopy.nextSale}</Button>
-            <Button variant="outline" className="h-14 w-full rounded-xl text-lg" onClick={() => void printReceipt(session.receipt!)}>
+            <Button className="h-16 w-full rounded-full text-lg font-bold" onClick={startNextSale}>{posCopy.nextSale}</Button>
+            <Button variant="outline" className="h-14 w-full rounded-full text-lg" onClick={() => void printReceipt(session.receipt!)}>
               <ReceiptText data-icon="inline-start" />
               {posCopy.printAgain}
             </Button>
@@ -221,10 +221,10 @@ export function CartPanel() {
           </div>
 
           <div className="grid grid-cols-2 gap-3" aria-label={posCopy.payment}>
-            <Button variant={session.paymentMethod === 'cash' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg" onClick={() => setPaymentMethod('cash')}>
+            <Button variant={session.paymentMethod === 'cash' ? 'default' : 'outline'} className="h-16 rounded-full text-lg" onClick={() => setPaymentMethod('cash')}>
               <Banknote data-icon="inline-start" />{posCopy.cash}
             </Button>
-            <Button variant={session.paymentMethod === 'promptpay' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg" onClick={() => setPaymentMethod('promptpay')}>
+            <Button variant={session.paymentMethod === 'promptpay' ? 'default' : 'outline'} className="h-16 rounded-full text-lg" onClick={() => setPaymentMethod('promptpay')}>
               <QrCode data-icon="inline-start" />{posCopy.qr}
             </Button>
           </div>
@@ -233,7 +233,7 @@ export function CartPanel() {
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-2">
                 {shortcuts.map((amount, index) => (
-                  <Button key={amount} variant="outline" className="h-14 rounded-xl text-lg font-bold" onClick={() => {
+                  <Button key={amount} variant="outline" className="h-14 rounded-full text-lg font-bold" onClick={() => {
                     setTenderedInput(toTHBInput(amount))
                     updateSession({ tenderedAmount: amount })
                   }}>
@@ -253,10 +253,10 @@ export function CartPanel() {
                     setTenderedInput(event.target.value)
                     updateSession({ tenderedAmount: parseTHB(event.target.value) })
                   }}
-                  className="h-14 rounded-xl text-right text-xl font-bold"
+                  className="h-14 rounded-full text-right text-xl font-bold"
                 />
               </label>
-              <div className="rounded-xl bg-success-soft p-4 text-success-foreground">
+              <div className="rounded-card bg-accent p-5 text-accent-foreground">
                 <p className="text-lg font-semibold">{posCopy.changeDue}</p>
                 <p className="mt-1 text-4xl font-black tabular-nums">{formatCurrency(Math.max(tenderedAmount - grandTotal, 0))}</p>
               </div>
@@ -271,7 +271,7 @@ export function CartPanel() {
 
           {submitError ? <p role="alert" className="rounded-xl bg-destructive-soft p-4 text-base font-semibold text-destructive-foreground">{submitError}</p> : null}
           <Button
-            className="h-16 w-full rounded-xl text-lg font-bold"
+            className="h-16 w-full rounded-full text-lg font-bold"
             disabled={!canComplete || isSubmitting || (session.paymentMethod === 'promptpay' && !qrDataUrl)}
             onClick={() => void completeSale()}
           >
@@ -284,7 +284,7 @@ export function CartPanel() {
 
   return (
     <PosLayout bottomAction={!isEmpty ? (
-      <Button className="h-16 w-full rounded-xl text-lg font-bold" onClick={goToPayment}>{posCopy.continuePayment}</Button>
+      <Button className="h-16 w-full rounded-full text-lg font-bold" onClick={goToPayment}>{posCopy.continuePayment}</Button>
     ) : null}>
       <div className="flex flex-col gap-5">
         <div className="flex items-center justify-between gap-3">

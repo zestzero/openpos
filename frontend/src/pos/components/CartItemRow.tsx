@@ -24,11 +24,11 @@ export function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowPro
       </div>
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <Button size="icon" variant="outline" className="size-12 rounded-xl" onClick={() => onUpdateQuantity(item.variantId, item.quantity - 1)} aria-label={`${posCopy.decrease}: ${item.productName}`}>
+          <Button size="icon" variant="outline" className="size-12 rounded-full" onClick={() => onUpdateQuantity(item.variantId, item.quantity - 1)} aria-label={`${posCopy.decrease}: ${item.productName}`}>
             <Minus aria-hidden="true" />
           </Button>
           <span className="min-w-10 text-center text-xl font-bold tabular-nums">{item.quantity}</span>
-          <Button size="icon" variant="outline" className="size-12 rounded-xl" onClick={() => onUpdateQuantity(item.variantId, item.quantity + 1)} aria-label={`${posCopy.increase}: ${item.productName}`}>
+          <Button size="icon" variant="outline" className="size-12 rounded-full" onClick={() => onUpdateQuantity(item.variantId, item.quantity + 1)} aria-label={`${posCopy.increase}: ${item.productName}`}>
             <Plus aria-hidden="true" />
           </Button>
         </div>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { Button } from '@/components/ui/button'
+import { Chip } from '@/components/ui/chip'
 import { api, type Category } from '@/lib/api'
 import { posCopy } from '@/pos/lib/copy'
 
@@ -24,14 +25,13 @@ export function CatalogCategoryNav({ selectedCategory, onSelectCategory }: Catal
   if (error) return null
 
   const categoryButton = (id: string | null, label: string) => (
-    <Button
+    <Chip
       key={id ?? 'all'}
-      variant={selectedCategory === id ? 'default' : 'outline'}
-      className="min-h-12 rounded-xl px-4 text-base"
+      active={selectedCategory === id}
       onClick={() => onSelectCategory(id)}
     >
       {label}
-    </Button>
+    </Chip>
   )
 
   return (

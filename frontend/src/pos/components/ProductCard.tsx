@@ -39,7 +39,7 @@ export function ProductCard({ product, onAdded }: ProductCardProps) {
       <button
         type="button"
         onClick={handleProductClick}
-        className="flex min-h-36 w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-left outline-none transition-colors active:bg-accent focus-visible:ring-3 focus-visible:ring-ring/40"
+        className="flex min-h-36 w-full flex-col overflow-hidden rounded-card border border-border bg-card text-left outline-none transition-colors active:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40"
         aria-label={`${product.product.name}, ${formatCurrency(activeVariants[0].price)}`}
       >
         {product.product.image_url ? (
@@ -49,7 +49,7 @@ export function ProductCard({ product, onAdded }: ProductCardProps) {
         )}
         <span className="flex w-full flex-1 flex-col justify-between gap-2 p-3">
           <span className="line-clamp-2 text-lg font-bold leading-6 text-foreground">{product.product.name}</span>
-          <span className="text-lg font-bold tabular-nums text-primary">{formatCurrency(activeVariants[0].price)}</span>
+          <span className="text-lg font-bold tabular-nums text-foreground">{formatCurrency(activeVariants[0].price)}</span>
         </span>
       </button>
 

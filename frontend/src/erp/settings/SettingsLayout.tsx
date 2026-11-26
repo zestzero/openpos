@@ -1,7 +1,6 @@
 import { type ReactNode } from 'react'
 import { FolderCog, Users, type LucideIcon } from 'lucide-react'
 
-import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface SettingsNavItem {
@@ -18,10 +17,10 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
 
   return (
-    <div className="flex h-full gap-6">
-      <aside className="w-56 shrink-0 space-y-1">
-        <div className="mb-4 flex items-center gap-2 px-3 text-sm font-medium text-muted-foreground">
-          <FolderCog className="h-4 w-4" />
+    <div className="flex h-full flex-col gap-6 md:flex-row">
+      <aside className="flex shrink-0 flex-row gap-2 overflow-x-auto md:w-56 md:flex-col">
+        <div className="mb-1 flex items-center gap-2 px-3 text-sm font-semibold text-muted-foreground md:mb-3">
+          <FolderCog className="size-4" />
           Settings
         </div>
         {settingsNavItems.map((item) => {
@@ -33,11 +32,11 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
               key={item.label}
               href={item.to}
               className={cn(
-                buttonVariants({ variant: isActive ? 'secondary' : 'ghost' }),
-                'h-10 w-full justify-start gap-3 rounded-card px-3',
+                'inline-flex min-h-12 items-center gap-2 rounded-full px-4 text-sm font-semibold',
+                isActive ? 'bg-foreground text-accent' : 'bg-card text-foreground hover:bg-muted',
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="size-4" />
               {item.label}
             </a>
           )

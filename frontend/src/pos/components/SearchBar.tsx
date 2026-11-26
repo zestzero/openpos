@@ -65,7 +65,7 @@ export function SearchBar({ onAdded }: SearchBarProps) {
           placeholder={posCopy.searchPlaceholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-14 rounded-xl border-border bg-card pl-12 pr-4 text-lg placeholder:text-muted-foreground focus-visible:ring-ring"
+          className="h-14 rounded-full border-border bg-card pl-12 pr-4 text-lg placeholder:text-muted-foreground focus-visible:ring-ring"
           aria-label="Search products"
         />
       </form>
