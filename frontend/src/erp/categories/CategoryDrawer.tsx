@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { FormSelect } from '@/components/ui/form-select'
 import { Input } from '@/components/ui/input'
 import type { CatalogCategory, CategoryFormValues } from '@/lib/erp-api'
 import { normalizeCategoryDraft } from '@/lib/erp-api'
@@ -16,6 +17,7 @@ type CategoryDrawerProps = {
 
 export function CategoryDrawer({ open, category, categories, onOpenChange, onSave }: CategoryDrawerProps) {
   const [draft, setDraft] = useState<CategoryFormValues>(() => normalizeCategoryDraft(category))
+  const dialogContentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -27,7 +29,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(90vh,640px)] w-[calc(100vw-2rem)] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:rounded-card">
+      <DialogContent ref={dialogContentRef} className="flex max-h-[min(90vh,640px)] w-[calc(100vw-2rem)] max-w-xl flex-col gap-0 overflow-hidden p-0 sm:rounded-card">
         <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle>{title}</DialogTitle>
@@ -56,21 +58,16 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
             </Field>
 
             <Field label="Parent category">
-              <select
-                aria-label="Parent category"
-                value={draft.parentId ?? ''}
-                onChange={(event) => setDraft((current) => ({ ...current, parentId: event.target.value || null }))}
-                className="h-11 w-full rounded-pill border border-input bg-background px-4 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">No parent</option>
-                {categories
+              <FormSelect
+                portalContainer={dialogContentRef}
+                value={draft.parentId}
+                onValueChange={(parentId) => setDraft((current) => ({ ...current, parentId }))}
+                options={categories
                   .filter((item) => item.id !== category?.id)
-                  .map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-              </select>
+                  .map((item) => ({ value: item.id, label: item.name }))}
+                emptyOption={{ label: 'No parent' }}
+                className="h-11 bg-background"
+              />
             </Field>
 
             <DialogFooter className="border-t border-border px-0 py-5">

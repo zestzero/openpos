@@ -27,12 +27,17 @@ function SelectValue(props: React.ComponentProps<typeof SelectPrimitive.Value>) 
   return <SelectPrimitive.Value {...props} />
 }
 
-function SelectContent({ className, children, ...props }: React.ComponentProps<typeof SelectPrimitive.Popup>) {
+type SelectContentProps = React.ComponentProps<typeof SelectPrimitive.Popup> & {
+  portalContainer?: React.ComponentProps<typeof SelectPrimitive.Portal>['container']
+}
+
+function SelectContent({ className, children, portalContainer, style, ...props }: SelectContentProps) {
   return (
-    <SelectPrimitive.Portal>
-      <SelectPrimitive.Positioner>
+    <SelectPrimitive.Portal container={portalContainer}>
+      <SelectPrimitive.Positioner alignItemWithTrigger={false}>
         <SelectPrimitive.Popup
           className={cn('z-50 min-w-[8rem] overflow-hidden rounded-card border border-border bg-popover p-1 text-popover-foreground shadow-dialog', className)}
+          style={{ minWidth: 'var(--anchor-width)', ...style }}
           {...props}
         >
           <SelectPrimitive.List>
