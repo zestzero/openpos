@@ -116,7 +116,12 @@ describe('ERP import workflow', () => {
       />,
     )
 
-    fireEvent.change(screen.getByLabelText('Parent category'), { target: { value: 'cat-2' } })
+    fireEvent.click(screen.getByRole('combobox', { name: 'Parent category' }))
+    const parentOption = screen.getByRole('option', { name: 'Coffee' })
+    fireEvent.mouseMove(parentOption)
+    fireEvent.pointerEnter(parentOption, { pointerType: 'mouse' })
+    fireEvent.pointerDown(parentOption, { pointerType: 'mouse', button: 0 })
+    fireEvent.click(parentOption)
     fireEvent.click(screen.getByRole('button', { name: 'Save category' }))
 
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ parentId: 'cat-2' }))
