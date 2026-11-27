@@ -57,6 +57,14 @@ function makeCategory(id: string, name: string) {
   }
 }
 
+function selectOption(name: string) {
+  const option = screen.getByRole('option', { name })
+  fireEvent.mouseMove(option)
+  fireEvent.pointerEnter(option, { pointerType: 'mouse' })
+  fireEvent.pointerDown(option, { pointerType: 'mouse', button: 0 })
+  fireEvent.click(option)
+}
+
 function makeProductRecord() {
   return {
     product: {
@@ -190,6 +198,70 @@ describe('ERP catalog management', () => {
     expect(screen.getByLabelText('Image URL')).toBeInTheDocument()
     expect(screen.getByText('Variant 1')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add variant' })).toBeInTheDocument()
+    const categoryTrigger = screen.getByRole('combobox', { name: 'Category' })
+    fireEvent.click(categoryTrigger)
+    expect(categoryTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('option', { name: 'Tea' }).closest('[role="dialog"]')).toBe(screen.getByRole('dialog'))
+    const saveButton = screen.getByRole('button', { name: 'Save product' })
+    const scrollArea = saveButton.closest('form')?.querySelector('.overflow-y-auto')
+    expect(scrollArea).not.toContainElement(saveButton)
+  })
+
+  it('keeps focus in the SKU field while typing', () => {
+    render(
+      <ProductDrawer
+        open
+        categories={[]}
+        onOpenChange={() => undefined}
+        onSave={() => undefined}
+      />,
+    )
+
+    const skuInput = screen.getByLabelText('SKU')
+    skuInput.focus()
+    fireEvent.change(skuInput, { target: { value: 'A' } })
+
+    expect(screen.getByLabelText('SKU')).toBe(skuInput)
+    expect(document.activeElement).toBe(skuInput)
+  })
+
+  it('preserves nullable product and parent category choices', () => {
+    const onSaveProduct = vi.fn()
+    const onSaveCategory = vi.fn()
+    const productView = render(
+      <div>
+        <ProductDrawer
+          open
+          categories={[makeCategory('cat-1', 'Tea')]}
+          onOpenChange={() => undefined}
+          onSave={onSaveProduct}
+        />
+      </div>,
+    )
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Category' }))
+    selectOption('Tea')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Category' }))
+    selectOption('No category')
+    fireEvent.click(screen.getByRole('button', { name: 'Save product' }))
+    expect(onSaveProduct).toHaveBeenCalledWith(expect.objectContaining({ categoryId: null }))
+
+    productView.unmount()
+    render(
+      <CategoryDrawer
+        open
+        categories={[makeCategory('cat-1', 'Tea')]}
+        onOpenChange={() => undefined}
+        onSave={onSaveCategory}
+      />,
+    )
+    fireEvent.click(screen.getByRole('combobox', { name: 'Parent category' }))
+    expect(screen.getByRole('option', { name: 'Tea' }).closest('[role="dialog"]')).toBe(screen.getByRole('dialog'))
+    selectOption('Tea')
+    fireEvent.click(screen.getByRole('combobox', { name: 'Parent category' }))
+    selectOption('No parent')
+    fireEvent.click(screen.getByRole('button', { name: 'Save category' }))
+    expect(onSaveCategory).toHaveBeenCalledWith(expect.objectContaining({ parentId: null }))
   })
 
   it('uses the shared compact green switch treatment for product and variant active controls', () => {
@@ -249,6 +321,22 @@ describe('ERP catalog management', () => {
     )
   })
 
+  it('excludes the edited category from parent options', () => {
+    render(
+      <CategoryDrawer
+        open
+        category={makeCategory('cat-1', 'Tea')}
+        categories={[makeCategory('cat-1', 'Tea'), makeCategory('cat-2', 'Coffee')]}
+        onOpenChange={() => undefined}
+        onSave={() => undefined}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Parent category' }))
+    expect(screen.getByRole('option', { name: 'Coffee' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: 'Tea' })).not.toBeInTheDocument()
+  })
+
   it('renders the category drawer with parent category controls', () => {
     render(
         <CategoryDrawer
@@ -263,7 +351,10 @@ describe('ERP catalog management', () => {
     )
 
     expect(screen.getByText('Create category')).toBeInTheDocument()
-    expect(screen.getByLabelText('Parent category')).toBeInTheDocument()
+    const parentCategoryTrigger = screen.getByRole('combobox', { name: 'Parent category' })
+    fireEvent.click(parentCategoryTrigger)
+    expect(parentCategoryTrigger).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('option', { name: 'Tea' }).closest('[role="dialog"]')).toBe(screen.getByRole('dialog'))
     expect(screen.getByLabelText('Description')).toBeInTheDocument()
   })
 

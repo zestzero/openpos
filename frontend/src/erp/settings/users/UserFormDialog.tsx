@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 
+import { FormSelect } from '@/components/ui/form-select'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -27,6 +28,7 @@ interface UserFormDialogProps {
 export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
   const createMutation = useCreateUserMutation()
   const updateMutation = useUpdateUserMutation()
+  const dialogContentRef = useRef<HTMLDivElement>(null)
   const isEditing = user !== null
 
   const [name, setName] = useState('')
@@ -98,7 +100,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent ref={dialogContentRef}>
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit User' : 'Add User'}</DialogTitle>
         </DialogHeader>
@@ -115,16 +117,18 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <select
-              id="role"
+            <Label id="role-label" htmlFor="role">Role</Label>
+            <FormSelect
+              portalContainer={dialogContentRef}
+              aria-labelledby="role-label"
               value={role}
-              onChange={(event) => setRole(event.target.value as 'owner' | 'cashier')}
-              className="flex h-10 w-full rounded-card border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <option value="owner">Owner</option>
-              <option value="cashier">Cashier</option>
-            </select>
+              onValueChange={(value) => value !== null && setRole(value as 'owner' | 'cashier')}
+              options={[
+                { value: 'owner', label: 'Owner' },
+                { value: 'cashier', label: 'Cashier' },
+              ]}
+              className="h-10 rounded-card bg-background px-3 text-sm"
+            />
           </div>
 
           {!isEditing && role === 'owner' ? (

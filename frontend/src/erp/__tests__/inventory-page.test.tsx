@@ -28,6 +28,14 @@ const productRecords = [
   },
 ]
 
+function selectOption(name: string) {
+  const option = screen.getByRole('option', { name })
+  fireEvent.mouseMove(option)
+  fireEvent.pointerEnter(option, { pointerType: 'mouse' })
+  fireEvent.pointerDown(option, { pointerType: 'mouse', button: 0 })
+  fireEvent.click(option)
+}
+
 describe('InventoryPage', () => {
   beforeEach(() => {
     useProductsQuery.mockReturnValue({ data: productRecords, isLoading: false, isError: false })
@@ -88,5 +96,49 @@ describe('InventoryPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save adjustment' }))
 
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ variantId: 'var-1', quantity: 1, reason: 'ADJUSTMENT' }))
+  })
+
+  it('preserves inventory dropdown labels, values, and adjustment reason behavior', async () => {
+    const mutateAsync = vi.fn().mockResolvedValue({})
+    useAdjustStockMutation.mockReturnValue({ isPending: false, mutateAsync })
+    render(<InventoryPage />)
+
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
+    const stockFilter = screen.getByRole('combobox', { name: 'Stock state filter' })
+    const reason = screen.getByRole('combobox', { name: 'Reason code' })
+    const ledgerReason = screen.getByRole('combobox', { name: 'Ledger reason filter' })
+    const ledgerTime = screen.getByRole('combobox', { name: 'Ledger time range' })
+
+    expect(stockFilter).toHaveTextContent('All stock states')
+    expect(reason).toHaveTextContent('Adjustment')
+    expect(ledgerReason).toHaveTextContent('All reasons')
+    fireEvent.click(stockFilter)
+    selectOption('Low stock')
+    expect(screen.getByText('0 of 2 variants')).toBeInTheDocument()
+    fireEvent.click(stockFilter)
+    selectOption('All stock states')
+
+    fireEvent.click(ledgerReason)
+    selectOption('Restock')
+    fireEvent.click(ledgerTime)
+    selectOption('Last 24 hours')
+    fireEvent.click(screen.getByRole('button', { name: 'Clear ledger filters' }))
+    expect(ledgerReason).toHaveTextContent('All reasons')
+    expect(ledgerTime).toHaveTextContent('All time')
+
+    fireEvent.click(reason)
+    selectOption('Damage')
+    expect(reason).toHaveTextContent('Damage')
+    fireEvent.click(screen.getByRole('button', { name: 'Save adjustment' }))
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ variantId: 'var-1', quantity: 1, reason: 'DAMAGE' }))
+
+  })
+
+  it('disables the adjustment reason while a stock mutation is pending', async () => {
+    useAdjustStockMutation.mockReturnValue({ isPending: true, mutateAsync: vi.fn() })
+    render(<InventoryPage />)
+
+    await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
+    expect(screen.getByRole('combobox', { name: 'Reason code' })).toBeDisabled()
   })
 })
