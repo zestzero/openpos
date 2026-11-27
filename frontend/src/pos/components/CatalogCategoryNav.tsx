@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { api, type Category } from '@/lib/api'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface CatalogCategoryNavProps {
   selectedCategory: string | null
@@ -12,6 +12,7 @@ interface CatalogCategoryNavProps {
 }
 
 export function CatalogCategoryNav({ selectedCategory, onSelectCategory }: CatalogCategoryNavProps) {
+  const posCopy = usePosCopy()
   const [expanded, setExpanded] = useState(false)
   const { data, isLoading, error } = useQuery({
     queryKey: ['categories'],
@@ -21,7 +22,7 @@ export function CatalogCategoryNav({ selectedCategory, onSelectCategory }: Catal
   const categories: Category[] = data ?? []
   const visibleCategories = expanded ? categories : categories.slice(0, 4)
 
-  if (isLoading) return <div className="h-12 rounded-xl bg-muted" aria-label="Loading categories" />
+  if (isLoading) return <div className="h-12 rounded-xl bg-muted" aria-label={posCopy.loadingCategories} />
   if (error) return null
 
   const categoryButton = (id: string | null, label: string) => (
@@ -35,7 +36,7 @@ export function CatalogCategoryNav({ selectedCategory, onSelectCategory }: Catal
   )
 
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Product categories">
+    <nav className="flex flex-wrap gap-2" aria-label={posCopy.productCategories}>
       {categoryButton(null, posCopy.allItems)}
       {visibleCategories.map((category) => categoryButton(category.id, category.name))}
       {categories.length > 4 ? (

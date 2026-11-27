@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { Toaster } from 'sonner'
 
+import { I18nProvider } from '@/lib/i18n'
 import { routeTree } from './routeTree.gen'
 import './app.css'
 
@@ -32,7 +33,9 @@ if ('serviceWorker' in navigator) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
       <Toaster richColors position="top-right" />
     </QueryClientProvider>
   </StrictMode>,

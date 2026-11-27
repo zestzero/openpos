@@ -6,20 +6,25 @@ import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { Input } from '@/components/ui/input'
 import { useAdjustStockMutation, useInventoryLedgerQuery, useInventoryStockLevelQuery, useProductsQuery, type InventoryReasonCode } from '@/lib/erp-api'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 
-const reasonOptions: { value: InventoryReasonCode; label: string }[] = [
-  { value: 'RESTOCK', label: 'Restock' },
-  { value: 'ADJUSTMENT', label: 'Adjustment' },
-  { value: 'RETURN', label: 'Return' },
-  { value: 'DAMAGE', label: 'Damage' },
-  { value: 'LOST', label: 'Lost' },
-]
 
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+function formatDate(value: string, locale: 'th' | 'en') {
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
 export function InventoryPage() {
+  const { locale, t } = useI18n()
+  const reasonKeys: Record<InventoryReasonCode, TranslationKey> = {
+    RESTOCK: 'erp.reason.restock',
+    ADJUSTMENT: 'erp.reason.adjustment',
+    SALE: 'erp.reason.sale',
+    RETURN: 'erp.reason.return',
+    DAMAGE: 'erp.reason.damage',
+    LOST: 'erp.reason.lost',
+  }
+  const editableReasons: InventoryReasonCode[] = ['RESTOCK', 'ADJUSTMENT', 'RETURN', 'DAMAGE', 'LOST']
+  const reasonOptions: { value: InventoryReasonCode; label: string }[] = editableReasons.map((value) => ({ value, label: t(reasonKeys[value]) }))
   const productsQuery = useProductsQuery()
   const { data: products = [], isLoading: productsLoading, isError: productsError, error: productsQueryError } = productsQuery
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
@@ -33,8 +38,8 @@ export function InventoryPage() {
   const variants = useMemo(() => products.flatMap((record) => record.variants.map((variant) => ({
     ...variant,
     productName: record.product.name,
-    categoryName: record.category?.name ?? 'Uncategorized',
-  }))), [products])
+    categoryName: record.category?.name ?? t('erp.uncategorized'),
+  }))), [products, t])
 
   const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? null
   const stockQuery = useInventoryStockLevelQuery(selectedVariantId)
@@ -78,11 +83,11 @@ export function InventoryPage() {
     if (!selectedVariantId) return
     const parsed = Number(quantity)
     if (!Number.isInteger(parsed) || parsed === 0) {
-      toast.error('Enter a whole number quantity.')
+      toast.error(t('erp.enterQuantity'))
       return
     }
     await adjustStockMutation.mutateAsync({ variantId: selectedVariantId, quantity: parsed, reason })
-    toast.success('Inventory adjustment saved')
+    toast.success(t('erp.adjustmentSaved'))
     setQuantity('1')
   }
 
@@ -90,48 +95,48 @@ export function InventoryPage() {
     <div className="space-y-6">
       <section>
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-muted-foreground">Inventory</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Stock levels and ledger</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">Review stock by variant, inspect movement history, and record manual adjustments with a required reason code.</p>
+          <p className="text-sm font-semibold text-muted-foreground">{t('erp.inventory')}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('erp.stockLevels')}</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">{t('erp.inventoryDescription')}</p>
         </div>
       </section>
 
       {productsLoading ? (
         <section className="rounded-card border border-border bg-card p-5">
-          <p className="text-sm text-muted-foreground">Loading inventory…</p>
+          <p className="text-sm text-muted-foreground">{t('erp.loadingInventory')}</p>
         </section>
       ) : productsError ? (
         <section className="rounded-card border border-border bg-card p-5">
-          <p className="text-sm text-destructive">Failed to load inventory. {(productsQueryError as Error | null)?.message ?? 'Please try again.'}</p>
+          <p className="text-sm text-destructive">{t('erp.inventoryLoadFailed')} {(productsQueryError as Error | null)?.message ?? t('common.retry')}</p>
         </section>
       ) : variants.length === 0 ? (
         <section className="rounded-card border border-border bg-card p-5">
-          <p className="text-sm text-muted-foreground">No stocked variants are available yet.</p>
+          <p className="text-sm text-muted-foreground">{t('erp.noStockedVariants')}</p>
         </section>
       ) : (
         <>
           <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
             <div className="rounded-card border border-border bg-card p-5">
               <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">Variant stock</h2>
-                <p className="text-sm text-muted-foreground">{filteredVariants.length} of {variants.length} variants</p>
+                <h2 className="text-lg font-semibold">{t('erp.variantStock')}</h2>
+                <p className="text-sm text-muted-foreground">{t('erp.variantsCount', { visible: filteredVariants.length, total: variants.length })}</p>
               </div>
               <div className="mb-4 grid gap-3 md:grid-cols-3">
-                <Input aria-label="Search variants" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder="Search variant, SKU, category" />
+                <Input aria-label={t('erp.searchVariantsAria')} value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder={t('erp.searchVariants')} />
                 <FormSelect
-                  aria-label="Stock state filter"
+                  aria-label={t('erp.stockStateFilter')}
                   className="h-12 rounded-full bg-card px-4 text-base"
                   value={stockFilter}
                   onValueChange={(value) => value !== null && setStockFilter(value as typeof stockFilter)}
                   options={[
-                    { value: 'all', label: 'All stock states' },
-                    { value: 'low', label: 'Low stock' },
-                    { value: 'zero', label: 'Zero stock' },
+                    { value: 'all', label: t('erp.allStockStates') },
+                    { value: 'low', label: t('erp.lowStock') },
+                    { value: 'zero', label: t('erp.zeroStock') },
                   ]}
                 />
                 <div className="flex flex-wrap gap-2">
-                  <Chip type="button" active={stockFilter === 'low'} onClick={() => setStockFilter('low')}>Low stock ({lowStockCount})</Chip>
-                  <Chip type="button" active={stockFilter === 'zero'} onClick={() => setStockFilter('zero')}>Zero stock ({zeroStockCount})</Chip>
+                  <Chip type="button" active={stockFilter === 'low'} onClick={() => setStockFilter('low')}>{t('erp.lowStock')} ({lowStockCount})</Chip>
+                  <Chip type="button" active={stockFilter === 'zero'} onClick={() => setStockFilter('zero')}>{t('erp.zeroStock')} ({zeroStockCount})</Chip>
                 </div>
               </div>
               <div className="space-y-3">
@@ -152,49 +157,49 @@ export function InventoryPage() {
                           <p className="text-sm text-muted-foreground">{variant.productName} · {variant.categoryName} · {variant.sku}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-muted-foreground">Stock</p>
+                          <p className="text-sm text-muted-foreground">{t('erp.stock')}</p>
                           <p className={`text-lg font-semibold ${stockTone(displayStockLevel)}`}>
-                            {formatStockValue(displayStockLevel)}
+                            {formatStockValue(displayStockLevel, t)}
                           </p>
-                          {stockStatusLabel(displayStockLevel)}
+                          {stockStatusLabel(displayStockLevel, t)}
                         </div>
                       </div>
                     </button>
                   )
                 })}
-                {filteredVariants.length === 0 ? <p className="text-sm text-muted-foreground">No variants match the current filters.</p> : null}
+                {filteredVariants.length === 0 ? <p className="text-sm text-muted-foreground">{t('erp.noVariantsMatch')}</p> : null}
               </div>
             </div>
 
             <div className="space-y-4">
               <section className="rounded-card border border-border bg-card p-5">
-                <h2 className="text-lg font-semibold">Selected variant</h2>
+                <h2 className="text-lg font-semibold">{t('erp.selectedVariant')}</h2>
                 {selectedVariant ? (
                   <div className="mt-3 space-y-2 text-sm text-muted-foreground">
                     <p className="text-foreground">{selectedVariant.name}</p>
                     <p>{selectedVariant.productName}</p>
                     <p>{selectedVariant.sku}</p>
                     <p>
-                      Current stock:{' '}
-                      <span className={`font-semibold ${stockTone(currentStockLevel)}`}>{formatStockValue(currentStockLevel)}</span>
+                      {t('erp.currentStock')}:{' '}
+                      <span className={`font-semibold ${stockTone(currentStockLevel)}`}>{formatStockValue(currentStockLevel, t)}</span>
                     </p>
-                    {stockQuery.isLoading ? <p className="text-xs text-muted-foreground">Refreshing ledger-derived stock…</p> : null}
-                    {stockQuery.isError ? <p className="text-xs text-destructive">Unable to refresh Current Stock. Showing catalog value if available.</p> : null}
+                    {stockQuery.isLoading ? <p className="text-xs text-muted-foreground">{t('erp.refreshingStock')}</p> : null}
+                    {stockQuery.isError ? <p className="text-xs text-destructive">{t('erp.unableRefreshStock')}</p> : null}
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm text-muted-foreground">Choose a variant to view its ledger and adjust stock.</p>
+                  <p className="mt-3 text-sm text-muted-foreground">{t('erp.chooseVariant')}</p>
                 )}
               </section>
 
               <section className="rounded-card border border-border bg-card p-5">
-                <h2 className="text-lg font-semibold">Manual adjustment</h2>
+                <h2 className="text-lg font-semibold">{t('erp.manualAdjustment')}</h2>
                 <div className="mt-4 space-y-4">
                   <div className="space-y-2">
-                    <label htmlFor="inventory-quantity" className="text-sm font-medium">Quantity</label>
+                    <label htmlFor="inventory-quantity" className="text-sm font-medium">{t('erp.quantity')}</label>
                     <Input id="inventory-quantity" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={!selectedVariantId || adjustStockMutation.isPending} />
                   </div>
                   <div className="space-y-2">
-                    <label id="inventory-reason-label" htmlFor="inventory-reason" className="text-sm font-medium">Reason code</label>
+                    <label id="inventory-reason-label" htmlFor="inventory-reason" className="text-sm font-medium">{t('erp.reasonCode')}</label>
                     <FormSelect
                       id="inventory-reason"
                       aria-labelledby="inventory-reason-label"
@@ -205,54 +210,54 @@ export function InventoryPage() {
                       disabled={!selectedVariantId || adjustStockMutation.isPending}
                     />
                   </div>
-                  <Button onClick={submitAdjustment} disabled={!selectedVariantId || adjustStockMutation.isPending}>Save adjustment</Button>
+                  <Button onClick={submitAdjustment} disabled={!selectedVariantId || adjustStockMutation.isPending}>{t('erp.saveAdjustment')}</Button>
                 </div>
               </section>
             </div>
           </section>
 
           <section className="rounded-card border border-border bg-card p-5">
-            <h2 className="text-lg font-semibold">Ledger history</h2>
+            <h2 className="text-lg font-semibold">{t('erp.ledgerHistory')}</h2>
             {selectedVariant ? (
               <div className="mt-4 space-y-4">
                 <div className="grid gap-3 md:grid-cols-3">
                   <FormSelect
-                    aria-label="Ledger reason filter"
+                    aria-label={t('erp.ledgerReasonFilter')}
                     className="h-12 rounded-full bg-card px-4 text-base"
                     value={ledgerReasonFilter}
                     onValueChange={(value) => value !== null && setLedgerReasonFilter(value as typeof ledgerReasonFilter)}
                     options={[
-                      { value: 'all', label: 'All reasons' },
+                      { value: 'all', label: t('erp.allReasons') },
                       ...reasonOptions,
                     ]}
                   />
                   <FormSelect
-                    aria-label="Ledger time range"
+                    aria-label={t('erp.ledgerTimeRange')}
                     className="h-12 rounded-full bg-card px-4 text-base"
                     value={ledgerTimeRange}
                     onValueChange={(value) => value !== null && setLedgerTimeRange(value as typeof ledgerTimeRange)}
                     options={[
-                      { value: 'all', label: 'All time' },
-                      { value: '24h', label: 'Last 24 hours' },
-                      { value: '7d', label: 'Last 7 days' },
-                      { value: '30d', label: 'Last 30 days' },
+                      { value: 'all', label: t('erp.allTime') },
+                      { value: '24h', label: t('erp.last24Hours') },
+                      { value: '7d', label: t('erp.last7Days') },
+                      { value: '30d', label: t('erp.last30Days') },
                     ]}
                   />
-                  <Button type="button" variant="outline" onClick={() => { setLedgerReasonFilter('all'); setLedgerTimeRange('all') }}>Clear ledger filters</Button>
+                  <Button type="button" variant="outline" onClick={() => { setLedgerReasonFilter('all'); setLedgerTimeRange('all') }}>{t('erp.clearLedgerFilters')}</Button>
                 </div>
                 {(visibleLedgerEntries).map((entry) => (
                   <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium">{entry.reason}</p>
-                      <p className="text-muted-foreground">{formatDate(entry.created_at)}</p>
+                      <p className="text-muted-foreground">{formatDate(entry.created_at, locale)}</p>
                     </div>
-                    <p className="text-muted-foreground">Change: {entry.quantity_change}</p>
+                    <p className="text-muted-foreground">{t('erp.change')}: {entry.quantity_change}</p>
                   </div>
                 ))}
-                {visibleLedgerEntries.length === 0 ? <p className="text-sm text-muted-foreground">No ledger entries match the current filters.</p> : null}
+                {visibleLedgerEntries.length === 0 ? <p className="text-sm text-muted-foreground">{t('erp.noLedgerEntries')}</p> : null}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-muted-foreground">Select a variant to view its ledger.</p>
+              <p className="mt-3 text-sm text-muted-foreground">{t('erp.selectVariantLedger')}</p>
             )}
           </section>
         </>
@@ -261,8 +266,8 @@ export function InventoryPage() {
   )
 }
 
-function formatStockValue(value: number | undefined) {
-  return typeof value === 'number' ? value : 'Unknown'
+function formatStockValue(value: number | undefined, translate: (key: TranslationKey) => string) {
+  return typeof value === 'number' ? value : translate('erp.unknown')
 }
 
 function stockTone(value: number | undefined) {
@@ -272,9 +277,9 @@ function stockTone(value: number | undefined) {
   return 'text-foreground'
 }
 
-function stockStatusLabel(value: number | undefined) {
-  if (value === undefined) return <p className="text-xs font-medium text-muted-foreground">Stock not loaded</p>
-  if (value === 0) return <p className="text-xs font-medium text-destructive">Zero stock</p>
-  if (value < 10) return <p className="text-xs font-medium text-amber-600">Low stock</p>
+function stockStatusLabel(value: number | undefined, translate: (key: TranslationKey) => string) {
+  if (value === undefined) return <p className="text-xs font-medium text-muted-foreground">{translate('erp.stockNotLoaded')}</p>
+  if (value === 0) return <p className="text-xs font-medium text-destructive">{translate('erp.zeroStock')}</p>
+  if (value < 10) return <p className="text-xs font-medium text-amber-600">{translate('erp.lowStock')}</p>
   return null
 }

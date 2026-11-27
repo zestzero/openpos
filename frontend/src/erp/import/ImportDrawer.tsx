@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { importProducts, type ImportProductInput } from '@/lib/erp-api'
+import { useI18n } from '@/lib/i18n'
 
 import { generateVariantBarcode } from '../products/variantBarcode'
 
@@ -238,6 +239,7 @@ async function readFileRows(file: File) {
 }
 
 export function ImportDrawer() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState<ImportPreviewRow[]>([])
   const [fileName, setFileName] = useState('')
@@ -311,7 +313,7 @@ export function ImportDrawer() {
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <Upload className="h-4 w-4" />
-          Import CSV
+          {t('import.button')}
         </Button>
       </DialogTrigger>
 
@@ -320,27 +322,25 @@ export function ImportDrawer() {
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle className="flex items-center gap-2 text-xl">
               <FileSpreadsheet className="h-5 w-5 text-foreground" />
-              Spreadsheet import
+              {t('import.title')}
             </DialogTitle>
-            <DialogDescription>
-              Upload CSV or XLSX rows, review validation issues, then submit the validated products and variants.
-            </DialogDescription>
+            <DialogDescription>{t('import.description')}</DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
             <div className="space-y-3 rounded-card border border-border bg-background p-4">
               <label className="space-y-2 text-sm font-medium text-foreground">
-                Upload CSV or XLSX file
-                <Input aria-label="Upload CSV or XLSX file" type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
+                {t('import.fileLabel')}
+                <Input aria-label={t('import.fileLabel')} type="file" accept=".csv,.xlsx,.xls" onChange={handleFileChange} />
               </label>
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <span>{fileName || 'No file selected'}</span>
+                <span>{fileName || t('import.noFile')}</span>
                 <span>•</span>
-                <span>{previewCount} preview row{previewCount === 1 ? '' : 's'}</span>
+                <span>{t('import.previewRows', { count: previewCount })}</span>
                 {hasErrors ? (
                   <span className="inline-flex items-center gap-1 text-destructive">
                     <AlertCircle className="h-4 w-4" />
-                    Row-level errors detected
+                    {t('import.rowErrors')}
                   </span>
                 ) : null}
               </div>
@@ -349,13 +349,13 @@ export function ImportDrawer() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Preview</h3>
-                <span className="text-sm text-muted-foreground">Validated rows are grouped by product before submit.</span>
+                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">{t('import.preview')}</h3>
+                <span className="text-sm text-muted-foreground">{t('import.previewDescription')}</span>
               </div>
 
               {rows.length === 0 ? (
                 <div className="rounded-card border border-dashed border-border bg-muted/30 px-4 py-8 text-sm text-muted-foreground">
-                  Create your first product or import a CSV to start managing variants, stock, and reports.
+                  {t('import.noRows')}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -363,29 +363,29 @@ export function ImportDrawer() {
                     <div key={row.id} className="rounded-card border border-border bg-card px-4 py-4">
                       <div className="flex flex-wrap items-start justify-between gap-4">
                         <div className="space-y-1">
-                          <p className="text-sm font-semibold text-foreground">{row.productName || 'Missing product name'}</p>
-                          <p className="text-sm text-muted-foreground">{row.variantName || 'Missing variant name'}</p>
+                          <p className="text-sm font-semibold text-foreground">{row.productName || t('import.missingProduct')}</p>
+                          <p className="text-sm text-muted-foreground">{row.variantName || t('import.missingVariant')}</p>
                           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">SKU {row.sku || '—'}</p>
                         </div>
 
                         <Button type="button" variant="secondary" size="sm" className="gap-2" onClick={() => updateBarcode(row.id)}>
                           <Wand2 className="h-4 w-4" />
-                          Generate barcode
+                          {t('import.generateBarcode')}
                         </Button>
                       </div>
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2">
                         <label className="space-y-1 text-sm">
-                          <span className="font-medium text-muted-foreground">Barcode</span>
+                          <span className="font-medium text-muted-foreground">{t('import.barcode')}</span>
                           <Input
                             value={row.barcode}
                             onChange={(event) => handleBarcodeChange(row.id, event.target.value)}
-                            placeholder="Optional barcode"
+                            placeholder={t('import.optionalBarcode')}
                           />
                         </label>
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <Field label="Price (satang)" value={row.priceSatang == null ? '—' : String(row.priceSatang)} />
-                          <Field label="Cost (satang)" value={row.costSatang == null ? '—' : String(row.costSatang)} />
+                          <Field label={t('import.priceSatang')} value={row.priceSatang == null ? '—' : String(row.priceSatang)} />
+                          <Field label={t('import.costSatang')} value={row.costSatang == null ? '—' : String(row.costSatang)} />
                         </div>
                       </div>
 
@@ -396,7 +396,7 @@ export function ImportDrawer() {
                           ))}
                         </ul>
                       ) : (
-                        <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">Ready to submit</p>
+                        <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-400">{t('import.ready')}</p>
                       )}
                     </div>
                   ))}
@@ -407,10 +407,10 @@ export function ImportDrawer() {
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-6 py-4">
             <p className="text-sm text-muted-foreground">
-              {canSubmit ? 'All preview rows are valid.' : 'Fix preview errors before submitting.'}
+              {canSubmit ? t('import.allValid') : t('import.fixErrors')}
             </p>
             <Button type="button" disabled={!canSubmit} onClick={handleSubmit}>
-              {mutation.isPending ? 'Importing…' : 'Import validated rows'}
+              {mutation.isPending ? t('import.importing') : t('import.submit')}
             </Button>
           </div>
         </div>

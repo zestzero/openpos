@@ -6,7 +6,7 @@ import { formatCurrency } from '@/lib/formatCurrency'
 import type { ProductWithVariants, Variant } from '@/lib/api'
 import { useCart } from '@/pos/hooks/useCart'
 import { useFavorites } from '@/pos/hooks/useFavorites'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface ProductCardProps {
   product: ProductWithVariants
@@ -14,6 +14,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onAdded }: ProductCardProps) {
+  const posCopy = usePosCopy()
   const [chooserOpen, setChooserOpen] = useState(false)
   const { addItem } = useCart()
   const { recordAdd } = useFavorites()

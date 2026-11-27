@@ -3,6 +3,7 @@ import { PencilLine, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import type { CatalogCategory } from '@/lib/erp-api'
+import { useI18n } from '@/lib/i18n'
 
 type CategoryTableProps = {
   categories: CatalogCategory[]
@@ -12,35 +13,36 @@ type CategoryTableProps = {
 }
 
 export function CategoryTable({ categories, reorderBusy = false, onCreateCategory, onEditCategory }: CategoryTableProps) {
+  const { t } = useI18n()
   return (
     <Card className="overflow-hidden border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Categories</h2>
-          <p className="text-sm text-muted-foreground">Create and edit the category list used by products and POS navigation.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t('erp.categoriesTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('erp.categoriesDescription')}</p>
         </div>
 
         <Button className="gap-2" onClick={onCreateCategory}>
           <Plus className="h-4 w-4" />
-          Create category
+          {t('erp.createCategory')}
         </Button>
       </div>
 
       {categories.length === 0 ? (
         <div className="px-6 py-12 text-center">
-          <p className="text-lg font-semibold">No categories yet</p>
-          <p className="mt-2 text-sm text-muted-foreground">Create your first category to organize products in the ERP table and POS grid.</p>
+          <p className="text-lg font-semibold">{t('erp.noCategories')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('erp.noCategoriesDescription')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/70 text-left text-xs uppercase tracking-[0.16em] text-foreground">
               <tr>
-                <th className="px-6 py-3">Category</th>
-                <th className="px-6 py-3">Parent</th>
-                <th className="px-6 py-3">Order</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+                <th className="px-6 py-3">{t('erp.category')}</th>
+                <th className="px-6 py-3">{t('erp.parent')}</th>
+                <th className="px-6 py-3">{t('erp.order')}</th>
+                <th className="px-6 py-3">{t('erp.status')}</th>
+                <th className="px-6 py-3 text-right">{t('erp.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -48,16 +50,16 @@ export function CategoryTable({ categories, reorderBusy = false, onCreateCategor
                 <tr key={category.id} className="border-t border-border/70">
                   <td className="px-6 py-4">
                     <p className="font-medium">{category.name}</p>
-                    <p className="text-xs text-muted-foreground">{category.description ?? 'No description'}</p>
+                    <p className="text-xs text-muted-foreground">{category.description ?? t('erp.noDescription')}</p>
                   </td>
-                  <td className="px-6 py-4">{category.parent_id ?? 'Top level'}</td>
+                  <td className="px-6 py-4">{category.parent_id ?? t('erp.topLevel')}</td>
                   <td className="px-6 py-4">{category.sort_order}</td>
-                  <td className="px-6 py-4">Active</td>
+                  <td className="px-6 py-4">{t('erp.active')}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" className="gap-2" onClick={() => onEditCategory(category)} disabled={reorderBusy}>
                         <PencilLine className="h-4 w-4" />
-                        Edit
+                        {t('erp.edit')}
                       </Button>
                     </div>
                   </td>

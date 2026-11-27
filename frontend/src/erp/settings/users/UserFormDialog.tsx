@@ -18,6 +18,7 @@ import {
   useCreateUserMutation,
   useUpdateUserMutation,
 } from '@/lib/users-api'
+import { useI18n } from '@/lib/i18n'
 
 interface UserFormDialogProps {
   open: boolean
@@ -26,6 +27,7 @@ interface UserFormDialogProps {
 }
 
 export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps) {
+  const { t } = useI18n()
   const createMutation = useCreateUserMutation()
   const updateMutation = useUpdateUserMutation()
   const dialogContentRef = useRef<HTMLDivElement>(null)
@@ -92,7 +94,7 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
       }
       onOpenChange(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : t('common.retry'))
     }
   }
 
@@ -102,30 +104,30 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent ref={dialogContentRef}>
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Edit User' : 'Add User'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('erp.editUser') : t('erp.addUserTitle')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="John Doe" />
+            <Label htmlFor="name">{t('common.name')}</Label>
+            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t('auth.namePlaceholder')} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="john@example.com" />
+            <Label htmlFor="email">{t('common.email')}</Label>
+            <Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder={t('auth.emailPlaceholder')} />
           </div>
 
           <div className="space-y-2">
-            <Label id="role-label" htmlFor="role">Role</Label>
+            <Label id="role-label" htmlFor="role">{t('erp.role')}</Label>
             <FormSelect
               portalContainer={dialogContentRef}
               aria-labelledby="role-label"
               value={role}
               onValueChange={(value) => value !== null && setRole(value as 'owner' | 'cashier')}
               options={[
-                { value: 'owner', label: 'Owner' },
-                { value: 'cashier', label: 'Cashier' },
+                { value: 'owner', label: t('erp.owner') },
+                { value: 'cashier', label: t('erp.cashier') },
               ]}
               className="h-10 rounded-card bg-background px-3 text-sm"
             />
@@ -133,15 +135,15 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
           {!isEditing && role === 'owner' ? (
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="••••••••" />
+              <Label htmlFor="password">{t('common.password')}</Label>
+              <Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder={t('auth.passwordPlaceholder')} />
             </div>
           ) : null}
 
           {!isEditing && role === 'cashier' ? (
             <div className="space-y-2">
-              <Label htmlFor="pin">PIN</Label>
-              <Input id="pin" type="password" value={pin} onChange={(event) => setPin(event.target.value)} placeholder="4-6 digits" maxLength={6} />
+              <Label htmlFor="pin">{t('common.pin')}</Label>
+              <Input id="pin" type="password" value={pin} onChange={(event) => setPin(event.target.value)} placeholder={t('auth.pinPlaceholder')} maxLength={6} />
             </div>
           ) : null}
 
@@ -149,10 +151,10 @@ export function UserFormDialog({ open, onOpenChange, user }: UserFormDialogProps
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isEditing ? 'Save Changes' : 'Create User'}
+              {isEditing ? t('erp.saveChanges') : t('erp.createUser')}
             </Button>
           </DialogFooter>
         </form>

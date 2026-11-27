@@ -2,10 +2,11 @@ import { ChevronDown, LogOut, PackageSearch, ReceiptText, ShoppingBasket } from 
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 
 import { Button } from '@/components/ui/button'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { useAuth } from '@/hooks/useAuth'
 import type { AuthUser } from '@/lib/auth'
 import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface PosHeaderProps {
   user: AuthUser | null
@@ -13,6 +14,7 @@ interface PosHeaderProps {
 }
 
 export function PosHeader({ user, online }: PosHeaderProps) {
+  const posCopy = usePosCopy()
   const { logout } = useAuth()
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (state) => state.location.pathname })
@@ -28,6 +30,7 @@ export function PosHeader({ user, online }: PosHeaderProps) {
             {online ? posCopy.online : posCopy.offline}
           </p>
         </div>
+        <LanguageSwitcher />
 
         <details className="group relative">
           <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-full bg-foreground px-4 text-base font-semibold text-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40">

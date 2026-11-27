@@ -15,7 +15,7 @@ import { useOfflineOrders } from '@/pos/hooks/useOfflineOrders'
 import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
 import { PosLayout } from '@/pos/layout/PosLayout'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 import { CartItemRow } from './CartItemRow'
 
 function parseTHB(value: string) {
@@ -65,6 +65,7 @@ function localReceipt(
 }
 
 export function CartPanel() {
+  const posCopy = usePosCopy()
   const { user } = useAuth()
   const { isOnline } = useNetworkStatus()
   const { queueOrder } = useOfflineOrders()

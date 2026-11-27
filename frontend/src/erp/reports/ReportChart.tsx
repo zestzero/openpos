@@ -12,6 +12,7 @@ import {
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatTHB } from '@/lib/formatCurrency'
+import { formatNumber, useI18n } from '@/lib/i18n'
 import { formatReportingMonth, type ReportingMonthRow } from '@/lib/reporting-api'
 
 type ReportChartProps = {
@@ -19,16 +20,15 @@ type ReportChartProps = {
 }
 
 export function ReportChart({ rows }: ReportChartProps) {
+  const { t, locale } = useI18n()
   const chartRows = [...rows].reverse()
 
   return (
     <section className="grid gap-4 xl:grid-cols-[1.4fr_0.9fr]" aria-labelledby="monthly-trend-heading">
       <Card className="border-border/70 bg-card/95">
         <CardHeader className="space-y-2 pb-0">
-          <CardTitle id="monthly-trend-heading" className="text-xl">Monthly trend</CardTitle>
-          <CardDescription>
-            Revenue and gross profit move together here, so owners can compare sales volume with margin pressure at a glance.
-          </CardDescription>
+          <CardTitle id="monthly-trend-heading" className="text-xl">{t('report.monthlyTrend')}</CardTitle>
+          <CardDescription>{t('report.trendDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="h-80 w-full">
@@ -51,9 +51,9 @@ export function ReportChart({ rows }: ReportChartProps) {
                 />
                 <Tooltip content={<MonthlyTrendTooltip />} />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 8 }} />
-                <Bar dataKey="revenue" name="Revenue" fill="#c8f169" radius={[8, 8, 0, 0]} />
-                <Bar dataKey="grossProfit" name="Gross profit" fill="#1c1f16" radius={[8, 8, 0, 0]} />
-                <Line type="monotone" dataKey="averageOrderValue" name="AOV" stroke="#3d4a28" strokeWidth={2} dot={false} />
+                <Bar dataKey="revenue" name={t('report.revenue')} fill="#c8f169" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="grossProfit" name={t('report.grossProfit')} fill="#1c1f16" radius={[8, 8, 0, 0]} />
+                <Line type="monotone" dataKey="averageOrderValue" name={t('report.aov')} stroke="#3d4a28" strokeWidth={2} dot={false} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -62,8 +62,8 @@ export function ReportChart({ rows }: ReportChartProps) {
 
       <Card className="border-border/70 bg-secondary/35">
         <CardHeader className="space-y-2 pb-3">
-          <CardTitle className="text-lg">Monthly breakdown</CardTitle>
-          <CardDescription>Each row mirrors the query data that feeds the chart.</CardDescription>
+          <CardTitle className="text-lg">{t('report.monthlyBreakdown')}</CardTitle>
+          <CardDescription>{t('report.breakdownDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="space-y-3">
@@ -72,11 +72,11 @@ export function ReportChart({ rows }: ReportChartProps) {
                 <div className="flex items-center justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium text-foreground">{formatReportingMonth(row.month)}</p>
-                    <p className="text-xs text-muted-foreground">{row.orderCount.toLocaleString('en-US')} orders</p>
+                    <p className="text-xs text-muted-foreground">{t('report.orders', { count: formatNumber(row.orderCount, locale) })}</p>
                   </div>
                   <div className="text-right text-sm">
-                    <p className="font-medium text-foreground">Revenue {formatTHB(row.revenue)}</p>
-                    <p className="text-muted-foreground">Gross profit {formatTHB(row.grossProfit)}</p>
+                    <p className="font-medium text-foreground">{t('report.revenue')} {formatTHB(row.revenue)}</p>
+                    <p className="text-muted-foreground">{t('report.grossProfit')} {formatTHB(row.grossProfit)}</p>
                   </div>
                 </div>
               </li>
@@ -89,6 +89,7 @@ export function ReportChart({ rows }: ReportChartProps) {
 }
 
 function MonthlyTrendTooltip({ active, payload, label }: any) {
+  const { t } = useI18n()
   if (!active || !payload?.length) return null
 
   const row = payload[0]?.payload as ReportingMonthRow | undefined
@@ -98,9 +99,9 @@ function MonthlyTrendTooltip({ active, payload, label }: any) {
   return (
     <div className="rounded-card border border-border bg-background px-4 py-3 shadow-card">
       <p className="text-sm font-medium text-foreground">{formatReportingMonth(String(label))}</p>
-      <p className="mt-2 text-sm text-muted-foreground">Revenue {formatTHB(row.revenue)}</p>
-      <p className="text-sm text-muted-foreground">Gross profit {formatTHB(row.grossProfit)}</p>
-      <p className="text-sm text-muted-foreground">AOV {formatTHB(row.averageOrderValue)}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{t('report.revenue')} {formatTHB(row.revenue)}</p>
+      <p className="text-sm text-muted-foreground">{t('report.grossProfit')} {formatTHB(row.grossProfit)}</p>
+      <p className="text-sm text-muted-foreground">{t('report.aov')} {formatTHB(row.averageOrderValue)}</p>
     </div>
   )
 }

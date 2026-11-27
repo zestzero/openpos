@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { formatTHB } from '@/lib/formatCurrency'
 import type { CatalogCategory, CatalogProductRecord } from '@/lib/erp-api'
+import { useI18n } from '@/lib/i18n'
 
 import { productSelectionState } from '../products/barcodeLabels'
 
@@ -41,6 +42,7 @@ export function ProductTable({
   onOpenBarcodePreview,
   onClearBarcodeSelection,
 }: ProductTableProps) {
+  const { t } = useI18n()
   const categoryNames = new Map(categories.map((category) => [category.id, category.name]))
   const selectedCount = barcodeLabelCount
 
@@ -48,47 +50,45 @@ export function ProductTable({
     <Card className="overflow-hidden border-border/70 shadow-sm">
       <div className="flex items-center justify-between gap-4 border-b border-border bg-muted/25 px-6 py-5">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Products</h2>
-          <p className="text-sm text-muted-foreground">Parent products with nested variants, THB pricing, and archive actions.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t('erp.productsTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('erp.productsDescription')}</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
           {selectedCount > 0 ? (
             <Button variant="outline" size="sm" className="gap-2" onClick={onClearBarcodeSelection}>
               <X className="h-4 w-4" />
-              Clear {selectedCount}
+              {t('erp.clearSelection', { count: selectedCount })}
             </Button>
           ) : null}
           <Button variant="outline" className="gap-2" onClick={onOpenBarcodePreview} disabled={selectedCount === 0}>
             <Barcode className="h-4 w-4" />
-            Print barcodes{selectedCount > 0 ? ` (${selectedCount})` : ''}
+            {t('erp.printBarcodes')}{selectedCount > 0 ? ` (${selectedCount})` : ''}
           </Button>
           <Button className="gap-2 transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98]" onClick={onCreateProduct}>
             <Plus className="h-4 w-4" />
-            Create product
+            {t('erp.createProduct')}
           </Button>
         </div>
       </div>
 
       {products.length === 0 ? (
         <div className="px-6 py-12 text-center">
-          <p className="text-lg font-semibold">No products yet</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Create your first product or import a CSV to start managing variants, stock, and reports.
-          </p>
+          <p className="text-lg font-semibold">{t('erp.noProducts')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('erp.noProductsDescription')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/70 text-left text-xs uppercase tracking-[0.16em] text-foreground">
               <tr>
-                <th className="w-12 px-6 py-3">Print</th>
-                <th className="px-6 py-3">Product</th>
-                <th className="px-6 py-3">Category</th>
-                <th className="px-6 py-3">Variants / Stock</th>
-                <th className="px-6 py-3">Price range</th>
-                <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+                <th className="w-12 px-6 py-3">{t('erp.print')}</th>
+                <th className="px-6 py-3">{t('erp.product')}</th>
+                <th className="px-6 py-3">{t('erp.category')}</th>
+                <th className="px-6 py-3">{t('erp.variantsStock')}</th>
+                <th className="px-6 py-3">{t('erp.priceRange')}</th>
+                <th className="px-6 py-3">{t('erp.status')}</th>
+                <th className="px-6 py-3 text-right">{t('erp.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -105,7 +105,7 @@ export function ProductTable({
                     <tr className="border-t border-border/70 align-top transition-colors duration-150 hover:bg-muted/30">
                       <td className="px-6 py-4">
                         <IndeterminateCheckbox
-                          ariaLabel={`Select all active variants for ${record.product.name}`}
+                          ariaLabel={t('erp.selectActiveVariants', { name: record.product.name })}
                           checked={selection.checked}
                           indeterminate={selection.indeterminate}
                           disabled={selection.activeIds.length === 0}
@@ -123,35 +123,35 @@ export function ProductTable({
                           )}
                           <div>
                             <p className="font-medium">{record.product.name}</p>
-                            <p className="text-xs text-muted-foreground">{record.product.description ?? 'No description'}</p>
+                            <p className="text-xs text-muted-foreground">{record.product.description ?? t('erp.noDescription')}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">{record.category?.name ?? categoryNames.get(record.product.category_id ?? '') ?? 'Uncategorized'}</td>
+                      <td className="px-6 py-4">{record.category?.name ?? categoryNames.get(record.product.category_id ?? '') ?? t('erp.uncategorized')}</td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col">
-                          <span className="text-sm font-medium">{variants.length} variant{variants.length !== 1 ? 's' : ''}</span>
-                          {selection.selectedCount > 0 ? <span className="text-xs font-medium text-primary">{selection.selectedCount} active selected for print</span> : null}
+                          <span className="text-sm font-medium">{t('erp.variants', { count: variants.length })}</span>
+                          {selection.selectedCount > 0 ? <span className="text-xs font-medium text-primary">{t('erp.activeSelectedForPrint', { count: selection.selectedCount })}</span> : null}
                           {totalStock > 0 ? (
                             <span className={`text-xs font-medium ${totalStock < 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                              {totalStock} in stock
+                              {t('erp.inStock', { count: totalStock })}
                             </span>
                           ) : (
-                            <span className="text-xs text-destructive">Out of stock</span>
+                            <span className="text-xs text-destructive">{t('erp.outOfStock')}</span>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">{variants.length ? `${formatTHB(minPrice)} – ${formatTHB(maxPrice)}` : '—'}</td>
-                      <td className="px-6 py-4">{record.product.is_active ? 'Active' : 'Archived'}</td>
+                      <td className="px-6 py-4">{record.product.is_active ? t('erp.active') : t('erp.archived')}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Button variant="outline" size="sm" className="gap-2" onClick={() => onEditProduct(record)}>
                             <PencilLine className="h-4 w-4" />
-                            Edit
+                            {t('erp.edit')}
                           </Button>
                           <Button variant="destructive" size="sm" className="gap-2" onClick={() => onArchiveProduct(record)} disabled={archiveBusy}>
                             <Archive className="h-4 w-4" />
-                            Archive
+                            {t('erp.archive')}
                           </Button>
                         </div>
                       </td>
@@ -161,14 +161,14 @@ export function ProductTable({
                       <td className="px-6 py-4" colSpan={7}>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Nested variants</p>
+                            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{t('erp.nestedVariants')}</p>
                             <Button variant="ghost" size="sm" className="gap-2" onClick={() => onReorderVariants(record.product.id, variants.map((variant) => variant.id))} disabled={archiveBusy}>
-                              Reorder variants
+                              {t('erp.reorderVariants')}
                             </Button>
                           </div>
 
                           {variants.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No variants yet.</p>
+                            <p className="text-sm text-muted-foreground">{t('erp.noVariants')}</p>
                           ) : (
                             <div className="space-y-2">
                               {variants.map((variant, index) => {

@@ -21,7 +21,7 @@ import { useFavorites } from '@/pos/hooks/useFavorites'
 import { useKeyboardWedge } from '@/pos/hooks/useKeyboardWedge'
 import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 import { PosLayout } from '@/pos/layout/PosLayout'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 import { Route as rootRoute } from './__root'
 
 export const Route = createRoute({
@@ -54,6 +54,7 @@ function toCartVariant(variant: SearchVariantRow) {
 }
 
 export function PosRoute() {
+  const posCopy = usePosCopy()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [feedback, setFeedback] = useState<AddedFeedback>(null)

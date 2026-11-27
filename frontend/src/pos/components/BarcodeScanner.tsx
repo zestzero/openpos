@@ -4,6 +4,7 @@ import { Camera, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { api, type SearchVariantRow } from '@/lib/api'
 import { useBarcodeDetector } from '@/pos/hooks/useBarcodeDetector'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface BarcodeScannerProps {
   onScanSuccess: (variant: SearchVariantRow) => void
@@ -11,6 +12,7 @@ interface BarcodeScannerProps {
 }
 
 export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerProps) {
+  const posCopy = usePosCopy()
   const [status, setStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle')
   const [scannedCode, setScannedCode] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -34,7 +36,7 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
       }, 2000)
     } catch (err) {
       setStatus('error')
-      const errorMsg = err instanceof Error ? err.message : 'Search failed'
+      const errorMsg = err instanceof Error ? err.message : posCopy.searchNotFound
       setErrorMessage(errorMsg)
       onScanError(code, errorMsg)
 
@@ -47,7 +49,7 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
     } finally {
       setSearchLoading(false)
     }
-  }, [onScanError, onScanSuccess])
+  }, [onScanError, onScanSuccess, posCopy.searchNotFound])
 
   const {
     isSupported,
@@ -77,7 +79,7 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
           <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-300" />
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-emerald-950 dark:text-emerald-100">Added to cart</p>
+          <p className="text-lg font-semibold text-emerald-950 dark:text-emerald-100">{posCopy.addedToCart}</p>
           <p className="mt-1 text-sm text-emerald-800/80 dark:text-emerald-200/80">{scannedCode}</p>
         </div>
       </div>
@@ -91,10 +93,10 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
           <XCircle className="h-8 w-8 text-red-600 dark:text-red-300" />
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-red-950 dark:text-red-100">Product not found</p>
+          <p className="text-lg font-semibold text-red-950 dark:text-red-100">{posCopy.productNotFound}</p>
           <p className="mt-1 text-sm text-red-800/80 dark:text-red-200/80">{errorMessage}</p>
         </div>
-        <p className="text-xs text-red-700/80 dark:text-red-300/80">Scanning will restart automatically.</p>
+        <p className="text-xs text-red-700/80 dark:text-red-300/80">{posCopy.scanningRestart}</p>
       </div>
     )
   }
@@ -106,11 +108,11 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
           <XCircle className="h-8 w-8 text-amber-600 dark:text-amber-300" />
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-amber-950 dark:text-amber-100">Camera error</p>
+          <p className="text-lg font-semibold text-amber-950 dark:text-amber-100">{posCopy.cameraError}</p>
           <p className="mt-1 text-sm text-amber-800/80 dark:text-amber-200/80">{scannerError}</p>
         </div>
         <Button onClick={handleStartScanning} variant="outline">
-          Try Again
+          {posCopy.retry}
         </Button>
       </div>
     )
@@ -122,12 +124,12 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-              Live camera
+              {posCopy.liveCamera}
             </p>
-            <p className="mt-1 text-sm font-medium text-foreground">Searching for a barcode</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{posCopy.searchingBarcode}</p>
           </div>
           <span className="rounded-pill border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-            Active
+            {posCopy.active}
           </span>
         </div>
         <div className="relative overflow-hidden rounded-[1.25rem] bg-black/5">
@@ -143,17 +145,17 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
             <div
               id={scannerTargetId}
               className="min-h-[18rem] w-full bg-black/5"
-              aria-label="Barcode scanner preview"
+              aria-label={posCopy.scannerPreview}
             />
           )}
           <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-foreground/10" />
         </div>
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">
-            {searchLoading ? 'Searching...' : 'Hold steady while the camera locks on.'}
+            {searchLoading ? posCopy.searchingBarcode : posCopy.holdSteady}
           </p>
           <Button onClick={handleStopScanning} variant="destructive" size="sm">
-            Cancel
+            {posCopy.cancel}
           </Button>
         </div>
       </div>
@@ -167,16 +169,14 @@ export function BarcodeScanner({ onScanSuccess, onScanError }: BarcodeScannerPro
         <Camera className="h-7 w-7 text-muted-foreground" />
       </div>
       <div className="text-center">
-        <p className="text-lg font-medium text-foreground">Scan barcode</p>
+        <p className="text-lg font-medium text-foreground">{posCopy.scanBarcode}</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          {isSupported
-            ? 'Use the camera for quick item lookup.'
-            : 'Camera scanning is unavailable, so the wedge scanner takes over.'}
+          {isSupported ? posCopy.cameraLookup : posCopy.cameraUnavailable}
         </p>
       </div>
       <Button onClick={handleStartScanning} size="lg" className="min-w-40 gap-2">
         <Camera className="mr-2 h-4 w-4" />
-        Start Scanning
+        {posCopy.startScanning}
       </Button>
     </div>
   )

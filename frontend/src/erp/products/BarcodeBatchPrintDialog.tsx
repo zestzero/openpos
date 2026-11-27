@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useI18n } from '@/lib/i18n'
 
 import type { BarcodeLabel } from './barcodeLabels'
 
@@ -17,6 +18,7 @@ type BarcodeBatchPrintDialogProps = {
 type LabelMachineFormat = 'barcode' | 'qr'
 
 export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSelection }: BarcodeBatchPrintDialogProps) {
+  const { t } = useI18n()
   const canPrint = labels.length > 0
   const [format, setFormat] = useState<LabelMachineFormat>('barcode')
   const [qrStatuses, setQrStatuses] = useState<Record<string, 'loading' | 'ready' | 'error'>>({})
@@ -33,15 +35,13 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
       <DialogContent className="max-h-[min(90vh,820px)] w-[calc(100vw-2rem)] max-w-5xl overflow-hidden p-0 print:fixed print:inset-0 print:max-h-none print:w-full print:max-w-none print:translate-x-0 print:translate-y-0 print:overflow-visible print:border-0 print:shadow-none">
         <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left print:hidden">
-            <DialogTitle>Label preview</DialogTitle>
-            <DialogDescription>
-              {labels.length} label{labels.length !== 1 ? 's' : ''} selected. Choose Barcode or QR code for the print sheet.
-            </DialogDescription>
+            <DialogTitle>{t('erp.labelPreview')}</DialogTitle>
+            <DialogDescription>{t('erp.labelsSelected', { count: labels.length })}</DialogDescription>
           </DialogHeader>
 
           <div className="flex items-center justify-between gap-3 border-b border-border px-6 py-3 print:hidden">
-            <p className="text-sm font-medium text-foreground">Machine-readable format</p>
-            <div className="inline-flex rounded-lg border border-border bg-background p-1" role="group" aria-label="Machine-readable format">
+            <p className="text-sm font-medium text-foreground">{t('erp.machineReadable')}</p>
+            <div className="inline-flex rounded-lg border border-border bg-background p-1" role="group" aria-label={t('erp.machineReadable')}>
               <Button
                 type="button"
                 size="sm"
@@ -49,7 +49,7 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                 aria-pressed={format === 'barcode'}
                 onClick={() => setFormat('barcode')}
               >
-                Barcode
+                {t('erp.barcode')}
               </Button>
               <Button
                 type="button"
@@ -58,14 +58,14 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
                 aria-pressed={format === 'qr'}
                 onClick={() => setFormat('qr')}
               >
-                QR code
+                {t('erp.qrCode')}
               </Button>
             </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-muted/30 p-6 print:overflow-visible print:bg-background print:p-0">
             {canPrint ? (
-              <div data-barcode-print-sheet className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-0" aria-label="Printable barcode labels">
+              <div data-barcode-print-sheet className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 print:grid-cols-3 print:gap-0" aria-label={t('erp.printableLabels')}>
                 {labels.map((label) => (
                   <article key={label.id} className="break-inside-avoid rounded-card border border-border bg-background p-4 shadow-sm print:h-[38mm] print:rounded-none print:border print:p-[4mm] print:shadow-none">
                     <div className="min-w-0 space-y-2">
@@ -93,8 +93,8 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
               </div>
             ) : (
               <div className="rounded-card border border-dashed border-border bg-background px-6 py-12 text-center">
-                <p className="text-sm font-medium text-foreground">No barcode labels selected</p>
-                <p className="mt-2 text-sm text-muted-foreground">Select Products or Variants before opening print preview.</p>
+                <p className="text-sm font-medium text-foreground">{t('erp.noBarcodeLabels')}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{t('erp.selectProductsBeforePrint')}</p>
               </div>
             )}
           </div>
@@ -102,11 +102,11 @@ export function BarcodeBatchPrintDialog({ open, labels, onOpenChange, onClearSel
           <style>{`@media print { @page { size: A4; margin: 8mm; } body * { visibility: hidden; } [data-barcode-print-sheet], [data-barcode-print-sheet] * { visibility: visible; } [data-barcode-print-sheet] { position: fixed; inset: 0; } }`}</style>
 
           <DialogFooter className="border-t border-border px-6 py-4 print:hidden">
-            <Button type="button" variant="outline" onClick={onClearSelection} disabled={!canPrint}>Clear selection</Button>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Adjust selection</Button>
+            <Button type="button" variant="outline" onClick={onClearSelection} disabled={!canPrint}>{t('erp.clearSelectionButton')}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t('erp.adjustSelection')}</Button>
             <Button type="button" className="gap-2" onClick={() => window.print()} disabled={printDisabled}>
               <Printer className="h-4 w-4" />
-              Print labels
+              {t('erp.printLabels')}
             </Button>
           </DialogFooter>
         </div>
