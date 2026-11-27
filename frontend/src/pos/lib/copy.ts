@@ -70,6 +70,8 @@ export function usePosCopy() {
     completeSale: t('pos.completeSale'),
     printReceipt: t('pos.printReceipt'),
     promptPayQr: t('pos.promptPayQr'),
+    loadingQr: t('pos.loadingQr'),
+    qrError: t('pos.qrError'),
     addedToCart: t('pos.addedToCart'),
     productNotFound: t('pos.productNotFound'),
     scanningRestart: t('pos.scanningRestart'),

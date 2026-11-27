@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { api, ApiError } from '@/lib/api'
 import { STORAGE_KEY_LATEST_RECEIPT } from '@/lib/constants'
 import { printReceipt } from '@/lib/receipt'
+import { useI18n, type TranslationKey, type TranslationVariables } from '@/lib/i18n'
 
 import { useNetworkStatus } from './useNetworkStatus'
 
@@ -40,24 +41,25 @@ function publishLatestReceiptUpdate() {
   window.dispatchEvent(new Event(LATEST_RECEIPT_UPDATE_EVENT))
 }
 
-function getReplayErrorMessage(error: unknown) {
+function getReplayErrorMessage(error: unknown, translate: (key: TranslationKey, variables?: TranslationVariables) => string) {
   if (error instanceof ApiError) {
     if (error.status === 404) {
-      return 'Receipt unavailable. That order could not be found, but your current sale is unchanged.'
+      return translate('pos.receiptUnavailableMissing')
     }
 
-    return 'Receipt unavailable right now. Your current sale is unchanged.'
+    return translate('pos.receiptUnavailable')
   }
 
   if (error instanceof Error && /not found|missing/i.test(error.message)) {
-    return 'Receipt unavailable. That order could not be found, but your current sale is unchanged.'
+    return translate('pos.receiptUnavailableMissing')
   }
 
-  return 'Receipt unavailable right now. Your current sale is unchanged.'
+  return translate('pos.receiptUnavailable')
 }
 
 export function useLatestReceipt() {
   const { isOnline } = useNetworkStatus()
+  const { t } = useI18n()
   const [latestReceiptId, setLatestReceiptId] = useState<string | null>(() => loadLatestReceiptId())
   const [replayError, setReplayError] = useState<string | null>(null)
   const [isReprinting, setIsReprinting] = useState(false)
@@ -96,12 +98,12 @@ export function useLatestReceipt() {
 
   const reprintLatestReceipt = useCallback(async () => {
     if (!isOnline) {
-      setReplayError('Reprint receipt is unavailable while offline. Reconnect to print the saved receipt.')
+      setReplayError(t('pos.reprintOffline'))
       return false
     }
 
     if (!latestReceiptId) {
-      setReplayError('No saved receipt is available to reprint yet.')
+      setReplayError(t('pos.noSavedReceipt'))
       return false
     }
 
@@ -114,12 +116,12 @@ export function useLatestReceipt() {
 
       return true
     } catch (error) {
-      setReplayError(getReplayErrorMessage(error))
+      setReplayError(getReplayErrorMessage(error, t))
       return false
     } finally {
       setIsReprinting(false)
     }
-  }, [isOnline, latestReceiptId])
+  }, [isOnline, latestReceiptId, t])
 
   return {
     latestReceiptId,

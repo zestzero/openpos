@@ -15,7 +15,7 @@ function formatDate(value: string, locale: 'th' | 'en') {
 
 export function InventoryPage() {
   const { locale, t } = useI18n()
-  const reasonKeys: Record<InventoryReasonCode, TranslationKey> = {
+  const reasonKeys: Record<string, TranslationKey> = {
     RESTOCK: 'erp.reason.restock',
     ADJUSTMENT: 'erp.reason.adjustment',
     SALE: 'erp.reason.sale',
@@ -248,7 +248,7 @@ export function InventoryPage() {
                 {(visibleLedgerEntries).map((entry) => (
                   <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{entry.reason}</p>
+                      <p className="font-medium">{t(reasonKeys[entry.reason])}</p>
                       <p className="text-muted-foreground">{formatDate(entry.created_at, locale)}</p>
                     </div>
                     <p className="text-muted-foreground">{t('erp.change')}: {entry.quantity_change}</p>

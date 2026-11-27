@@ -1,4 +1,5 @@
 import { getToken } from '@/lib/auth'
+import type { Locale } from '@/lib/i18n'
 
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 
@@ -85,12 +86,12 @@ function parseMonth(month: string) {
   return new Date(Date.UTC(year, monthNumber - 1, 1))
 }
 
-export function formatReportingMonth(month: string) {
+export function formatReportingMonth(month: string, locale: Locale = 'en') {
   const parsed = parseMonth(month)
 
   if (!parsed) return month
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',

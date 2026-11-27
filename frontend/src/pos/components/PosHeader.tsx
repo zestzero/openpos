@@ -30,7 +30,6 @@ export function PosHeader({ user, online }: PosHeaderProps) {
             {online ? posCopy.online : posCopy.offline}
           </p>
         </div>
-        <LanguageSwitcher />
 
         <details className="group relative">
           <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-full bg-foreground px-4 text-base font-semibold text-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40">
@@ -38,6 +37,7 @@ export function PosHeader({ user, online }: PosHeaderProps) {
             <ChevronDown aria-hidden="true" className="size-5 transition-transform group-open:rotate-180" />
           </summary>
           <div className="absolute right-0 top-14 flex w-64 flex-col gap-1 rounded-card border border-border bg-popover p-2 shadow-dialog">
+            <LanguageSwitcher />
             {pathname === '/pos' ? (
               <Button variant="ghost" className="min-h-12 justify-start text-base" onClick={() => navigate({ to: '/pos/inventory' })}>
                 <PackageSearch data-icon="inline-start" />

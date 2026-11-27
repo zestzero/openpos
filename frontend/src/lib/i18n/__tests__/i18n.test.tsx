@@ -31,6 +31,7 @@ describe('i18n', () => {
 
   it('interpolates values and formats non-money numbers by locale', () => {
     expect(translate('th', 'pos.viewOrder')).toBe('ดูรายการ')
+    expect(translate('en', 'report.orders', { count: 3 })).toBe('3 orders')
     expect(formatNumber(1234567, 'en')).toBe('1,234,567')
     expect(formatNumber(1234567, 'th')).toContain('1,234,567')
   })

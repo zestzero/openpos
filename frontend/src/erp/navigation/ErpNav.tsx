@@ -1,7 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { BarChart3, Boxes, FolderTree, LayoutDashboard, Settings2, ShoppingCart, Table2 } from 'lucide-react'
 
-import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useI18n, type TranslationKey } from '@/lib/i18n'
@@ -33,7 +32,6 @@ export function ErpNav() {
           O
         </div>
       </div>
-      <LanguageSwitcher />
 
       <nav className="flex flex-1 flex-row gap-1 md:flex-col md:gap-1.5" aria-label={t('erp.label')}>
         {navItems.map((item) => {

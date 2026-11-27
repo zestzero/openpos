@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable'
 import ExcelJS from 'exceljs'
 
 import { formatTHB } from '@/lib/formatCurrency'
+import { type Locale } from '@/lib/i18n'
 import { formatReportingMonth, type ReportingMonthRow } from '@/lib/reporting-api'
 
 export type ReportExportFormat = 'pdf' | 'xlsx'
@@ -10,6 +11,7 @@ export type ReportExportFormat = 'pdf' | 'xlsx'
 export type ReportExportPayload = {
   title: string
   rows: ReportingMonthRow[]
+  locale?: Locale
 }
 
 export function buildReportExportFilename(format: ReportExportFormat, title: string, rows: Pick<ReportingMonthRow, 'month'>[]) {
@@ -39,8 +41,9 @@ function exportPdfReport({ title, rows }: ReportExportPayload) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
 
+  // jsPDF's built-in font cannot render Thai glyphs, so keep PDF text in English until a Thai font is bundled.
   doc.setFontSize(16)
-  doc.text(title, 40, 40)
+  doc.text('Monthly sales and gross profit', 40, 40)
   doc.setFontSize(10)
   doc.text(`Generated ${new Date().toLocaleString('en-US')}`, 40, 58)
 
@@ -55,7 +58,7 @@ function exportPdfReport({ title, rows }: ReportExportPayload) {
       'Average order value',
     ]],
     body: rows.map((row) => [
-      formatReportingMonth(row.month),
+      formatReportingMonth(row.month, 'en'),
       row.orderCount.toLocaleString('en-US'),
       formatTHB(row.revenue),
       formatTHB(row.costOfGoodsSold),
@@ -80,10 +83,10 @@ function exportPdfReport({ title, rows }: ReportExportPayload) {
   doc.save(filename)
 }
 
-async function exportXlsxReport({ title, rows }: ReportExportPayload) {
+async function exportXlsxReport({ title, rows, locale = 'en' }: ReportExportPayload) {
   const filename = buildReportExportFilename('xlsx', title, rows)
   const worksheetRows = rows.map((row) => ({
-    Month: formatReportingMonth(row.month),
+    Month: formatReportingMonth(row.month, locale),
     Orders: row.orderCount,
     Revenue: formatTHB(row.revenue),
     'Cost of goods sold': formatTHB(row.costOfGoodsSold),

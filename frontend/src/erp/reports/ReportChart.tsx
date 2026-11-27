@@ -12,7 +12,7 @@ import {
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatTHB } from '@/lib/formatCurrency'
-import { formatNumber, useI18n } from '@/lib/i18n'
+import { formatNumber, useI18n, type Locale } from '@/lib/i18n'
 import { formatReportingMonth, type ReportingMonthRow } from '@/lib/reporting-api'
 
 type ReportChartProps = {
@@ -40,7 +40,7 @@ export function ReportChart({ rows }: ReportChartProps) {
                   tickLine={false}
                   axisLine={false}
                   tickMargin={12}
-                  tickFormatter={formatReportingMonth}
+                  tickFormatter={(value) => formatReportingMonth(String(value), locale)}
                 />
                 <YAxis
                   width={96}
@@ -49,7 +49,7 @@ export function ReportChart({ rows }: ReportChartProps) {
                   tickMargin={8}
                   tickFormatter={(value) => formatTHB(Number(value))}
                 />
-                <Tooltip content={<MonthlyTrendTooltip />} />
+                <Tooltip content={<MonthlyTrendTooltip locale={locale} />} />
                 <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: 8 }} />
                 <Bar dataKey="revenue" name={t('report.revenue')} fill="#c8f169" radius={[8, 8, 0, 0]} />
                 <Bar dataKey="grossProfit" name={t('report.grossProfit')} fill="#1c1f16" radius={[8, 8, 0, 0]} />
@@ -71,7 +71,7 @@ export function ReportChart({ rows }: ReportChartProps) {
               <li key={row.month} className="rounded-card border border-border bg-card px-4 py-3">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-foreground">{formatReportingMonth(row.month)}</p>
+                    <p className="text-sm font-medium text-foreground">{formatReportingMonth(row.month, locale)}</p>
                     <p className="text-xs text-muted-foreground">{t('report.orders', { count: formatNumber(row.orderCount, locale) })}</p>
                   </div>
                   <div className="text-right text-sm">
@@ -88,7 +88,14 @@ export function ReportChart({ rows }: ReportChartProps) {
   )
 }
 
-function MonthlyTrendTooltip({ active, payload, label }: any) {
+type MonthlyTrendTooltipProps = {
+  active?: boolean
+  payload?: Array<{ payload?: ReportingMonthRow }>
+  label?: string | number
+  locale: Locale
+}
+
+function MonthlyTrendTooltip({ active, payload, label, locale }: MonthlyTrendTooltipProps) {
   const { t } = useI18n()
   if (!active || !payload?.length) return null
 
@@ -98,7 +105,7 @@ function MonthlyTrendTooltip({ active, payload, label }: any) {
 
   return (
     <div className="rounded-card border border-border bg-background px-4 py-3 shadow-card">
-      <p className="text-sm font-medium text-foreground">{formatReportingMonth(String(label))}</p>
+      <p className="text-sm font-medium text-foreground">{formatReportingMonth(String(label), locale)}</p>
       <p className="mt-2 text-sm text-muted-foreground">{t('report.revenue')} {formatTHB(row.revenue)}</p>
       <p className="text-sm text-muted-foreground">{t('report.grossProfit')} {formatTHB(row.grossProfit)}</p>
       <p className="text-sm text-muted-foreground">{t('report.aov')} {formatTHB(row.averageOrderValue)}</p>

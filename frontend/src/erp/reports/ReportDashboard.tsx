@@ -48,13 +48,13 @@ export function ReportDashboard() {
             <div className="flex flex-col gap-3 rounded-card border border-border bg-card px-5 py-4 text-sm">
               <div>
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{t('report.latestMonth')}</p>
-                <p className="mt-2 text-lg font-semibold text-foreground">{formatReportingMonth(summary.current.month)}</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">{formatReportingMonth(summary.current.month, locale)}</p>
                 <p className="mt-1 text-muted-foreground">
                   {t('report.orders', { count: formatNumber(summary.current.orderCount, locale) })} · {t('report.monthsLoaded', { count: summary.rows.length })}
                 </p>
               </div>
 
-              <ReportExportButtons title={t('report.monthlyTitle')} rows={summary.rows} />
+              <ReportExportButtons title={t('report.monthlyTitle')} rows={summary.rows} locale={locale} />
             </div>
           ) : null}
       </section>
