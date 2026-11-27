@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { FormSelect } from '@/components/ui/form-select'
@@ -13,21 +13,27 @@ function formatDate(value: string, locale: 'th' | 'en') {
   return new Intl.DateTimeFormat(locale === 'th' ? 'th-TH' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 
+const reasonKeys: Record<InventoryReasonCode, TranslationKey> = {
+  RESTOCK: 'erp.reason.restock',
+  ADJUSTMENT: 'erp.reason.adjustment',
+  SALE: 'erp.reason.sale',
+  RETURN: 'erp.reason.return',
+  DAMAGE: 'erp.reason.damage',
+  LOST: 'erp.reason.lost',
+}
+
+function isInventoryReasonCode(reason: string): reason is InventoryReasonCode {
+  return Object.prototype.hasOwnProperty.call(reasonKeys, reason)
+}
+
 export function InventoryPage() {
   const { locale, t } = useI18n()
-  const reasonKeys: Record<string, TranslationKey> = {
-    RESTOCK: 'erp.reason.restock',
-    ADJUSTMENT: 'erp.reason.adjustment',
-    SALE: 'erp.reason.sale',
-    RETURN: 'erp.reason.return',
-    DAMAGE: 'erp.reason.damage',
-    LOST: 'erp.reason.lost',
-  }
   const editableReasons: InventoryReasonCode[] = ['RESTOCK', 'ADJUSTMENT', 'RETURN', 'DAMAGE', 'LOST']
   const reasonOptions: { value: InventoryReasonCode; label: string }[] = editableReasons.map((value) => ({ value, label: t(reasonKeys[value]) }))
   const productsQuery = useProductsQuery()
   const { data: products = [], isLoading: productsLoading, isError: productsError, error: productsQueryError } = productsQuery
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
+  const [now] = useState(() => Date.now())
   const [variantSearch, setVariantSearch] = useState('')
   const [stockFilter, setStockFilter] = useState<'all' | 'low' | 'zero'>('all')
   const [ledgerReasonFilter, setLedgerReasonFilter] = useState<'all' | InventoryReasonCode>('all')
@@ -41,27 +47,18 @@ export function InventoryPage() {
     categoryName: record.category?.name ?? t('erp.uncategorized'),
   }))), [products, t])
 
-  const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? null
-  const stockQuery = useInventoryStockLevelQuery(selectedVariantId)
-  const ledgerQuery = useInventoryLedgerQuery(selectedVariantId)
+  const activeVariantId = selectedVariantId && variants.some((variant) => variant.id === selectedVariantId)
+    ? selectedVariantId
+    : variants[0]?.id ?? null
+  const selectedVariant = variants.find((variant) => variant.id === activeVariantId) ?? null
+  const stockQuery = useInventoryStockLevelQuery(activeVariantId)
+  const ledgerQuery = useInventoryLedgerQuery(activeVariantId)
   const adjustStockMutation = useAdjustStockMutation()
   const currentStockLevel = stockQuery.data?.stock_level ?? selectedVariant?.stockLevel
 
-  useEffect(() => {
-    if (variants.length === 0) {
-      if (selectedVariantId) {
-        setSelectedVariantId(null)
-      }
-      return
-    }
-
-    if (!selectedVariantId || !variants.some((variant) => variant.id === selectedVariantId)) {
-      setSelectedVariantId(variants[0].id)
-    }
-  }, [selectedVariantId, variants])
 
   const filteredVariants = variants.filter((variant) => {
-    const stockLevel = selectedVariantId === variant.id ? currentStockLevel : variant.stockLevel
+    const stockLevel = activeVariantId === variant.id ? currentStockLevel : variant.stockLevel
     const matchesSearch = !variantSearch.trim() || [variant.name, variant.productName, variant.categoryName, variant.sku].join(' ').toLowerCase().includes(variantSearch.trim().toLowerCase())
     const matchesStock = stockFilter === 'all' || (stockFilter === 'low' && typeof stockLevel === 'number' && stockLevel > 0 && stockLevel < 10) || (stockFilter === 'zero' && stockLevel === 0)
     return matchesSearch && matchesStock
@@ -70,7 +67,6 @@ export function InventoryPage() {
   const visibleLedgerEntries = (ledgerQuery.data ?? []).filter((entry) => {
     const matchesReason = ledgerReasonFilter === 'all' || entry.reason === ledgerReasonFilter
     const createdAt = new Date(entry.created_at).getTime()
-    const now = Date.now()
     const rangeMs = ledgerTimeRange === '24h' ? 24 * 60 * 60 * 1000 : ledgerTimeRange === '7d' ? 7 * 24 * 60 * 60 * 1000 : ledgerTimeRange === '30d' ? 30 * 24 * 60 * 60 * 1000 : null
     const matchesTime = rangeMs === null || (Number.isFinite(createdAt) && createdAt >= now - rangeMs)
     return matchesReason && matchesTime
@@ -80,13 +76,13 @@ export function InventoryPage() {
   const zeroStockCount = variants.filter((variant) => variant.stockLevel === 0).length
 
   const submitAdjustment = async () => {
-    if (!selectedVariantId) return
+    if (!activeVariantId) return
     const parsed = Number(quantity)
     if (!Number.isInteger(parsed) || parsed === 0) {
       toast.error(t('erp.enterQuantity'))
       return
     }
-    await adjustStockMutation.mutateAsync({ variantId: selectedVariantId, quantity: parsed, reason })
+    await adjustStockMutation.mutateAsync({ variantId: activeVariantId, quantity: parsed, reason })
     toast.success(t('erp.adjustmentSaved'))
     setQuantity('1')
   }
@@ -141,15 +137,15 @@ export function InventoryPage() {
               </div>
               <div className="space-y-3">
                 {filteredVariants.map((variant) => {
-                  const displayStockLevel = selectedVariantId === variant.id ? currentStockLevel : variant.stockLevel
+                  const displayStockLevel = activeVariantId === variant.id ? currentStockLevel : variant.stockLevel
 
                   return (
                     <button
                       key={variant.id}
                       type="button"
                       onClick={() => setSelectedVariantId(variant.id)}
-                      aria-pressed={selectedVariantId === variant.id}
-                      className={`w-full rounded-2xl px-4 py-4 text-left transition-colors ${selectedVariantId === variant.id ? 'bg-accent/40 ring-2 ring-foreground' : 'hover:bg-muted'}`}
+                      aria-pressed={activeVariantId === variant.id}
+                      className={`w-full rounded-2xl px-4 py-4 text-left transition-colors ${activeVariantId === variant.id ? 'bg-accent/40 ring-2 ring-foreground' : 'hover:bg-muted'}`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
@@ -196,7 +192,7 @@ export function InventoryPage() {
                 <div className="mt-4 space-y-4">
                   <div className="space-y-2">
                     <label htmlFor="inventory-quantity" className="text-sm font-medium">{t('erp.quantity')}</label>
-                    <Input id="inventory-quantity" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={!selectedVariantId || adjustStockMutation.isPending} />
+                    <Input id="inventory-quantity" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={!activeVariantId || adjustStockMutation.isPending} />
                   </div>
                   <div className="space-y-2">
                     <label id="inventory-reason-label" htmlFor="inventory-reason" className="text-sm font-medium">{t('erp.reasonCode')}</label>
@@ -207,10 +203,10 @@ export function InventoryPage() {
                       value={reason}
                       onValueChange={(value) => value !== null && setReason(value as InventoryReasonCode)}
                       options={reasonOptions}
-                      disabled={!selectedVariantId || adjustStockMutation.isPending}
+                      disabled={!activeVariantId || adjustStockMutation.isPending}
                     />
                   </div>
-                  <Button onClick={submitAdjustment} disabled={!selectedVariantId || adjustStockMutation.isPending}>{t('erp.saveAdjustment')}</Button>
+                  <Button onClick={submitAdjustment} disabled={!activeVariantId || adjustStockMutation.isPending}>{t('erp.saveAdjustment')}</Button>
                 </div>
               </section>
             </div>
@@ -248,7 +244,7 @@ export function InventoryPage() {
                 {(visibleLedgerEntries).map((entry) => (
                   <div key={entry.id} className="rounded-lg border border-border px-4 py-3 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{t(reasonKeys[entry.reason])}</p>
+                      <p className="font-medium">{isInventoryReasonCode(entry.reason) ? t(reasonKeys[entry.reason]) : entry.reason}</p>
                       <p className="text-muted-foreground">{formatDate(entry.created_at, locale)}</p>
                     </div>
                     <p className="text-muted-foreground">{t('erp.change')}: {entry.quantity_change}</p>
