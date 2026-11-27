@@ -54,7 +54,7 @@ export function ProductCard({ product, onAdded }: ProductCardProps) {
       </button>
 
       <Dialog open={chooserOpen} onOpenChange={setChooserOpen}>
-        <DialogContent className="inset-0 flex h-dvh max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-6 rounded-none border-0 p-5 sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-[min(100%-2rem,32rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border">
+        <DialogContent closeLabel={posCopy.close} className="inset-0 flex h-dvh max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-6 rounded-none border-0 p-5 sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[90dvh] sm:w-[min(100%-2rem,32rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border">
           <DialogHeader className="pr-10 text-left">
             <DialogTitle className="text-2xl">{product.product.name}</DialogTitle>
             <DialogDescription className="text-base">{posCopy.chooseOption}</DialogDescription>

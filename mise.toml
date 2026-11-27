@@ -1,6 +1,6 @@
 [tools]
 go = "1.26.2"
-node = "20"
+node = "latest"
 pnpm = "10"
 
 [env]
