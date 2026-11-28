@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { FormSelect } from '@/components/ui/form-select'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@/components/ui/chip'
 import { Input } from '@/components/ui/input'
@@ -117,11 +118,17 @@ export function InventoryPage() {
               </div>
               <div className="mb-4 grid gap-3 md:grid-cols-3">
                 <Input aria-label="Search variants" value={variantSearch} onChange={(event) => setVariantSearch(event.target.value)} placeholder="Search variant, SKU, category" />
-                <select aria-label="Stock state filter" className="select-field" value={stockFilter} onChange={(event) => setStockFilter(event.target.value as typeof stockFilter)}>
-                  <option value="all">All stock states</option>
-                  <option value="low">Low stock</option>
-                  <option value="zero">Zero stock</option>
-                </select>
+                <FormSelect
+                  aria-label="Stock state filter"
+                  className="h-12 rounded-full bg-card px-4 text-base"
+                  value={stockFilter}
+                  onValueChange={(value) => value !== null && setStockFilter(value as typeof stockFilter)}
+                  options={[
+                    { value: 'all', label: 'All stock states' },
+                    { value: 'low', label: 'Low stock' },
+                    { value: 'zero', label: 'Zero stock' },
+                  ]}
+                />
                 <div className="flex flex-wrap gap-2">
                   <Chip type="button" active={stockFilter === 'low'} onClick={() => setStockFilter('low')}>Low stock ({lowStockCount})</Chip>
                   <Chip type="button" active={stockFilter === 'zero'} onClick={() => setStockFilter('zero')}>Zero stock ({zeroStockCount})</Chip>
@@ -187,10 +194,16 @@ export function InventoryPage() {
                     <Input id="inventory-quantity" type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} disabled={!selectedVariantId || adjustStockMutation.isPending} />
                   </div>
                   <div className="space-y-2">
-                    <span className="text-sm font-medium">Reason code</span>
-                    <select className="select-field" value={reason} onChange={(event) => setReason(event.target.value as InventoryReasonCode)} disabled={!selectedVariantId || adjustStockMutation.isPending}>
-                      {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                    </select>
+                    <label id="inventory-reason-label" htmlFor="inventory-reason" className="text-sm font-medium">Reason code</label>
+                    <FormSelect
+                      id="inventory-reason"
+                      aria-labelledby="inventory-reason-label"
+                      className="h-12 rounded-full bg-card px-4 text-base"
+                      value={reason}
+                      onValueChange={(value) => value !== null && setReason(value as InventoryReasonCode)}
+                      options={reasonOptions}
+                      disabled={!selectedVariantId || adjustStockMutation.isPending}
+                    />
                   </div>
                   <Button onClick={submitAdjustment} disabled={!selectedVariantId || adjustStockMutation.isPending}>Save adjustment</Button>
                 </div>
@@ -203,16 +216,28 @@ export function InventoryPage() {
             {selectedVariant ? (
               <div className="mt-4 space-y-4">
                 <div className="grid gap-3 md:grid-cols-3">
-                  <select aria-label="Ledger reason filter" className="select-field" value={ledgerReasonFilter} onChange={(event) => setLedgerReasonFilter(event.target.value as typeof ledgerReasonFilter)}>
-                    <option value="all">All reasons</option>
-                    {reasonOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                  <select aria-label="Ledger time range" className="select-field" value={ledgerTimeRange} onChange={(event) => setLedgerTimeRange(event.target.value as typeof ledgerTimeRange)}>
-                    <option value="all">All time</option>
-                    <option value="24h">Last 24 hours</option>
-                    <option value="7d">Last 7 days</option>
-                    <option value="30d">Last 30 days</option>
-                  </select>
+                  <FormSelect
+                    aria-label="Ledger reason filter"
+                    className="h-12 rounded-full bg-card px-4 text-base"
+                    value={ledgerReasonFilter}
+                    onValueChange={(value) => value !== null && setLedgerReasonFilter(value as typeof ledgerReasonFilter)}
+                    options={[
+                      { value: 'all', label: 'All reasons' },
+                      ...reasonOptions,
+                    ]}
+                  />
+                  <FormSelect
+                    aria-label="Ledger time range"
+                    className="h-12 rounded-full bg-card px-4 text-base"
+                    value={ledgerTimeRange}
+                    onValueChange={(value) => value !== null && setLedgerTimeRange(value as typeof ledgerTimeRange)}
+                    options={[
+                      { value: 'all', label: 'All time' },
+                      { value: '24h', label: 'Last 24 hours' },
+                      { value: '7d', label: 'Last 7 days' },
+                      { value: '30d', label: 'Last 30 days' },
+                    ]}
+                  />
                   <Button type="button" variant="outline" onClick={() => { setLedgerReasonFilter('all'); setLedgerTimeRange('all') }}>Clear ledger filters</Button>
                 </div>
                 {(visibleLedgerEntries).map((entry) => (

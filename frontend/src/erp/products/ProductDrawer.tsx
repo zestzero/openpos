@@ -3,6 +3,7 @@ import { ImagePlus, Loader2, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ActiveSwitch } from '@/components/ui/active-switch'
 import { Button } from '@/components/ui/button'
+import { FormSelect } from '@/components/ui/form-select'
 import { Input } from '@/components/ui/input'
 import { formatTHB } from '@/lib/formatCurrency'
 import type { CatalogCategory, CatalogProductRecord, ProductFormValues, VariantFormValues } from '@/lib/erp-api'
@@ -28,15 +29,15 @@ const emptyVariant = (): VariantFormValues => ({
 
 const controlBaseClass =
   'w-full rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
-
-const selectClassName = `${controlBaseClass} h-11`
 const textareaClassName = `${controlBaseClass} min-h-24 resize-y`
+
 const panelClassName = 'rounded-xl border border-border bg-background p-4 shadow-sm'
 
 export function ProductDrawer({ open, product, categories, onOpenChange, onSave }: ProductDrawerProps) {
   const [draft, setDraft] = useState<ProductFormValues>(() => normalizeProductDraft(product))
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const dialogContentRef = useRef<HTMLDivElement>(null)
 
   const { state: uploadState, upload, reset: resetUpload } = useImageUpload((url) => {
     setDraft((current) => ({ ...current, imageUrl: url }))
@@ -68,7 +69,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] w-full max-w-2xl flex-col p-0">
+      <DialogContent ref={dialogContentRef} className="flex max-h-[90vh] w-full max-w-2xl flex-col p-0">
         <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left shrink-0">
             <DialogTitle>{title}</DialogTitle>
@@ -78,12 +79,13 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
           </DialogHeader>
 
           <form
-            className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-6 py-6"
+            className="flex min-h-0 flex-1 flex-col"
             onSubmit={(event) => {
               event.preventDefault()
               void onSave(draft)
             }}
           >
+            <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-6 py-6">
             <section className="space-y-4">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Product details</h3>
@@ -99,19 +101,14 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 </Field>
 
                 <Field label="Category">
-                  <select
-                    aria-label="Category"
-                    value={draft.categoryId ?? ''}
-                    onChange={(event) => setDraft((current) => ({ ...current, categoryId: event.target.value || null }))}
-                    className={selectClassName}
-                  >
-                    <option value="">No category</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
+                  <FormSelect
+                    portalContainer={dialogContentRef}
+                    value={draft.categoryId}
+                    onValueChange={(categoryId) => setDraft((current) => ({ ...current, categoryId }))}
+                    options={categories.map((category) => ({ value: category.id, label: category.name }))}
+                    emptyOption={{ label: 'No category' }}
+                    className="h-11 rounded-xl bg-background px-4 py-3"
+                  />
                 </Field>
 
                 <Field label="Description" className="md:col-span-2">
@@ -254,7 +251,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
 
               <div className="space-y-4">
                 {draft.variants.map((variant, index) => (
-                  <article key={variant.id ?? `${variant.sku}-${index}`} className={panelClassName}>
+                  <article key={variant.id ? `persisted-${variant.id}` : `draft-${index}`} className={panelClassName}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-base font-semibold text-foreground">
@@ -313,8 +310,9 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 ))}
               </div>
             </section>
+            </div>
 
-            <DialogFooter className="sticky bottom-0 border-t border-border bg-background px-0 py-5">
+            <DialogFooter className="shrink-0 border-t border-border bg-background px-6 py-5">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
