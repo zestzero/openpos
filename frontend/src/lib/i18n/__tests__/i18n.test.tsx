@@ -15,12 +15,12 @@ describe('i18n', () => {
   it('defaults to Thai and persists a selected locale', () => {
     render(<I18nProvider><LocaleProbe /></I18nProvider>)
 
-    expect(screen.getByRole('group', { name: 'เลือกภาษา' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'ไทย' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('combobox', { name: 'เลือกภาษา' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'เลือกภาษา' })).toHaveTextContent('ไทย')
 
-    fireEvent.click(screen.getByRole('button', { name: 'English' }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'เลือกภาษา' }), { target: { value: 'en' } })
 
-    expect(screen.getByRole('group', { name: 'Choose language' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'Choose language' })).toHaveValue('en')
     expect(localStorage.getItem(localeStorageKey)).toBe('en')
   })
 

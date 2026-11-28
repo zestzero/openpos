@@ -234,8 +234,8 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
             <section className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Variants</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Each variant keeps its own SKU, barcode, price, and cost.</p>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('erp.variantsTitle')}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t('erp.variantsDescription')}</p>
                 </div>
 
                 <Button
@@ -243,7 +243,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                   variant="outline"
                   onClick={() => setDraft((current) => ({ ...current, variants: [...current.variants, emptyVariant()] }))}
                 >
-                  Add variant
+                  {t('erp.addVariant')}
                 </Button>
               </div>
 
@@ -253,15 +253,15 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-base font-semibold text-foreground">
-                          {variant.name || variant.sku || `Variant ${index + 1}`}
+                          {variant.name || variant.sku || t('erp.variantNumber', { number: index + 1 })}
                         </h4>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {variant.name ? (variant.sku ? `SKU ${variant.sku}` : 'No SKU set') : 'Keep barcode, SKU, and pricing aligned.'}
+                          {variant.name ? (variant.sku ? t('erp.variantSku', { sku: variant.sku }) : t('erp.noSku')) : t('erp.variantDescription')}
                         </p>
                       </div>
                       <ActiveSwitch
-                        label="Active"
-                        ariaLabel={`Variant ${index + 1} active`}
+                        label={t('erp.active')}
+                        ariaLabel={t('erp.variantActive', { number: index + 1 })}
                         checked={variant.isActive}
                         onCheckedChange={(checked) => updateVariant(index, { isActive: checked })}
                         compact
@@ -269,16 +269,16 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     </div>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <Field label="Variant name">
+                      <Field label={t('erp.variantName')}>
                         <Input value={variant.name} onChange={(event) => updateVariant(index, { name: event.target.value })} />
                       </Field>
-                      <Field label="SKU">
+                      <Field label={t('erp.sku')}>
                         <Input value={variant.sku} onChange={(event) => updateVariant(index, { sku: event.target.value })} />
                       </Field>
-                      <Field label="Barcode">
+                      <Field label={t('erp.barcode')}>
                         <Input value={variant.barcode} onChange={(event) => updateVariant(index, { barcode: event.target.value })} />
                       </Field>
-                      <Field label="Price (THB)">
+                      <Field label={t('erp.priceTHB')}>
                         <Input
                           type="number"
                           step="0.01"
@@ -287,7 +287,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                           onChange={(event) => updateVariant(index, { price: Number(event.target.value || 0) })}
                         />
                       </Field>
-                      <Field label="Cost (THB)">
+                      <Field label={t('erp.costTHB')}>
                         <Input
                           type="number"
                           step="0.01"
@@ -297,11 +297,11 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                         />
                       </Field>
                       <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 md:col-span-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Price preview</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('erp.pricePreview')}</p>
                         <p className="mt-1 text-lg font-semibold text-foreground">
                           {formatTHB(Math.round(variant.price * 100))}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">Calculated from the entered price.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t('erp.pricePreviewDescription')}</p>
                       </div>
                     </div>
                   </article>
@@ -312,9 +312,9 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
 
             <DialogFooter className="shrink-0 border-t border-border bg-background px-6 py-5">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isUploading}>Save product</Button>
+              <Button type="submit" disabled={isUploading}>{t('erp.saveProduct')}</Button>
             </DialogFooter>
           </form>
         </div>

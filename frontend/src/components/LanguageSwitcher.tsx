@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button'
+import { ChevronDown } from 'lucide-react'
+
 import { useI18n, type Locale } from '@/lib/i18n'
 
 export function LanguageSwitcher() {
@@ -9,20 +10,24 @@ export function LanguageSwitcher() {
   ]
 
   return (
-    <div className="flex items-center gap-1 rounded-full border border-border bg-card p-1" role="group" aria-label={t('language.choose')}>
-      <span className="sr-only">{t('language.label')}</span>
-      {options.map((option) => (
-        <Button
-          key={option.value}
-          type="button"
-          size="sm"
-          variant={locale === option.value ? 'default' : 'ghost'}
-          aria-pressed={locale === option.value}
-          onClick={() => setLocale(option.value)}
-        >
-          {option.label}
-        </Button>
-      ))}
+    <div className="relative w-full">
+      <select
+        id="language-select"
+        aria-label={t('language.choose')}
+        value={locale}
+        onChange={(event) => {
+          const value = event.target.value
+          if (value === 'th' || value === 'en') setLocale(value)
+        }}
+        className="h-11 w-full appearance-none rounded-full border border-input bg-card px-4 pr-10 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 opacity-50" aria-hidden="true" />
     </div>
   )
 }

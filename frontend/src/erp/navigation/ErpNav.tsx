@@ -1,3 +1,4 @@
+import { Link, useRouterState } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { BarChart3, Boxes, FolderTree, LayoutDashboard, Settings2, ShoppingCart, Table2 } from 'lucide-react'
 
@@ -23,7 +24,7 @@ const navItems: NavItem[] = [
 
 export function ErpNav() {
   const { t } = useI18n()
-  const pathname = typeof window !== 'undefined' && window.location.pathname !== '/' ? window.location.pathname : '/erp'
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
 
   return (
     <aside className="flex shrink-0 flex-row items-center gap-2 overflow-x-auto border-b border-border bg-card px-3 py-3 md:w-[6.75rem] md:flex-col md:items-stretch md:overflow-visible md:border-b-0 md:border-r md:px-2 md:py-5">
@@ -43,10 +44,10 @@ export function ErpNav() {
           )
 
           return item.to ? (
-            <a key={item.key} href={item.to} className={className}>
+            <Link key={item.key} to={item.to} className={className}>
               <Icon className="size-5" aria-hidden="true" />
               <span className="max-w-[4.5rem] text-center">{t(item.key)}</span>
-            </a>
+            </Link>
           ) : (
             <Button key={item.key} type="button" variant="ghost" className={cn(className, 'h-auto')}>
               <Icon className="size-5" aria-hidden="true" />

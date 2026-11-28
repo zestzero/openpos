@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { LogOut, ScanLine, Search } from "lucide-react";
 
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,7 +32,6 @@ export function ErpLayout({ children }: { children: ReactNode }) {
                   placeholder={t("erp.searchPlaceholder")}
                 />
               </div>
-              <LanguageSwitcher />
               <a
                 href="/pos"
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-foreground px-4 text-sm font-semibold text-background transition-colors hover:bg-foreground/90"
