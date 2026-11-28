@@ -7,12 +7,14 @@ import { api, type PaymentMethod, type ReceiptSnapshot } from '@/lib/api'
 import { formatTHB } from '@/lib/formatCurrency'
 import { buildPromptPayQrDataUrl } from '@/lib/promptpay'
 import { buildReceiptText, printReceipt } from '@/lib/receipt'
+import { usePosCopy } from '@/pos/lib/copy'
 
 type CheckoutPanelProps = {
   order: ReceiptSnapshot
 }
 
 export function CheckoutPanel({ order }: CheckoutPanelProps) {
+  const posCopy = usePosCopy()
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [tendered, setTendered] = useState(String(order.total_amount))
   const [qr, setQr] = useState<string | null>(null)
@@ -39,27 +41,27 @@ export function CheckoutPanel({ order }: CheckoutPanelProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Checkout</CardTitle>
-        <CardDescription>Take cash or PromptPay, then print the receipt.</CardDescription>
+        <CardTitle>{posCopy.checkout}</CardTitle>
+        <CardDescription>{posCopy.checkoutDescription}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2 sm:grid-cols-2">
-          <Button variant={method === 'cash' ? 'default' : 'outline'} onClick={() => setMethod('cash')}>Cash</Button>
-          <Button variant={method === 'promptpay' ? 'default' : 'outline'} onClick={() => setMethod('promptpay')}>PromptPay</Button>
+          <Button variant={method === 'cash' ? 'default' : 'outline'} onClick={() => setMethod('cash')}>{posCopy.cash}</Button>
+          <Button variant={method === 'promptpay' ? 'default' : 'outline'} onClick={() => setMethod('promptpay')}>{posCopy.promptPayQr}</Button>
         </div>
         <div className="grid gap-2">
-          <label className="text-sm font-medium">Tendered amount</label>
+          <label className="text-sm font-medium">{posCopy.tenderedAmount}</label>
           <Input inputMode="numeric" value={tendered} onChange={(event) => setTendered(event.target.value)} />
-          <p className="text-sm text-muted-foreground">Change due: {formatTHB(changeDue)}</p>
+          <p className="text-sm text-muted-foreground">{posCopy.changeDue}: {formatTHB(changeDue)}</p>
         </div>
         <div className="grid gap-2">
-          <Button onClick={handlePromptPayPreview}>Generate PromptPay QR</Button>
-          {qr ? <img alt="PromptPay QR" src={qr} className="mx-auto h-48 w-48 rounded-lg border" /> : null}
+          <Button onClick={handlePromptPayPreview}>{posCopy.generatePromptPay}</Button>
+          {qr ? <img alt={posCopy.promptPayQr} src={qr} className="mx-auto h-48 w-48 rounded-lg border" /> : null}
         </div>
         <pre className="overflow-auto rounded-md bg-muted p-3 text-xs">{receiptPreview}</pre>
         <div className="flex gap-2">
-          <Button disabled={!canComplete} onClick={handleComplete}>Complete sale</Button>
-          <Button variant="outline" onClick={() => printReceipt(order)}>Print receipt</Button>
+          <Button disabled={!canComplete} onClick={handleComplete}>{posCopy.completeSale}</Button>
+          <Button variant="outline" onClick={() => printReceipt(order)}>{posCopy.printReceipt}</Button>
         </div>
       </CardContent>
     </Card>

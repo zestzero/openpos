@@ -67,7 +67,7 @@ describe('InventoryPage', () => {
 
     await waitFor(() => expect(screen.getByText('Current stock:')).toBeInTheDocument())
     expect(screen.getAllByText('0')[0]).toBeInTheDocument()
-    expect(screen.getByText('RESTOCK')).toBeInTheDocument()
+    expect(screen.getByText('Restock')).toBeInTheDocument()
     expect(screen.getByLabelText('Quantity')).toBeInTheDocument()
   })
 

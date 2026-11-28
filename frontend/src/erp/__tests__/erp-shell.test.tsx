@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { ErpLayout } from '../layout/ErpLayout'
 import { ErpNav } from '../navigation/ErpNav'
 import { Route as erpRoute } from '@/routes/erp'
@@ -19,7 +19,21 @@ type TestRoute = {
 const getStoredSession = vi.hoisted(() => vi.fn())
 const getLandingPath = vi.hoisted(() => vi.fn())
 const logout = vi.hoisted(() => vi.fn())
+const routerMocks = vi.hoisted(() => ({
+  useRouterState: vi.fn(),
+}))
 
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual<typeof import('@tanstack/react-router')>('@tanstack/react-router')
+
+  return {
+    ...actual,
+    Link: ({ to, children, className }: { to: string; children: ReactNode; className?: string }) => (
+      <a href={to} className={className}>{children}</a>
+    ),
+    useRouterState: routerMocks.useRouterState,
+  }
+})
 vi.mock('@/lib/auth', () => ({
   getStoredSession,
 }))
@@ -40,6 +54,8 @@ describe('ERP shell', () => {
     getStoredSession.mockReset()
     getLandingPath.mockReset()
     logout.mockReset()
+    routerMocks.useRouterState.mockReset()
+    routerMocks.useRouterState.mockReturnValue('/erp')
   })
 
   it('renders the desktop navigation and utility bar', () => {

@@ -6,6 +6,7 @@ import { FormSelect } from '@/components/ui/form-select'
 import { Input } from '@/components/ui/input'
 import type { CatalogCategory, CategoryFormValues } from '@/lib/erp-api'
 import { normalizeCategoryDraft } from '@/lib/erp-api'
+import { useI18n } from '@/lib/i18n'
 
 type CategoryDrawerProps = {
   open: boolean
@@ -16,6 +17,7 @@ type CategoryDrawerProps = {
 }
 
 export function CategoryDrawer({ open, category, categories, onOpenChange, onSave }: CategoryDrawerProps) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState<CategoryFormValues>(() => normalizeCategoryDraft(category))
   const dialogContentRef = useRef<HTMLDivElement>(null)
 
@@ -25,7 +27,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
     }
   }, [open, category])
 
-  const title = useMemo(() => (category ? 'Edit category' : 'Create category'), [category])
+  const title = useMemo(() => (category ? t('erp.categoryEdit') : t('erp.categoryCreate')), [category, t])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,7 +36,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
           <DialogHeader className="border-b border-border px-6 py-5 text-left">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              Keep ERP categories simple and stable so the product table and POS navigation stay aligned.
+              {t('erp.categoryDialogDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -45,11 +47,11 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
               void onSave(draft)
             }}
           >
-            <Field label="Name">
+            <Field label={t('common.name')}>
               <Input value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} />
             </Field>
 
-            <Field label="Description">
+            <Field label={t('erp.description')}>
               <textarea
                 value={draft.description}
                 onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
@@ -57,7 +59,7 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
               />
             </Field>
 
-            <Field label="Parent category">
+            <Field label={t('erp.parentCategory')}>
               <FormSelect
                 portalContainer={dialogContentRef}
                 value={draft.parentId}
@@ -65,16 +67,16 @@ export function CategoryDrawer({ open, category, categories, onOpenChange, onSav
                 options={categories
                   .filter((item) => item.id !== category?.id)
                   .map((item) => ({ value: item.id, label: item.name }))}
-                emptyOption={{ label: 'No parent' }}
+                emptyOption={{ label: t('erp.noParent') }}
                 className="h-11 bg-background"
               />
             </Field>
 
             <DialogFooter className="border-t border-border px-0 py-5">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
-              <Button type="submit">Save category</Button>
+              <Button type="submit">{t('erp.saveCategory')}</Button>
             </DialogFooter>
           </form>
         </div>

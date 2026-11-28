@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import { useI18n, type TranslationKey, type TranslationVariables } from '@/lib/i18n'
 
 export interface UseBarcodeDetectorReturn {
   isSupported: boolean
@@ -52,6 +53,7 @@ const HTML5_QRCODE_CONFIG = {
 }
 
 export function useBarcodeDetector(options: UseBarcodeDetectorOptions = {}): UseBarcodeDetectorReturn {
+  const { t } = useI18n()
   const { onScan } = options
   const [isSupported] = useState(() => {
     return 'BarcodeDetector' in window
@@ -59,7 +61,8 @@ export function useBarcodeDetector(options: UseBarcodeDetectorOptions = {}): Use
 
   const [isScanning, setIsScanning] = useState(false)
   const [lastScan, setLastScan] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(null)
+  const [errorVariables, setErrorVariables] = useState<TranslationVariables | undefined>(undefined)
 
   const streamRef = useRef<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
@@ -165,13 +168,15 @@ export function useBarcodeDetector(options: UseBarcodeDetectorOptions = {}): Use
 
   const startScanning = useCallback(
     async (videoElementId: string) => {
-      setError(null)
+      setErrorKey(null)
+      setErrorVariables(undefined)
       setLastScan(null)
 
       const videoElement = document.getElementById(videoElementId) as HTMLVideoElement | null
 
       if (!videoElement) {
-        setError(`Video element with id "${videoElementId}" not found`)
+        setErrorKey('pos.scannerElementMissing')
+        setErrorVariables(undefined)
         return
       }
 
@@ -215,21 +220,25 @@ export function useBarcodeDetector(options: UseBarcodeDetectorOptions = {}): Use
         const errorMessage = err instanceof Error ? err.message : 'Unknown error'
 
         if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
-          setError('Camera permission denied. Please allow camera access to scan barcodes.')
+          setErrorKey('pos.cameraPermissionDenied')
+          setErrorVariables(undefined)
         } else if (errorMessage.includes('NotFoundError') || errorMessage.includes('not found')) {
-          setError('No camera found. Please connect a camera and try again.')
+          setErrorKey('pos.noCameraFound')
+          setErrorVariables(undefined)
         } else {
           // Try html5-qrcode fallback
           try {
             await startHtml5QrcodeScanner(videoElementId)
           } catch {
-            setError(`Failed to start scanner: ${errorMessage}`)
+            setErrorKey('pos.scannerStartFailed')
+            setErrorVariables({ error: errorMessage })
           }
         }
       }
     },
     [detectBarcodes, isSupported, startHtml5QrcodeScanner]
   )
+  const error = errorKey ? t(errorKey, errorVariables) : null
 
   return {
     isSupported,

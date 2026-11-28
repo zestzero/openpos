@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { api, type ProductWithVariants } from '@/lib/api'
 import { ProductCard } from './ProductCard'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface CatalogGridProps {
   categoryId: string | null
@@ -12,6 +12,7 @@ interface CatalogGridProps {
 }
 
 export function CatalogGrid({ categoryId, onProductAdded }: CatalogGridProps) {
+  const posCopy = usePosCopy()
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['products', categoryId],
     queryFn: async () => {

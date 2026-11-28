@@ -1,10 +1,11 @@
 'use client'
 
 import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 export function OfflineBanner() {
   const { isOnline } = useNetworkStatus()
+  const posCopy = usePosCopy()
 
   if (isOnline) return null
 

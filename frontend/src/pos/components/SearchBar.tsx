@@ -8,13 +8,14 @@ import { Input } from '@/components/ui/input'
 import { api } from '@/lib/api'
 import { useCart } from '@/pos/hooks/useCart'
 import { useFavorites } from '@/pos/hooks/useFavorites'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface SearchBarProps {
   onAdded?: (variantId: string, productName: string) => void
 }
 
 export function SearchBar({ onAdded }: SearchBarProps) {
+  const posCopy = usePosCopy()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const { addItem } = useCart()
@@ -66,12 +67,12 @@ export function SearchBar({ onAdded }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-14 rounded-full border-border bg-card pl-12 pr-4 text-lg placeholder:text-muted-foreground focus-visible:ring-ring"
-          aria-label="Search products"
+          aria-label={posCopy.searchProducts}
         />
       </form>
 
       {searchMutation.isPending ? (
-        <p className="text-base text-muted-foreground">Searching…</p>
+        <p className="text-base text-muted-foreground">{posCopy.searchingBarcode}</p>
       ) : null}
 
       {status ? (

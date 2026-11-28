@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { api, type SearchVariantRow } from '@/lib/api'
+import { useI18n, type TranslationKey } from '@/lib/i18n'
 import type { QueuedAdjustment } from '@/lib/db'
 import { BarcodeScanner } from '@/pos/components/BarcodeScanner'
 import { useKeyboardWedge } from '@/pos/hooks/useKeyboardWedge'
@@ -16,7 +17,7 @@ import { useNetworkStatus } from '@/pos/hooks/useNetworkStatus'
 import { useOfflineAdjustments } from '@/pos/hooks/useOfflineAdjustments'
 import { useSync } from '@/pos/hooks/useSync'
 import { PosLayout } from '@/pos/layout/PosLayout'
-import { posLocale } from '@/pos/lib/copy'
+import { usePosInventoryCopy } from '@/pos/lib/copy'
 import { Route as rootRoute } from './__root'
 
 export const Route = createRoute({ getParentRoute: () => rootRoute, path: 'pos/inventory', component: PosInventoryRoute })
@@ -25,35 +26,25 @@ type AdjustmentReason = QueuedAdjustment['reason']
 type Direction = 'add' | 'remove'
 type Screen = 'find' | 'edit' | 'saved'
 
-const copy = posLocale === 'th' ? {
-  title: 'ปรับสต็อก', find: 'สแกนสินค้าเพื่อเริ่ม', placeholder: 'ค้นหาด้วยชื่อ รหัส หรือบาร์โค้ด', scan: 'สแกนบาร์โค้ดด้วยกล้อง',
-  searchFallback: 'หรือค้นหาด้วยชื่อสินค้า', noMatch: 'ไม่พบสินค้า', itemNotFound: 'ไม่พบสินค้านี้', cameraUnavailable: 'กล้องไม่พร้อมใช้งาน', retrying: 'กำลังลองส่งข้อมูล…', retryFailed: 'ยังส่งข้อมูลไม่สำเร็จ กรุณาลองอีกครั้ง',
-  quantity: 'จำนวน', reason: 'สาเหตุ', save: 'บันทึกการปรับสต็อก', saved: 'บันทึกแล้ว', savedOffline: 'บันทึกไว้ในโทรศัพท์นี้แล้ว',
-  savedOnline: 'บันทึกแล้ว ระบบกำลังส่งข้อมูลอัตโนมัติ', another: 'ปรับสินค้าอีกชิ้น', done: 'เสร็จสิ้น', back: 'ย้อนกลับ', retry: 'ลองอีกครั้ง',
-  needsAttention: 'มีรายการที่ต้องตรวจสอบ', increase: 'เพิ่ม', decrease: 'ลด', add: 'เพิ่มสินค้า', remove: 'ตัดสินค้า', current: 'สต็อกปัจจุบัน', after: 'หลังปรับ',
-  other: 'จำนวนอื่น', notEnough: 'สต็อกไม่พอสำหรับการตัดจำนวนนี้', discardTitle: 'ยกเลิกการปรับสินค้า?', discard: 'ยกเลิก', keepEditing: 'แก้ไขต่อ', scanAgain: 'สแกนอีกครั้ง', search: 'ค้นหาสินค้า',
-} : {
-  title: 'Adjust stock', find: 'Scan an item to begin', placeholder: 'Search by name, SKU, or barcode', scan: 'Scan barcode with camera',
-  searchFallback: 'Or search by product name', noMatch: 'No matching product', itemNotFound: 'Item not found', cameraUnavailable: 'Camera unavailable', retrying: 'Trying again…', retryFailed: 'Still unable to sync. Try again.',
-  quantity: 'Quantity', reason: 'Reason', save: 'Save adjustment', saved: 'Adjustment saved', savedOffline: 'Saved on this phone',
-  savedOnline: 'Saved. It is syncing automatically.', another: 'Adjust another item', done: 'Done', back: 'Back', retry: 'Try again',
-  needsAttention: 'Some adjustments need attention', increase: 'Increase', decrease: 'Decrease', add: 'Add stock', remove: 'Remove stock', current: 'Current stock', after: 'After change',
-  other: 'Other amount', notEnough: 'Not enough stock for this removal', discardTitle: 'Discard this adjustment?', discard: 'Discard', keepEditing: 'Keep editing', scanAgain: 'Scan again', search: 'Search by name',
-}
-
-const reasons: Array<{ value: AdjustmentReason; direction: Direction; th: string; en: string }> = [
-  { value: 'RESTOCK', direction: 'add', th: 'รับสินค้าเข้า', en: 'Restock' },
-  { value: 'RETURN', direction: 'add', th: 'ลูกค้าคืนสินค้า', en: 'Customer return' },
-  { value: 'DAMAGE', direction: 'remove', th: 'สินค้าเสียหาย', en: 'Damaged' },
-  { value: 'LOST', direction: 'remove', th: 'สินค้าสูญหาย', en: 'Missing' },
+const reasons: Array<{ value: AdjustmentReason; direction: Direction; key: TranslationKey }> = [
+  { value: 'RESTOCK', direction: 'add', key: 'pos.reason.restock' },
+  { value: 'RETURN', direction: 'add', key: 'pos.reason.return' },
+  { value: 'DAMAGE', direction: 'remove', key: 'pos.reason.damage' },
+  { value: 'LOST', direction: 'remove', key: 'pos.reason.lost' },
 ]
 
-function reasonLabel(reason: AdjustmentReason) {
-  const item = reasons.find((candidate) => candidate.value === reason)
-  return posLocale === 'th' ? item?.th : item?.en
+const reasonKeys: Record<AdjustmentReason, TranslationKey> = {
+  RESTOCK: 'pos.reason.restock',
+  ADJUSTMENT: 'pos.reason.adjustment',
+  RETURN: 'pos.reason.return',
+  DAMAGE: 'pos.reason.damage',
+  LOST: 'pos.reason.lost',
 }
 
+
 export function PosInventoryRoute() {
+  const copy = usePosInventoryCopy()
+  const { t } = useI18n()
   const { isOnline } = useNetworkStatus()
   const { queueAdjustment, getAllQueuedAdjustments } = useOfflineAdjustments()
   const { syncPendingAdjustments } = useSync()
@@ -91,7 +82,7 @@ export function PosInventoryRoute() {
   }, [])
   const findBarcode = useCallback(async (code: string) => {
     try { chooseVariant((await api.searchVariant(code)).data) } catch { setError(copy.itemNotFound) }
-  }, [chooseVariant])
+  }, [chooseVariant, copy.itemNotFound])
   useKeyboardWedge({ onScan: findBarcode })
 
   const selectDirection = (next: Direction) => {
@@ -129,8 +120,8 @@ export function PosInventoryRoute() {
       <div><h2 className="text-2xl font-bold">{selected.product_name}</h2>{selected.name !== 'Default' ? <p className="mt-1 text-lg text-muted-foreground">{selected.name}</p> : null}<p className="mt-2 text-lg"><span className="text-muted-foreground">{copy.current}: </span><strong>{currentStock}</strong></p></div>
       <div className="grid grid-cols-2 gap-3"><Button type="button" variant={direction === 'add' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg font-bold" onClick={() => selectDirection('add')}><Plus data-icon="inline-start" />{copy.add}</Button><Button type="button" variant={direction === 'remove' ? 'default' : 'outline'} className="h-16 rounded-xl text-lg font-bold" onClick={() => selectDirection('remove')}><Minus data-icon="inline-start" />{copy.remove}</Button></div>
       <div className="flex flex-col gap-3 border-y border-border py-5"><p className="text-lg font-semibold">{copy.quantity}</p><div className="flex items-center justify-center gap-3"><Button variant="outline" className="size-14 rounded-xl" onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label={copy.decrease}><Minus aria-hidden="true" /></Button><span aria-label={copy.quantity} className="min-w-16 text-center text-3xl font-black tabular-nums">{quantity}</span><Button variant="outline" className="size-14 rounded-xl" onClick={() => setQuantity((value) => value + 1)} aria-label={copy.increase}><Plus aria-hidden="true" /></Button></div><div className="grid grid-cols-3 gap-2">{[1, 5, 10].map((amount) => <Button key={amount} type="button" variant={quantity === amount && customAmount === '' ? 'secondary' : 'outline'} className="min-h-12 text-lg" onClick={() => setAmount(amount)}>{amount}</Button>)}</div><label className="flex flex-col gap-2 text-base font-semibold">{copy.other}<Input value={customAmount} inputMode="numeric" pattern="[0-9]*" onChange={(event) => { const value = event.target.value.replace(/[^0-9]/g, ''); setCustomAmount(value); if (value) setQuantity(Math.max(1, Number(value))) }} className="h-14 rounded-xl text-lg" /></label></div>
-      <div className="flex flex-col gap-3"><p className="text-lg font-semibold">{copy.reason}</p><div className="grid gap-2">{visibleReasons.map((item) => <Button key={item.value} type="button" variant={reason === item.value ? 'default' : 'outline'} className="min-h-14 justify-start rounded-xl px-4 text-left text-lg" onClick={() => setReason(item.value)}>{posLocale === 'th' ? item.th : item.en}</Button>)}</div></div>
-      <div className="border-y border-border py-4 text-lg"><div className="flex justify-between"><span>{copy.after}</span><strong className={resultingStock < 0 ? 'text-destructive' : ''}>{resultingStock}</strong></div><p className="mt-2 font-semibold">{direction === 'add' ? copy.add : copy.remove} {quantity} · {reasonLabel(reason)}</p></div>
+      <div className="flex flex-col gap-3"><p className="text-lg font-semibold">{copy.reason}</p><div className="grid gap-2">{visibleReasons.map((item) => <Button key={item.value} type="button" variant={reason === item.value ? 'default' : 'outline'} className="min-h-14 justify-start rounded-xl px-4 text-left text-lg" onClick={() => setReason(item.value)}>{t(item.key)}</Button>)}</div></div>
+      <div className="border-y border-border py-4 text-lg"><div className="flex justify-between"><span>{copy.after}</span><strong className={resultingStock < 0 ? 'text-destructive' : ''}>{resultingStock}</strong></div><p className="mt-2 font-semibold">{direction === 'add' ? copy.add : copy.remove} {quantity} · {t(reasonKeys[reason])}</p></div>
       {resultingStock < 0 ? <p role="alert" className="rounded-xl bg-destructive-soft p-4 text-base font-semibold text-destructive-foreground">{copy.notEnough}</p> : null}{error ? <p role="alert" className="rounded-xl bg-destructive-soft p-4 text-base font-semibold text-destructive-foreground">{error}</p> : null}
     </div>
     <Dialog open={discardOpen} onOpenChange={setDiscardOpen}><DialogContent><DialogHeader><DialogTitle>{copy.discardTitle}</DialogTitle><DialogDescription>{copy.discardTitle}</DialogDescription></DialogHeader><div className="flex gap-3"><Button variant="outline" className="min-h-12 flex-1" onClick={() => setDiscardOpen(false)}>{copy.keepEditing}</Button><Button variant="destructive" className="min-h-12 flex-1" onClick={() => { setDiscardOpen(false); reset() }}>{copy.discard}</Button></div></DialogContent></Dialog>

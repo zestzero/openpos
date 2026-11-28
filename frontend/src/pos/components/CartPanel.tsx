@@ -15,7 +15,7 @@ import { useOfflineOrders } from '@/pos/hooks/useOfflineOrders'
 import { usePosCheckoutSession } from '@/pos/hooks/usePosCheckoutSession'
 import { useLatestReceipt } from '@/pos/hooks/useLatestReceipt'
 import { PosLayout } from '@/pos/layout/PosLayout'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 import { CartItemRow } from './CartItemRow'
 
 function parseTHB(value: string) {
@@ -65,6 +65,7 @@ function localReceipt(
 }
 
 export function CartPanel() {
+  const posCopy = usePosCopy()
   const { user } = useAuth()
   const { isOnline } = useNetworkStatus()
   const { queueOrder } = useOfflineOrders()
@@ -263,9 +264,9 @@ export function CartPanel() {
             </div>
           ) : (
             <div className="flex min-h-72 flex-col items-center justify-center gap-4 text-center">
-              {qrDataUrl ? <img src={qrDataUrl} alt="PromptPay QR" className="size-64 border border-border bg-card p-3" /> : null}
-              {!qrDataUrl && !qrError ? <p className="text-lg text-muted-foreground">Loading QR…</p> : null}
-              {qrError ? <p className="text-lg text-destructive">QR could not be created. Choose cash or try again.</p> : null}
+              {qrDataUrl ? <img src={qrDataUrl} alt={posCopy.promptPayQr} className="size-64 border border-border bg-card p-3" /> : null}
+              {!qrDataUrl && !qrError ? <p className="text-lg text-muted-foreground">{posCopy.loadingQr}</p> : null}
+              {qrError ? <p className="text-lg text-destructive">{posCopy.qrError}</p> : null}
             </div>
           )}
 

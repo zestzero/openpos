@@ -3,7 +3,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/formatCurrency'
 import type { CartItem } from '@/pos/hooks/useCart'
-import { posCopy } from '@/pos/lib/copy'
+import { usePosCopy } from '@/pos/lib/copy'
 
 interface CartItemRowProps {
   item: CartItem
@@ -13,6 +13,7 @@ interface CartItemRowProps {
 }
 
 export function CartItemRow({ item, onUpdateQuantity, onRemove }: CartItemRowProps) {
+  const posCopy = usePosCopy()
   return (
     <div className="flex flex-col gap-3 py-4">
       <div className="flex items-start justify-between gap-3">

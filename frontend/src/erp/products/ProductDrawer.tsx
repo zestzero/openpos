@@ -9,6 +9,7 @@ import { formatTHB } from '@/lib/formatCurrency'
 import type { CatalogCategory, CatalogProductRecord, ProductFormValues, VariantFormValues } from '@/lib/erp-api'
 import { normalizeProductDraft } from '@/lib/erp-api'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useI18n } from '@/lib/i18n'
 
 type ProductDrawerProps = {
   open: boolean
@@ -34,6 +35,7 @@ const textareaClassName = `${controlBaseClass} min-h-24 resize-y`
 const panelClassName = 'rounded-xl border border-border bg-background p-4 shadow-sm'
 
 export function ProductDrawer({ open, product, categories, onOpenChange, onSave }: ProductDrawerProps) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState<ProductFormValues>(() => normalizeProductDraft(product))
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -50,7 +52,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
     }
   }, [open, product])
 
-  const title = useMemo(() => (product ? 'Edit product' : 'Create product'), [product])
+  const title = useMemo(() => (product ? t('erp.edit') : t('erp.createProduct')), [product, t])
 
   const updateVariant = (index: number, patch: Partial<VariantFormValues>) => {
     setDraft((current) => ({
@@ -73,9 +75,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
         <div className="flex min-h-0 flex-1 flex-col">
           <DialogHeader className="border-b border-border px-6 py-5 text-left shrink-0">
             <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
-              Manage the parent product, nested variants, and image from one place.
-            </DialogDescription>
+            <DialogDescription>{t('erp.productDetailsDescription')}</DialogDescription>
           </DialogHeader>
 
           <form
@@ -88,30 +88,30 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
             <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto px-6 py-6">
             <section className="space-y-4">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Product details</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Core fields that define how the product appears in ERP and POS.</p>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('erp.productDetails')}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t('erp.productDetailsDescription')}</p>
               </div>
 
               <div className="grid gap-4 rounded-2xl border border-border bg-background p-4 shadow-sm md:grid-cols-2">
-                <Field label="Product name">
+                <Field label={t('erp.productName')}>
                   <Input
                     value={draft.name}
                     onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
                   />
                 </Field>
 
-                <Field label="Category">
+                <Field label={t('erp.category')}>
                   <FormSelect
                     portalContainer={dialogContentRef}
                     value={draft.categoryId}
                     onValueChange={(categoryId) => setDraft((current) => ({ ...current, categoryId }))}
                     options={categories.map((category) => ({ value: category.id, label: category.name }))}
-                    emptyOption={{ label: 'No category' }}
+                    emptyOption={{ label: t('erp.noCategory') }}
                     className="h-11 rounded-xl bg-background px-4 py-3"
                   />
                 </Field>
 
-                <Field label="Description" className="md:col-span-2">
+                <Field label={t('erp.description')} className="md:col-span-2">
                   <textarea
                     value={draft.description}
                     onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
@@ -122,18 +122,16 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 <div className="md:col-span-2 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Product image</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Upload a JPG, PNG, or WebP image up to 10 MB. It will be compressed automatically.
-                      </p>
+                      <p className="text-sm font-semibold text-foreground">{t('erp.productImage')}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{t('erp.imageUploadDescription')}</p>
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">Optional</span>
+                    <span className="text-xs font-medium text-muted-foreground">{t('common.optional')}</span>
                   </div>
 
                   <div
                     role="button"
                     tabIndex={0}
-                    aria-label="Upload image: click or drag and drop"
+                    aria-label={t('erp.uploadImage')}
                     aria-busy={isUploading}
                     className={[
                       'group relative flex min-h-40 cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-8 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
@@ -162,16 +160,16 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                       <>
                         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                         <p className="text-sm font-medium text-foreground">
-                          {uploadState.status === 'compressing' ? 'Compressing…' : 'Uploading…'}
+                          {uploadState.status === 'compressing' ? t('erp.compressing') : t('erp.uploading')}
                         </p>
-                        <p className="text-xs text-muted-foreground">Keep this dialog open while the image is being processed.</p>
+                        <p className="text-xs text-muted-foreground">{t('erp.keepDialogOpen')}</p>
                       </>
                     ) : (
                       <>
                         <ImagePlus className="h-8 w-8 text-muted-foreground" />
                         <div>
-                          <p className="text-sm font-medium text-foreground">Click to browse or drag and drop</p>
-                          <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, WebP. Best results use a square or near-square image.</p>
+                          <p className="text-sm font-medium text-foreground">{t('erp.browseOrDrop')}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{t('erp.imageFormatDescription')}</p>
                         </div>
                       </>
                     )}
@@ -191,9 +189,9 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                   )}
 
                   <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Or paste image URL</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('erp.pasteImageUrl')}</p>
                     <Input
-                      aria-label="Image URL"
+                      aria-label={t('erp.imageUrl')}
                       placeholder="https://example.com/image.jpg"
                       value={draft.imageUrl}
                       onChange={(event) => setDraft((current) => ({ ...current, imageUrl: event.target.value }))}
@@ -204,16 +202,16 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     <div className="flex items-center gap-4 rounded-2xl border border-border bg-muted/20 p-3">
                       <img
                         src={draft.imageUrl}
-                        alt={draft.name ? `${draft.name} preview` : 'Product preview'}
+                        alt={draft.name ? `${draft.name} ${t('erp.productPreview')}` : t('erp.productPreview')}
                         className="h-16 w-16 shrink-0 rounded-xl object-cover ring-1 ring-border"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground">Current image</p>
+                        <p className="text-sm font-semibold text-foreground">{t('erp.currentImage')}</p>
                         <p className="truncate text-xs text-muted-foreground">{draft.imageUrl}</p>
                       </div>
                       <button
                         type="button"
-                        aria-label="Remove image"
+                        aria-label={t('erp.removeImage')}
                         className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-pill border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         onClick={() => setDraft((current) => ({ ...current, imageUrl: '' }))}
                       >
@@ -224,8 +222,8 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                 </div>
 
                 <ActiveSwitch
-                  label="Active in POS"
-                  description="Show this product in POS for cashiers to ring up."
+                  label={t('erp.activeInPos')}
+                  description={t('erp.activeInPosDescription')}
                   checked={draft.isActive}
                   onCheckedChange={(checked) => setDraft((current) => ({ ...current, isActive: checked }))}
                   className="md:col-span-2"
@@ -236,8 +234,8 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
             <section className="space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Variants</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Each variant keeps its own SKU, barcode, price, and cost.</p>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t('erp.variantsTitle')}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{t('erp.variantsDescription')}</p>
                 </div>
 
                 <Button
@@ -245,7 +243,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                   variant="outline"
                   onClick={() => setDraft((current) => ({ ...current, variants: [...current.variants, emptyVariant()] }))}
                 >
-                  Add variant
+                  {t('erp.addVariant')}
                 </Button>
               </div>
 
@@ -255,15 +253,15 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-base font-semibold text-foreground">
-                          {variant.name || variant.sku || `Variant ${index + 1}`}
+                          {variant.name || variant.sku || t('erp.variantNumber', { number: index + 1 })}
                         </h4>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {variant.name ? (variant.sku ? `SKU ${variant.sku}` : 'No SKU set') : 'Keep barcode, SKU, and pricing aligned.'}
+                          {variant.name ? (variant.sku ? t('erp.variantSku', { sku: variant.sku }) : t('erp.noSku')) : t('erp.variantDescription')}
                         </p>
                       </div>
                       <ActiveSwitch
-                        label="Active"
-                        ariaLabel={`Variant ${index + 1} active`}
+                        label={t('erp.active')}
+                        ariaLabel={t('erp.variantActive', { number: index + 1 })}
                         checked={variant.isActive}
                         onCheckedChange={(checked) => updateVariant(index, { isActive: checked })}
                         compact
@@ -271,16 +269,16 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                     </div>
 
                     <div className="mt-4 grid gap-4 md:grid-cols-2">
-                      <Field label="Variant name">
+                      <Field label={t('erp.variantName')}>
                         <Input value={variant.name} onChange={(event) => updateVariant(index, { name: event.target.value })} />
                       </Field>
-                      <Field label="SKU">
+                      <Field label={t('erp.sku')}>
                         <Input value={variant.sku} onChange={(event) => updateVariant(index, { sku: event.target.value })} />
                       </Field>
-                      <Field label="Barcode">
+                      <Field label={t('erp.barcode')}>
                         <Input value={variant.barcode} onChange={(event) => updateVariant(index, { barcode: event.target.value })} />
                       </Field>
-                      <Field label="Price (THB)">
+                      <Field label={t('erp.priceTHB')}>
                         <Input
                           type="number"
                           step="0.01"
@@ -289,7 +287,7 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                           onChange={(event) => updateVariant(index, { price: Number(event.target.value || 0) })}
                         />
                       </Field>
-                      <Field label="Cost (THB)">
+                      <Field label={t('erp.costTHB')}>
                         <Input
                           type="number"
                           step="0.01"
@@ -299,11 +297,11 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
                         />
                       </Field>
                       <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 md:col-span-2">
-                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Price preview</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{t('erp.pricePreview')}</p>
                         <p className="mt-1 text-lg font-semibold text-foreground">
                           {formatTHB(Math.round(variant.price * 100))}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">Calculated from the entered price.</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t('erp.pricePreviewDescription')}</p>
                       </div>
                     </div>
                   </article>
@@ -314,9 +312,9 @@ export function ProductDrawer({ open, product, categories, onOpenChange, onSave 
 
             <DialogFooter className="shrink-0 border-t border-border bg-background px-6 py-5">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={isUploading}>Save product</Button>
+              <Button type="submit" disabled={isUploading}>{t('erp.saveProduct')}</Button>
             </DialogFooter>
           </form>
         </div>
