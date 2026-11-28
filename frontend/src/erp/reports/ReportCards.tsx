@@ -14,7 +14,7 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
   const { t, locale } = useI18n()
   const current = summary?.current
   const previous = summary?.previous
-  const showSkeleton = isLoading || !current
+  const showSkeleton = isLoading
 
   const cards = current
     ? [
@@ -55,8 +55,17 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
 
   return (
     <section className="grid gap-4 xl:grid-cols-4">
-      {!showSkeleton && cards.length > 0
-        ? cards.map((card) => (
+      {showSkeleton
+        ? Array.from({ length: 4 }, (_, index) => (
+            <Card key={index} className="border-border/70 bg-card/95">
+              <CardHeader className="space-y-3 pb-3">
+                <div className="h-4 w-24 animate-pulse rounded-full bg-muted" />
+                <div className="h-10 w-32 animate-pulse rounded-full bg-muted" />
+                <div className="h-10 w-full animate-pulse rounded-2xl bg-muted" />
+              </CardHeader>
+            </Card>
+          ))
+        : cards.map((card) => (
             <KpiStat
               key={card.label}
               label={card.label}
@@ -65,15 +74,6 @@ export function ReportCards({ summary, isLoading = false }: ReportCardsProps) {
               note={card.note}
               highlight={card.highlight}
             />
-          ))
-        : Array.from({ length: 4 }, (_, index) => (
-            <Card key={index} className="border-border/70 bg-card/95">
-              <CardHeader className="space-y-3 pb-3">
-                <div className="h-4 w-24 animate-pulse rounded-full bg-muted" />
-                <div className="h-10 w-32 animate-pulse rounded-full bg-muted" />
-                <div className="h-10 w-full animate-pulse rounded-2xl bg-muted" />
-              </CardHeader>
-            </Card>
           ))}
     </section>
   )

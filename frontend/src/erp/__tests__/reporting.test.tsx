@@ -97,6 +97,16 @@ describe('reporting dashboard', () => {
     expect((await screen.findAllByText('Apr 2026')).length).toBeGreaterThan(0)
   })
 
+  it('shows an empty state when the report has no rows', async () => {
+    vi.mocked(reportingApi.getMonthlySales).mockResolvedValue({ data: [] })
+    vi.mocked(reportingApi.getGrossProfit).mockResolvedValue({ data: [] })
+
+    renderDashboard()
+
+    expect(await screen.findByText('No report data yet')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '42 orders' })).not.toBeInTheDocument()
+  })
+
   it('shows the chart panel with merged monthly data', async () => {
     renderDashboard()
 

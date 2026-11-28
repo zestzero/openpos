@@ -111,6 +111,31 @@ func TestHandlerRoutes(t *testing.T) {
 			t.Fatalf("unexpected payload: %+v", payload)
 		}
 	})
+
+	t.Run("empty report endpoints return arrays", func(t *testing.T) {
+		emptyRouter := NewHandler(&fakeReportingService{}).Routes()
+
+		for _, path := range []string{"/monthly-sales", "/gross-profit"} {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, path, nil)
+
+			emptyRouter.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("%s: expected 200, got %d", path, rec.Code)
+			}
+
+			var payload struct {
+				Data json.RawMessage `json:"data"`
+			}
+			if err := json.NewDecoder(rec.Body).Decode(&payload); err != nil {
+				t.Fatalf("%s: decode response: %v", path, err)
+			}
+			if string(payload.Data) != "[]" {
+				t.Fatalf("%s: expected empty array, got %s", path, payload.Data)
+			}
+		}
+	})
 }
 
 type fakeReportingQueries struct {

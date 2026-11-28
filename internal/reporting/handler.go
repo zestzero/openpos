@@ -40,6 +40,9 @@ func (h *Handler) MonthlySales(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if rows == nil {
+		rows = []sqlc.MonthlySalesReport{}
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(successResponse{Data: rows})
 }
@@ -49,6 +52,9 @@ func (h *Handler) GrossProfit(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if rows == nil {
+		rows = []sqlc.GrossProfitReport{}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(successResponse{Data: rows})

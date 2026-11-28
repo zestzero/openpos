@@ -79,6 +79,15 @@ export function ReportDashboard() {
         </Card>
       ) : null}
 
+      {!isLoading && !error && !summary ? (
+        <Card className="border-border/70 bg-card/95">
+          <CardHeader>
+            <CardTitle>{t('report.emptyTitle')}</CardTitle>
+            <CardDescription>{t('report.emptyDescription')}</CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
+
       <ReportCards summary={summary} isLoading={isLoading} />
 
       {summary ? <ReportChart rows={summary.rows} /> : null}
